@@ -1,9 +1,9 @@
-'use client';
+﻿'use client';
 
-import ActivityChart from '../../components/ActivityChart';
+import ActivityChart from '@/components/charts/ActivityChart';
 
 // ======================================================
-// Helpers: escala Y dinâmica (pra não ficar "grandão" com valores pequenos)
+// Helpers: escala Y dinÃ¢mica (pra nÃ£o ficar "grandÃ£o" com valores pequenos)
 // ======================================================
 function niceCeil(v) {
   if (v <= 5) return 5;
@@ -29,7 +29,7 @@ function getMaxFromChartData(chartData) {
 function yOptionsSmart(chartData) {
   const maxVal = getMaxFromChartData(chartData);
 
-  // se não tiver dados, cai no padrão
+  // se nÃ£o tiver dados, cai no padrÃ£o
   if (!Number.isFinite(maxVal) || maxVal <= 0) {
     return {
       min: 0,
@@ -38,7 +38,7 @@ function yOptionsSmart(chartData) {
     };
   }
 
-  // se passar de ~50%, usa 0–100 com 0/50/100
+  // se passar de ~50%, usa 0â€“100 com 0/50/100
   if (maxVal >= 50) {
     return {
       min: 0,
@@ -50,7 +50,7 @@ function yOptionsSmart(chartData) {
     };
   }
 
-  // caso comum: valores pequenos -> escala dinâmica até um pouco acima do máximo
+  // caso comum: valores pequenos -> escala dinÃ¢mica atÃ© um pouco acima do mÃ¡ximo
   const padded = maxVal * 1.1; // +10% de folga
   const yMax = niceCeil(padded);
 
@@ -74,13 +74,13 @@ export default function AtividadesAcademicasTab({
   xTicksNoRot,
 
   // dados
-  discenteChartData, // já formatado (datasets.atividades)
+  discenteChartData, // jÃ¡ formatado (datasets.atividades)
   atividadesDoc, // raw da API
 
   // formatter
   formatAtividadesChartData,
 }) {
-  // monta o chart do docente 1x pra reaproveitar (evita chamar formatter várias vezes)
+  // monta o chart do docente 1x pra reaproveitar (evita chamar formatter vÃ¡rias vezes)
   const docenteChartData = atividadesDoc ? formatAtividadesChartData(atividadesDoc) : null;
 
   return (
@@ -89,7 +89,7 @@ export default function AtividadesAcademicasTab({
         <div className={styles.chartContainerFlex}>
           <ActivityChart
             chartData={discenteChartData}
-            title="Percentual de Participação em Atividades (Discente)"
+            title="Percentual de ParticipaÃ§Ã£o em Atividades (Discente)"
             customOptions={{
               ...disableZoomOptions,
               plugins: { tooltip: twoDecTooltip('%') },
@@ -105,7 +105,7 @@ export default function AtividadesAcademicasTab({
           {docenteChartData ? (
             <ActivityChart
               chartData={docenteChartData}
-              title="Percentual de Participação em Atividades (Docente)"
+              title="Percentual de ParticipaÃ§Ã£o em Atividades (Docente)"
               customOptions={{
                 ...disableZoomOptions,
                 plugins: { tooltip: twoDecTooltip('%') },
@@ -116,7 +116,7 @@ export default function AtividadesAcademicasTab({
               }}
             />
           ) : (
-            <p>Dados de atividades do docente não disponíveis.</p>
+            <p>Dados de atividades do docente nÃ£o disponÃ­veis.</p>
           )}
         </div>
       </div>

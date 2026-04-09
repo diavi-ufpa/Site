@@ -1,7 +1,7 @@
-'use client';
+﻿'use client';
 
-import ActivityChart from '../../components/ActivityChart';
-import BoxplotChart from '../../components/BoxplotChart';
+import ActivityChart from '@/components/charts/ActivityChart';
+import BoxplotChart from '@/components/charts/BoxplotChart';
 import { QUESTION_MAPPING_AVALIA } from '../../lib/questionMappingAvalia';
 
 export default function AutoavaliacaoTab({
@@ -17,21 +17,21 @@ export default function AutoavaliacaoTab({
   formatMediasItensChartData,
   formatProporcoesItensChartData,
 
-  // ✅ subdim formatters
+  // âœ… subdim formatters
   formatMediasSubdimChartData,
   formatProporcoesSubdimChartData,
 
-  // ✅ Ação Docente (subdimensões) - base discente
+  // âœ… AÃ§Ã£o Docente (subdimensÃµes) - base discente
   acaoDocSubMedDisc,
   acaoDocSubPropDisc,
   acaoDocSubBoxDisc,
 
-  // (mantidos — você já passava, mesmo que não use aqui)
+  // (mantidos â€” vocÃª jÃ¡ passava, mesmo que nÃ£o use aqui)
   docenteMed,
   docenteProp,
   docenteBox,
 
-  // dados (autoavaliação discente)
+  // dados (autoavaliaÃ§Ã£o discente)
   itensAutoMed,
   itensAutoProp,
   itensAutoBox,
@@ -41,7 +41,7 @@ export default function AutoavaliacaoTab({
   itensAtitudePropDisc,
   itensAtitudeBoxDisc,
 
-  // dados (gestão discente)
+  // dados (gestÃ£o discente)
   itensGestaoMedDisc,
   itensGestaoPropDisc,
   itensGestaoBoxDisc,
@@ -51,7 +51,7 @@ export default function AutoavaliacaoTab({
   procDiscProp,
   procDiscBox,
 
-  // dados (instalações discente)
+  // dados (instalaÃ§Ãµes discente)
   itensInstalacoesMed,
   itensInstalacoesProp,
   itensInstalacoesBoxDisc,
@@ -73,8 +73,8 @@ export default function AutoavaliacaoTab({
         }}
       >
         {/* ============================================================
-            ✅ AUTOAVALIAÇÃO DISCENTE (ordem igual ao R original)
-            Figura 13 (Proporções) -> Figura 11 (Médias) -> Figura 15 (Boxplot)
+            âœ… AUTOAVALIAÃ‡ÃƒO DISCENTE (ordem igual ao R original)
+            Figura 13 (ProporÃ§Ãµes) -> Figura 11 (MÃ©dias) -> Figura 15 (Boxplot)
            ============================================================ */}
         {showDim2 && (
           <>
@@ -83,7 +83,7 @@ export default function AutoavaliacaoTab({
           {acaoDocSubMedDisc ? (
             <ActivityChart
               chartData={formatMediasSubdimChartData(acaoDocSubMedDisc)}
-              title="Médias por Subdimensão da Avaliação da Ação Docente"
+              title="MÃ©dias por SubdimensÃ£o da AvaliaÃ§Ã£o da AÃ§Ã£o Docente"
               customOptions={{
                 ...disableZoomOptions,
                 plugins: {
@@ -94,7 +94,7 @@ export default function AutoavaliacaoTab({
               }}
             />
           ) : (
-            <p>Médias (Ação Docente por Subdimensão) não disponíveis.</p>
+            <p>MÃ©dias (AÃ§Ã£o Docente por SubdimensÃ£o) nÃ£o disponÃ­veis.</p>
           )}
         </div>
 
@@ -103,7 +103,7 @@ export default function AutoavaliacaoTab({
           {acaoDocSubPropDisc ? (
             <ActivityChart
               chartData={formatProporcoesSubdimChartData(acaoDocSubPropDisc)}
-              title="Proporções de respostas dadas por Subdimensão da Avaliação da Ação Docente"
+              title="ProporÃ§Ãµes de respostas dadas por SubdimensÃ£o da AvaliaÃ§Ã£o da AÃ§Ã£o Docente"
               customOptions={{
                 ...disableZoomOptions,
                 plugins: {
@@ -113,24 +113,24 @@ export default function AutoavaliacaoTab({
               }}
             />
           ) : (
-            <p>Proporções (Ação Docente por Subdimensão) não disponíveis.</p>
+            <p>ProporÃ§Ãµes (AÃ§Ã£o Docente por SubdimensÃ£o) nÃ£o disponÃ­veis.</p>
           )}
         </div>
 
-        {/* ✅ Figura 10 (logo após a Figura 8) + ✅ Tabela descritiva abaixo */}
+        {/* âœ… Figura 10 (logo apÃ³s a Figura 8) + âœ… Tabela descritiva abaixo */}
         {acaoDocSubBoxDisc ? (
           <>
             <div className={styles.chartContainer} style={{ width: '100%', minHeight: '400px' }}>
               <BoxplotChart
                 apiData={acaoDocSubBoxDisc}
-                title="Distribuição das Médias das Avaliações das Turmas/Docentes por Subdimensão da Ação Docente"
+                title="DistribuiÃ§Ã£o das MÃ©dias das AvaliaÃ§Ãµes das Turmas/Docentes por SubdimensÃ£o da AÃ§Ã£o Docente"
                 customOptions={disableZoomOptions}
               />
             </div>
 
             <div className={styles.chartContainer} style={{ width: '100%', height: 'auto', padding: '1.5rem' }}>
               <h4 style={{ textAlign: 'center', marginBottom: '1rem', color: '#333' }}>
-                Estatísticas descritivas – Ação Docente (por Subdimensão)
+                EstatÃ­sticas descritivas â€“ AÃ§Ã£o Docente (por SubdimensÃ£o)
               </h4>
               <div style={{ display: 'flex', justifyContent: 'center' }}>
                 <div style={{ width: '100%' }}>
@@ -141,7 +141,7 @@ export default function AutoavaliacaoTab({
           </>
         ) : (
           <div className={styles.chartContainer} style={{ width: '100%', minHeight: '100px' }}>
-            <p>Boxplot e Estatísticas (Ação Docente por Subdimensão) não disponíveis.</p>
+            <p>Boxplot e EstatÃ­sticas (AÃ§Ã£o Docente por SubdimensÃ£o) nÃ£o disponÃ­veis.</p>
           </div>
         )}
           </>
@@ -154,7 +154,7 @@ export default function AutoavaliacaoTab({
           {itensAutoMed ? (
             <ActivityChart
               chartData={formatMediasItensChartData(itensAutoMed)}
-              title="Médias dos itens relacionados à Autoavaliação Discente"
+              title="MÃ©dias dos itens relacionados Ã  AutoavaliaÃ§Ã£o Discente"
               customOptions={{
                 ...disableZoomOptions,
                 plugins: {
@@ -165,7 +165,7 @@ export default function AutoavaliacaoTab({
               }}
             />
           ) : (
-            <p>Médias (Autoavaliação) não disponíveis.</p>
+            <p>MÃ©dias (AutoavaliaÃ§Ã£o) nÃ£o disponÃ­veis.</p>
           )}
         </div>
 
@@ -174,7 +174,7 @@ export default function AutoavaliacaoTab({
           {itensAutoProp ? (
             <ActivityChart
               chartData={formatProporcoesItensChartData(itensAutoProp)}
-              title="Proporções de respostas dadas aos itens relacionados à Autoavaliação Discente"
+              title="ProporÃ§Ãµes de respostas dadas aos itens relacionados Ã  AutoavaliaÃ§Ã£o Discente"
               customOptions={{
                 ...disableZoomOptions,
                 plugins: {
@@ -184,7 +184,7 @@ export default function AutoavaliacaoTab({
               }}
             />
           ) : (
-            <p>Proporções (Autoavaliação) não disponíveis.</p>
+            <p>ProporÃ§Ãµes (AutoavaliaÃ§Ã£o) nÃ£o disponÃ­veis.</p>
           )}
         </div>
 
@@ -196,14 +196,14 @@ export default function AutoavaliacaoTab({
             <div className={styles.chartContainer} style={{ width: '100%', minHeight: '400px' }}>
               <BoxplotChart
                 apiData={itensAutoBox}
-                title="Distribuição das Médias das Avaliações das Turmas/Docentes por Item relacionado à Autoavaliação Discente"
+                title="DistribuiÃ§Ã£o das MÃ©dias das AvaliaÃ§Ãµes das Turmas/Docentes por Item relacionado Ã  AutoavaliaÃ§Ã£o Discente"
                 customOptions={disableZoomOptions}
               />
             </div>
 
             <div className={styles.chartContainer} style={{ width: '100%', height: 'auto', padding: '1.5rem' }}>
               <h4 style={{ textAlign: 'center', marginBottom: '1rem', color: '#333' }}>
-                Estatísticas descritivas – Autoavaliação Discente (por item)
+                EstatÃ­sticas descritivas â€“ AutoavaliaÃ§Ã£o Discente (por item)
               </h4>
               <div style={{ display: 'flex', justifyContent: 'center' }}>
                 <div style={{ width: '100%' }}>
@@ -214,20 +214,20 @@ export default function AutoavaliacaoTab({
           </>
         ) : (
           <div className={styles.chartContainer} style={{ width: '100%', minHeight: '100px' }}>
-            <p>Boxplot e Estatísticas (Autoavaliação) não disponíveis.</p>
+            <p>Boxplot e EstatÃ­sticas (AutoavaliaÃ§Ã£o) nÃ£o disponÃ­veis.</p>
           </div>
         )}
           </>
         )}
 
         {/* ============================================================
-            ✅ AÇÃO DOCENTE (SUBDIMENSÕES) - BASE DISCENTE
-            Ordem do R: Figura 8 (Proporções) -> Figura 6 (Médias) -> Figura 10 (Boxplot)
+            âœ… AÃ‡ÃƒO DOCENTE (SUBDIMENSÃ•ES) - BASE DISCENTE
+            Ordem do R: Figura 8 (ProporÃ§Ãµes) -> Figura 6 (MÃ©dias) -> Figura 10 (Boxplot)
            ============================================================ */}
 
         {/* ============================================================
-            Abaixo: blocos por item (Atitude, Gestão, Processo, Instalações)
-            (seu conteúdo original permanece)
+            Abaixo: blocos por item (Atitude, GestÃ£o, Processo, InstalaÃ§Ãµes)
+            (seu conteÃºdo original permanece)
            ============================================================ */}
 
         {showDim2 && (
@@ -237,7 +237,7 @@ export default function AutoavaliacaoTab({
           {itensAtitudeMedDisc ? (
             <ActivityChart
               chartData={formatMediasItensChartData(itensAtitudeMedDisc)}
-              title="Médias dos itens relacionados à Atitude Profissional (Discente)"
+              title="MÃ©dias dos itens relacionados Ã  Atitude Profissional (Discente)"
               customOptions={{
                 ...disableZoomOptions,
                 plugins: {
@@ -248,7 +248,7 @@ export default function AutoavaliacaoTab({
               }}
             />
           ) : (
-            <p>Médias (Atitude Profissional) não disponíveis.</p>
+            <p>MÃ©dias (Atitude Profissional) nÃ£o disponÃ­veis.</p>
           )}
         </div>
 
@@ -256,7 +256,7 @@ export default function AutoavaliacaoTab({
           {itensAtitudePropDisc ? (
             <ActivityChart
               chartData={formatProporcoesItensChartData(itensAtitudePropDisc)}
-              title="Proporções de respostas dadas aos itens relacionados à Atitude Profissional (Discente)"
+              title="ProporÃ§Ãµes de respostas dadas aos itens relacionados Ã  Atitude Profissional (Discente)"
               customOptions={{
                 ...disableZoomOptions,
                 plugins: {
@@ -266,7 +266,7 @@ export default function AutoavaliacaoTab({
               }}
             />
           ) : (
-            <p>Proporções (Atitude Profissional) não disponíveis.</p>
+            <p>ProporÃ§Ãµes (Atitude Profissional) nÃ£o disponÃ­veis.</p>
           )}
         </div>
 
@@ -275,14 +275,14 @@ export default function AutoavaliacaoTab({
             <div className={styles.chartContainer} style={{ width: '100%', minHeight: '400px' }}>
               <BoxplotChart
                 apiData={itensAtitudeBoxDisc}
-                title="Distribuição das Médias das Avaliações das Turmas/Docentes por Item relacionado à Atitude Profissional"
+                title="DistribuiÃ§Ã£o das MÃ©dias das AvaliaÃ§Ãµes das Turmas/Docentes por Item relacionado Ã  Atitude Profissional"
                 customOptions={disableZoomOptions}
               />
             </div>
 
             <div className={styles.chartContainer} style={{ width: '100%', height: 'auto', padding: '1.5rem' }}>
               <h4 style={{ textAlign: 'center', marginBottom: '1rem', color: '#333' }}>
-                Estatísticas descritivas – Atitude Profissional (Discente)
+                EstatÃ­sticas descritivas â€“ Atitude Profissional (Discente)
               </h4>
               <div style={{ display: 'flex', justifyContent: 'center' }}>
                 <div style={{ width: '100%' }}>
@@ -293,16 +293,16 @@ export default function AutoavaliacaoTab({
           </>
         ) : (
           <div className={styles.chartContainer} style={{ width: '100%', minHeight: '100px' }}>
-            <p>Boxplot e Estatísticas (Atitude Profissional) não disponíveis.</p>
+            <p>Boxplot e EstatÃ­sticas (Atitude Profissional) nÃ£o disponÃ­veis.</p>
           </div>
         )}
 
-        {/* === GESTÃO DIDÁTICA DISCENTE === */}
+        {/* === GESTÃƒO DIDÃTICA DISCENTE === */}
         <div className={styles.chartContainer} style={{ width: '100%', minHeight: '400px' }}>
           {itensGestaoMedDisc ? (
             <ActivityChart
               chartData={formatMediasItensChartData(itensGestaoMedDisc)}
-              title="Médias dos itens relacionados à Gestão Didática (Discente)"
+              title="MÃ©dias dos itens relacionados Ã  GestÃ£o DidÃ¡tica (Discente)"
               customOptions={{
                 ...disableZoomOptions,
                 plugins: {
@@ -313,7 +313,7 @@ export default function AutoavaliacaoTab({
               }}
             />
           ) : (
-            <p>Médias (Gestão Didática) não disponíveis.</p>
+            <p>MÃ©dias (GestÃ£o DidÃ¡tica) nÃ£o disponÃ­veis.</p>
           )}
         </div>
 
@@ -321,7 +321,7 @@ export default function AutoavaliacaoTab({
           {itensGestaoPropDisc ? (
             <ActivityChart
               chartData={formatProporcoesItensChartData(itensGestaoPropDisc)}
-              title="Proporções de respostas dadas aos itens relacionados à Gestão Didática (Discente)"
+              title="ProporÃ§Ãµes de respostas dadas aos itens relacionados Ã  GestÃ£o DidÃ¡tica (Discente)"
               customOptions={{
                 ...disableZoomOptions,
                 plugins: {
@@ -331,7 +331,7 @@ export default function AutoavaliacaoTab({
               }}
             />
           ) : (
-            <p>Proporções (Gestão Didática) não disponíveis.</p>
+            <p>ProporÃ§Ãµes (GestÃ£o DidÃ¡tica) nÃ£o disponÃ­veis.</p>
           )}
         </div>
 
@@ -340,14 +340,14 @@ export default function AutoavaliacaoTab({
             <div className={styles.chartContainer} style={{ width: '100%', minHeight: '400px' }}>
               <BoxplotChart
                 apiData={itensGestaoBoxDisc}
-                title="Distribuição das Médias das Avaliações das Turmas/Docentes por Item relacionado à Gestão Didática"
+                title="DistribuiÃ§Ã£o das MÃ©dias das AvaliaÃ§Ãµes das Turmas/Docentes por Item relacionado Ã  GestÃ£o DidÃ¡tica"
                 customOptions={disableZoomOptions}
               />
             </div>
 
             <div className={styles.chartContainer} style={{ width: '100%', height: 'auto', padding: '1.5rem' }}>
               <h4 style={{ textAlign: 'center', marginBottom: '1rem', color: '#333' }}>
-                Estatísticas descritivas – Gestão Didática (Discente)
+                EstatÃ­sticas descritivas â€“ GestÃ£o DidÃ¡tica (Discente)
               </h4>
               <div style={{ display: 'flex', justifyContent: 'center' }}>
                 <div style={{ width: '100%' }}>
@@ -358,7 +358,7 @@ export default function AutoavaliacaoTab({
           </>
         ) : (
           <div className={styles.chartContainer} style={{ width: '100%', minHeight: '100px' }}>
-            <p>Boxplot e Estatísticas (Gestão Didática) não disponíveis.</p>
+            <p>Boxplot e EstatÃ­sticas (GestÃ£o DidÃ¡tica) nÃ£o disponÃ­veis.</p>
           </div>
         )}
 
@@ -367,7 +367,7 @@ export default function AutoavaliacaoTab({
           {procDiscMed ? (
             <ActivityChart
               chartData={formatMediasItensChartData(procDiscMed)}
-              title="Médias dos itens relacionados ao Processo Avaliativo (Discente)"
+              title="MÃ©dias dos itens relacionados ao Processo Avaliativo (Discente)"
               customOptions={{
                 ...disableZoomOptions,
                 plugins: {
@@ -378,7 +378,7 @@ export default function AutoavaliacaoTab({
               }}
             />
           ) : (
-            <p>Médias (Processo Avaliativo) não disponíveis.</p>
+            <p>MÃ©dias (Processo Avaliativo) nÃ£o disponÃ­veis.</p>
           )}
         </div>
 
@@ -386,7 +386,7 @@ export default function AutoavaliacaoTab({
           {procDiscProp ? (
             <ActivityChart
               chartData={formatProporcoesItensChartData(procDiscProp)}
-              title="Proporções de respostas dadas aos itens relacionados ao Processo Avaliativo (Discente)"
+              title="ProporÃ§Ãµes de respostas dadas aos itens relacionados ao Processo Avaliativo (Discente)"
               customOptions={{
                 ...disableZoomOptions,
                 plugins: {
@@ -396,7 +396,7 @@ export default function AutoavaliacaoTab({
               }}
             />
           ) : (
-            <p>Proporções (Processo Avaliativo) não disponíveis.</p>
+            <p>ProporÃ§Ãµes (Processo Avaliativo) nÃ£o disponÃ­veis.</p>
           )}
         </div>
 
@@ -405,14 +405,14 @@ export default function AutoavaliacaoTab({
             <div className={styles.chartContainer} style={{ width: '100%', minHeight: '400px' }}>
               <BoxplotChart
                 apiData={procDiscBox}
-                title="Distribuição das Médias das Avaliações das Turmas/Docentes por Item relacionado ao Processo Avaliativo"
+                title="DistribuiÃ§Ã£o das MÃ©dias das AvaliaÃ§Ãµes das Turmas/Docentes por Item relacionado ao Processo Avaliativo"
                 customOptions={disableZoomOptions}
               />
             </div>
 
             <div className={styles.chartContainer} style={{ width: '100%', height: 'auto', padding: '1.5rem' }}>
               <h4 style={{ textAlign: 'center', marginBottom: '1rem', color: '#333' }}>
-                Estatísticas descritivas – Processo Avaliativo (Discente)
+                EstatÃ­sticas descritivas â€“ Processo Avaliativo (Discente)
               </h4>
               <div style={{ display: 'flex', justifyContent: 'center' }}>
                 <div style={{ width: '100%' }}>
@@ -423,7 +423,7 @@ export default function AutoavaliacaoTab({
           </>
         ) : (
           <div className={styles.chartContainer} style={{ width: '100%', minHeight: '100px' }}>
-            <p>Boxplot e Estatísticas (Processo Avaliativo) não disponíveis.</p>
+            <p>Boxplot e EstatÃ­sticas (Processo Avaliativo) nÃ£o disponÃ­veis.</p>
           </div>
         )}
           </>

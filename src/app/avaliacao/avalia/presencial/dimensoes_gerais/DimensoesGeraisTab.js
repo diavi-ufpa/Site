@@ -1,8 +1,8 @@
-// DimensoesGeraisTab.js
+﻿// DimensoesGeraisTab.js
 'use client';
 
-import ActivityChart from '../../components/ActivityChart';
-import BoxplotChart from '../../components/BoxplotChart';
+import ActivityChart from '@/components/charts/ActivityChart';
+import BoxplotChart from '@/components/charts/BoxplotChart';
 
 export default function DimensoesGeraisTab({
   datasets,
@@ -21,11 +21,11 @@ export default function DimensoesGeraisTab({
       }}
     >
       <div className={styles.singleGrid}>
-        {/* Linha 1: Médias */}
+        {/* Linha 1: MÃ©dias */}
         <div id="chart-medias-dimensoes" className={styles.chartContainer}>
           <ActivityChart
             chartData={datasets.discMedias}
-            title="Médias por dimensão (Discente)"
+            title="MÃ©dias por dimensÃ£o (Discente)"
             customOptions={{
               ...disableZoomOptions,
               plugins: {
@@ -40,7 +40,7 @@ export default function DimensoesGeraisTab({
           {dashboardData.docDimMedias ? (
             <ActivityChart
               chartData={datasets.docMedias}
-              title="Médias por dimensão (Docente)"
+              title="MÃ©dias por dimensÃ£o (Docente)"
               customOptions={{
                 ...disableZoomOptions,
                 plugins: {
@@ -50,15 +50,15 @@ export default function DimensoesGeraisTab({
               }}
             />
           ) : (
-            <p>Dados de médias por dimensão (Docente) não disponíveis.</p>
+            <p>Dados de mÃ©dias por dimensÃ£o (Docente) nÃ£o disponÃ­veis.</p>
           )}
         </div>
 
-        {/* Linha 2: Proporções */}
+        {/* Linha 2: ProporÃ§Ãµes */}
         <div id="chart-dimensoes" className={styles.chartContainer}>
           <ActivityChart
             chartData={datasets.discProporcoes}
-            title="Proporções de respostas dadas por Dimensão (Discente)"
+            title="ProporÃ§Ãµes de respostas dadas por DimensÃ£o (Discente)"
             legendPosition="overlayTopRight"
             customOptions={{
               ...disableZoomOptions,
@@ -71,7 +71,7 @@ export default function DimensoesGeraisTab({
           {dashboardData.docDimProporcoes ? (
             <ActivityChart
               chartData={datasets.docProporcoes}
-              title="Proporções de respostas dadas por Dimensão (Docente)"
+              title="ProporÃ§Ãµes de respostas dadas por DimensÃ£o (Docente)"
               legendPosition="overlayTopRight"
               customOptions={{
                 ...disableZoomOptions,
@@ -79,12 +79,12 @@ export default function DimensoesGeraisTab({
               }}
             />
           ) : (
-            <p>Dados de proporções por dimensão (Docente) não disponíveis.</p>
+            <p>Dados de proporÃ§Ãµes por dimensÃ£o (Docente) nÃ£o disponÃ­veis.</p>
           )}
         </div>
       </div>
 
-      {/* ADICIONADO id="chart-boxplot-dimensoes" PARA O PDF ENCONTRAR O GRÁFICO */}
+      {/* ADICIONADO id="chart-boxplot-dimensoes" PARA O PDF ENCONTRAR O GRÃFICO */}
       <div
         id="chart-boxplot-dimensoes"
         className={styles.chartContainer}
@@ -93,15 +93,15 @@ export default function DimensoesGeraisTab({
         {dashboardData.turmaDimBoxplot ? (
           <BoxplotChart
             apiData={dashboardData.turmaDimBoxplot}
-            title="Distribuição das Médias das Avaliações das Turmas/Docente por Dimensão"
+            title="DistribuiÃ§Ã£o das MÃ©dias das AvaliaÃ§Ãµes das Turmas/Docente por DimensÃ£o"
             customOptions={disableZoomOptions}
           />
         ) : (
-          <p>Dados de boxplot (Turmas/Docente por Dimensão) não disponíveis.</p>
+          <p>Dados de boxplot (Turmas/Docente por DimensÃ£o) nÃ£o disponÃ­veis.</p>
         )}
       </div>
 
-      {/* Caixa 2: A tabela em um container separado, para não dar sobreposição */}
+      {/* Caixa 2: A tabela em um container separado, para nÃ£o dar sobreposiÃ§Ã£o */}
       <div
         className={styles.chartContainer}
         style={{ gridColumn: '1 / -1', height: 'auto', padding: '1.5rem' }}
@@ -113,8 +113,8 @@ export default function DimensoesGeraisTab({
             width: '100%',
           }}
         >
-          Estatísticas Descritivas das Médias das Avaliações das Turmas/Docentes por
-          Dimensão
+          EstatÃ­sticas Descritivas das MÃ©dias das AvaliaÃ§Ãµes das Turmas/Docentes por
+          DimensÃ£o
         </h3>
 
         <div style={{ display: 'flex', justifyContent: 'center' }}>

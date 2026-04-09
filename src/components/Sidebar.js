@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import styles from '../styles/Sidebar.module.css';
 
-import LoadingOverlay from '../app/avaliacao/avalia/components/LoadingOverlay';
+import LoadingOverlay from '@/components/ui/LoadingOverlay';
 
 const Sidebar = () => {
   const pathname = usePathname();
@@ -28,7 +28,7 @@ const Sidebar = () => {
     presencialEnabled: true,
   };
 
-  // CORREÇÃO AQUI: presencial precisa estar true
+  // CORREÃ‡ÃƒO AQUI: presencial precisa estar true
   const reportEnabled = {
     ead: true,
     presencial: true,
@@ -170,7 +170,7 @@ const Sidebar = () => {
             <li className={pathname === '/' ? styles.activeParent : ''}>
               <Link href="/" className={styles.menuHeader}>
                 <Home size={18} />
-                <span>Página Inicial</span>
+                <span>PÃ¡gina Inicial</span>
               </Link>
             </li>
 
@@ -180,7 +180,7 @@ const Sidebar = () => {
                 onClick={() => handleMenuClick('avaliacao')}
               >
                 <ClipboardCheck size={18} />
-                <span>Avaliação</span>
+                <span>AvaliaÃ§Ã£o</span>
                 {openMenus.avaliacao ? (
                   <ChevronUp size={16} className={styles.chevron} />
                 ) : (
@@ -208,7 +208,7 @@ const Sidebar = () => {
                           : styles.subMenuItem
                       }
                     >
-                      <Link href="/avaliacao/minhaopiniao">Minha Opinião</Link>
+                      <Link href="/avaliacao/minhaopiniao">Minha OpiniÃ£o</Link>
                     </li>
                   )}
 
@@ -219,7 +219,7 @@ const Sidebar = () => {
                         : styles.subMenuItem
                     }
                   >
-                    <Link href="/avaliacao/avaliacaoInLoco">Avaliação In Loco</Link>
+                    <Link href="/avaliacao/avaliacaoInLoco">AvaliaÃ§Ã£o In Loco</Link>
                   </li>
                 </ul>
               )}
@@ -274,7 +274,7 @@ const Sidebar = () => {
                           }
                         >
                           <Link href="/avaliacao/minhaopiniao/tecnico">
-                            Técnico
+                            TÃ©cnico
                           </Link>
                         </li>
                       </>
@@ -335,13 +335,13 @@ const Sidebar = () => {
             <div className={styles.generateReportContainer}>
               <Link
                 href={reportHref}
-                aria-label="Gerar relatório"
+                aria-label="Gerar relatÃ³rio"
                 className={styles.generateReportBtn}
                 style={activeReportBtnStyle}
                 onClick={() => setIsLoading(true)}
               >
                 <Download size={18} />
-                <span>Gerar relatório</span>
+                <span>Gerar relatÃ³rio</span>
               </Link>
             </div>
           )}

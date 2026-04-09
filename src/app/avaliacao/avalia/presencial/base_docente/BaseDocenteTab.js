@@ -1,6 +1,6 @@
-'use client';
+﻿'use client';
 
-import ActivityChart from '../../components/ActivityChart';
+import ActivityChart from '@/components/charts/ActivityChart';
 import { QUESTION_MAPPING_AVALIA } from '../../lib/questionMappingAvalia';
 
 export default function BaseDocenteTab({
@@ -59,12 +59,12 @@ export default function BaseDocenteTab({
       >
         {showDim2 && (
           <>
-        {/* === 1. Médias por Subdimensão da Autoavaliação da Ação Docente === */}
+        {/* === 1. MÃ©dias por SubdimensÃ£o da AutoavaliaÃ§Ã£o da AÃ§Ã£o Docente === */}
         <div className={styles.chartContainer} style={{ width: '100%', minHeight: '400px' }}>
           {docSubMed ? (
             <ActivityChart
               chartData={formatMediasSubdimChartData(docSubMed)}
-              title="Médias por Subdimensão da Autoavaliação da Ação Docente"
+              title="MÃ©dias por SubdimensÃ£o da AutoavaliaÃ§Ã£o da AÃ§Ã£o Docente"
               customOptions={{
                 ...disableZoomOptions,
                 plugins: { legend: { display: false }, tooltip: twoDecTooltip() },
@@ -73,16 +73,16 @@ export default function BaseDocenteTab({
               }}
             />
           ) : (
-            <p>Médias (Subdimensão - Base Docente) não disponíveis.</p>
+            <p>MÃ©dias (SubdimensÃ£o - Base Docente) nÃ£o disponÃ­veis.</p>
           )}
         </div>
 
-        {/* === 2. Proporções por Subdimensão da Autoavaliação da Ação Docente === */}
+        {/* === 2. ProporÃ§Ãµes por SubdimensÃ£o da AutoavaliaÃ§Ã£o da AÃ§Ã£o Docente === */}
         <div className={styles.chartContainer} style={{ width: '100%', minHeight: '400px' }}>
           {docSubProp ? (
             <ActivityChart
               chartData={formatProporcoesSubdimChartData(docSubProp)}
-              title="Proporções de respostas dadas por Subdimensão da Autoavaliação da Ação Docente"
+              title="ProporÃ§Ãµes de respostas dadas por SubdimensÃ£o da AutoavaliaÃ§Ã£o da AÃ§Ã£o Docente"
               customOptions={{
                 ...disableZoomOptions,
                 plugins: { tooltip: twoDecTooltip('%') },
@@ -91,7 +91,7 @@ export default function BaseDocenteTab({
               }}
             />
           ) : (
-            <p>Proporções (Subdimensão - Base Docente) não disponíveis.</p>
+            <p>ProporÃ§Ãµes (SubdimensÃ£o - Base Docente) nÃ£o disponÃ­veis.</p>
           )}
         </div>
             </>
@@ -99,12 +99,12 @@ export default function BaseDocenteTab({
 
           {showDim1 && (
             <>
-        {/* === 3. Médias dos itens relacionados à Avaliação da Turma === */}
+        {/* === 3. MÃ©dias dos itens relacionados Ã  AvaliaÃ§Ã£o da Turma === */}
         <div className={styles.chartContainer} style={{ width: '100%', minHeight: '400px' }}>
           {docTurmaMed ? (
             <ActivityChart
               chartData={formatMediasItensChartData(docTurmaMed)}
-              title="Médias dos itens relacionados à Avaliação da Turma"
+              title="MÃ©dias dos itens relacionados Ã  AvaliaÃ§Ã£o da Turma"
               customOptions={{
                 ...disableZoomOptions,
                 plugins: {
@@ -116,16 +116,16 @@ export default function BaseDocenteTab({
               }}
             />
           ) : (
-            <p>Médias (Avaliação da Turma) não disponíveis.</p>
+            <p>MÃ©dias (AvaliaÃ§Ã£o da Turma) nÃ£o disponÃ­veis.</p>
           )}
         </div>
 
-        {/* === 4. Proporções dos itens relacionados à Avaliação da Turma === */}
+        {/* === 4. ProporÃ§Ãµes dos itens relacionados Ã  AvaliaÃ§Ã£o da Turma === */}
         <div className={styles.chartContainer} style={{ width: '100%', minHeight: '400px' }}>
           {docTurmaProp ? (
             <ActivityChart
               chartData={formatProporcoesItensChartData(docTurmaProp)}
-              title="Proporções de respostas dadas aos itens relacionados à Avaliação da Turma"
+              title="ProporÃ§Ãµes de respostas dadas aos itens relacionados Ã  AvaliaÃ§Ã£o da Turma"
               customOptions={{
                 ...disableZoomOptions,
                 plugins: {
@@ -136,7 +136,7 @@ export default function BaseDocenteTab({
               }}
             />
           ) : (
-            <p>Proporções (Avaliação da Turma) não disponíveis.</p>
+            <p>ProporÃ§Ãµes (AvaliaÃ§Ã£o da Turma) nÃ£o disponÃ­veis.</p>
           )}
         </div>
             </>
@@ -144,14 +144,14 @@ export default function BaseDocenteTab({
 
           {showDim2 && (
             <>
-        {/* === 5. Médias dos itens relacionados à Atitude Profissional (Docente) === */}
+        {/* === 5. MÃ©dias dos itens relacionados Ã  Atitude Profissional (Docente) === */}
         <div className={styles.chartContainer} style={{ width: '100%', minHeight: '400px' }}>
           {itensAtitudeMedDoc ? (
             <ActivityChart
               chartData={normalizeAtitudeDocenteChartData(
                 formatMediasItensChartData(itensAtitudeMedDoc)
               )}
-              title="Médias dos itens relacionados à Atitude Profissional (Docente)"
+              title="MÃ©dias dos itens relacionados Ã  Atitude Profissional (Docente)"
               customOptions={{
                 ...disableZoomOptions,
                 plugins: {
@@ -162,18 +162,18 @@ export default function BaseDocenteTab({
               }}
             />
           ) : (
-            <p>Médias (Atitude Profissional) não disponíveis.</p>
+            <p>MÃ©dias (Atitude Profissional) nÃ£o disponÃ­veis.</p>
           )}
         </div>
 
-        {/* === 6. Proporções dos itens relacionados à Atitude Profissional (Docente) === */}
+        {/* === 6. ProporÃ§Ãµes dos itens relacionados Ã  Atitude Profissional (Docente) === */}
         <div className={styles.chartContainer} style={{ width: '100%', minHeight: '400px' }}>
           {itensAtitudePropDoc ? (
             <ActivityChart
               chartData={normalizeAtitudeDocenteChartData(
                 formatProporcoesItensChartData(itensAtitudePropDoc)
               )}
-              title="Proporções de respostas dadas aos itens relacionados à Atitude Profissional (Docente)"
+              title="ProporÃ§Ãµes de respostas dadas aos itens relacionados Ã  Atitude Profissional (Docente)"
               customOptions={{
                 ...disableZoomOptions,
                 plugins: {
@@ -183,16 +183,16 @@ export default function BaseDocenteTab({
               }}
             />
           ) : (
-            <p>Proporções (Atitude Profissional) não disponíveis.</p>
+            <p>ProporÃ§Ãµes (Atitude Profissional) nÃ£o disponÃ­veis.</p>
           )}
         </div>
 
-        {/* === 7. Médias dos itens relacionados à Gestão Didática (Docente) === */}
+        {/* === 7. MÃ©dias dos itens relacionados Ã  GestÃ£o DidÃ¡tica (Docente) === */}
         <div className={styles.chartContainer} style={{ width: '100%', minHeight: '400px' }}>
           {itensGestaoMedDoc && itensGestaoMedDoc.length > 0 ? (
             <ActivityChart
               chartData={formatMediasItensChartData(itensGestaoMedDoc)}
-              title="Médias dos itens relacionados à Gestão Didática (Docente)"
+              title="MÃ©dias dos itens relacionados Ã  GestÃ£o DidÃ¡tica (Docente)"
               customOptions={{
                 ...disableZoomOptions,
                 plugins: {
@@ -203,16 +203,16 @@ export default function BaseDocenteTab({
               }}
             />
           ) : (
-            <p>Médias (Gestão Didática) não disponíveis.</p>
+            <p>MÃ©dias (GestÃ£o DidÃ¡tica) nÃ£o disponÃ­veis.</p>
           )}
         </div>
 
-        {/* === 8. Proporções dos itens relacionados à Gestão Didática (Docente) === */}
+        {/* === 8. ProporÃ§Ãµes dos itens relacionados Ã  GestÃ£o DidÃ¡tica (Docente) === */}
         <div className={styles.chartContainer} style={{ width: '100%', minHeight: '400px' }}>
           {itensGestaoPropDoc && itensGestaoPropDoc.length > 0 ? (
             <ActivityChart
               chartData={formatProporcoesItensChartData(itensGestaoPropDoc)}
-              title="Proporções de respostas dadas aos itens relacionados à Gestão Didática (Docente)"
+              title="ProporÃ§Ãµes de respostas dadas aos itens relacionados Ã  GestÃ£o DidÃ¡tica (Docente)"
               customOptions={{
                 ...disableZoomOptions,
                 plugins: {
@@ -222,16 +222,16 @@ export default function BaseDocenteTab({
               }}
             />
           ) : (
-            <p>Proporções (Gestão Didática) não disponíveis.</p>
+            <p>ProporÃ§Ãµes (GestÃ£o DidÃ¡tica) nÃ£o disponÃ­veis.</p>
           )}
         </div>
 
-        {/* === 9. Médias dos itens relacionados ao Processo Avaliativo (Docente) === */}
+        {/* === 9. MÃ©dias dos itens relacionados ao Processo Avaliativo (Docente) === */}
         <div className={styles.chartContainer} style={{ width: '100%', minHeight: '400px' }}>
           {procDocMed ? (
             <ActivityChart
               chartData={formatMediasItensChartData(procDocMed)}
-              title="Médias dos itens relacionados ao Processo Avaliativo (Docente)"
+              title="MÃ©dias dos itens relacionados ao Processo Avaliativo (Docente)"
               customOptions={{
                 ...disableZoomOptions,
                 plugins: {
@@ -242,16 +242,16 @@ export default function BaseDocenteTab({
               }}
             />
           ) : (
-            <p>Médias (Processo Avaliativo) não disponíveis.</p>
+            <p>MÃ©dias (Processo Avaliativo) nÃ£o disponÃ­veis.</p>
           )}
         </div>
 
-        {/* === 10. Proporções dos itens relacionados ao Processo Avaliativo (Docente) === */}
+        {/* === 10. ProporÃ§Ãµes dos itens relacionados ao Processo Avaliativo (Docente) === */}
         <div className={styles.chartContainer} style={{ width: '100%', minHeight: '400px' }}>
           {procDocProp ? (
             <ActivityChart
               chartData={formatProporcoesItensChartData(procDocProp)}
-              title="Proporções de respostas dadas aos itens relacionados ao Processo Avaliativo (Docente)"
+              title="ProporÃ§Ãµes de respostas dadas aos itens relacionados ao Processo Avaliativo (Docente)"
               customOptions={{
                 ...disableZoomOptions,
                 plugins: {
@@ -261,7 +261,7 @@ export default function BaseDocenteTab({
               }}
             />
           ) : (
-            <p>Proporções (Processo Avaliativo) não disponíveis.</p>
+            <p>ProporÃ§Ãµes (Processo Avaliativo) nÃ£o disponÃ­veis.</p>
           )}
         </div>
             </>
