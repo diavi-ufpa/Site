@@ -1,7 +1,7 @@
-'use client';
+﻿'use client';
 
 import { useState, useMemo } from 'react';
-import styles from '../../../../styles/dados.module.css';
+import styles from '@/styles/dados.module.css';
 import { Filter, ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function DocenteFilters({
@@ -12,7 +12,7 @@ export default function DocenteFilters({
   questionMap,
   dimensionMap,
 
-  // Comparação (opcional; só o card A usa)
+  // ComparaÃ§Ã£o (opcional; sÃ³ o card A usa)
   showCompareToggle = false,
   compareEnabled = false,
   onCompareChange = () => {}
@@ -20,7 +20,7 @@ export default function DocenteFilters({
   const [isOpen, setIsOpen] = useState(false);
   const { lotacoes, cargos } = filters;
 
-  // Perguntas disponíveis filtradas por dimensão
+  // Perguntas disponÃ­veis filtradas por dimensÃ£o
   const availableQuestions = useMemo(() => {
     const selectedDim = selectedFilters.dimensao;
     if (selectedDim && selectedDim !== 'todas' && dimensionMap && dimensionMap[selectedDim]) {
@@ -34,7 +34,7 @@ export default function DocenteFilters({
     return questionMap;
   }, [selectedFilters.dimensao, questionMap, dimensionMap]);
 
-  // Consistência Dimensão -> Pergunta (igual Discente)
+  // ConsistÃªncia DimensÃ£o -> Pergunta (igual Discente)
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -77,7 +77,7 @@ export default function DocenteFilters({
           onChange={handleChange}
           className={styles.filterSelect}
         >
-          <option value="todos">Todas as Lotações</option>
+          <option value="todos">Todas as LotaÃ§Ãµes</option>
           {lotacoes?.map((l, i) => (
             <option key={`${l}-${i}`} value={l}>
               {l}
@@ -105,7 +105,7 @@ export default function DocenteFilters({
           onChange={handleChange}
           className={`${styles.filterSelect} ${styles.filterSelectWide}`}
         >
-          <option value="todas">Todas as Dimensões</option>
+          <option value="todas">Todas as DimensÃµes</option>
           {dimensionMap && Object.keys(dimensionMap).map((dim, i) => (
             <option key={`${dim}-${i}`} value={dim}>
               {dim}
@@ -113,7 +113,7 @@ export default function DocenteFilters({
           ))}
         </select>
 
-        {/* Linha final: Pergunta + Comparação (lado a lado) */}
+        {/* Linha final: Pergunta + ComparaÃ§Ã£o (lado a lado) */}
         <div className={styles.questionCompareRow}>
           <select
             name="pergunta"
@@ -141,7 +141,7 @@ export default function DocenteFilters({
                 checked={compareEnabled}
                 onChange={(e) => onCompareChange(e.target.checked)}
               />
-              Comparação
+              ComparaÃ§Ã£o
             </label>
           )}
         </div>
@@ -149,3 +149,4 @@ export default function DocenteFilters({
     </div>
   );
 }
+

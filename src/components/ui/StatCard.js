@@ -1,5 +1,5 @@
-// src/app/dados/components/StatCard.js
-import styles from '../../../../styles/dados.module.css';
+﻿// src/app/dados/components/StatCard.js
+import styles from '@/styles/dados.module.css';
 
 const StatCard = ({ title, value, unit, icon }) => {
   return (

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { Bar } from 'react-chartjs-2';
 import {
@@ -10,7 +10,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import styles from '../../../../styles/dados.module.css';
+import styles from '@/styles/dados.module.css';
 
 const topLabelsPlugin = {
   id: 'topLabelsPlugin',
@@ -115,3 +115,4 @@ export default function QuantidadeCursosAvaliadosChart({ data }) {
     </>
   );
 }
+

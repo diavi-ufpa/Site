@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -10,7 +10,7 @@ import {
   Legend
 } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
-import styles from '../../../../styles/dados.module.css';
+import styles from '@/styles/dados.module.css';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartDataLabels);
 
@@ -23,7 +23,7 @@ const ActivityChart = ({
   showLegend = true,
   legendPosition = 'side'
 }) => {
-  const isPercentual = title.includes('Proporções') || title.includes('Atividades');
+  const isPercentual = title.includes('ProporÃ§Ãµes') || title.includes('Atividades');
 
   const defaultOptions = {
     responsive: true,
@@ -79,7 +79,7 @@ const ActivityChart = ({
     <div className={styles.chartWrapper}>
       <h2 className={styles.chartTitle}>{title}</h2>
 
-      {/* Área do gráfico em layout flex com altura controlada */}
+      {/* Ãrea do grÃ¡fico em layout flex com altura controlada */}
       <div
         className={styles.chartCanvasWrapper}
         style={{
@@ -90,12 +90,12 @@ const ActivityChart = ({
           height
         }}
       >
-        {/* Canvas ocupa todo o espaço disponível */}
+        {/* Canvas ocupa todo o espaÃ§o disponÃ­vel */}
         <div style={{ position: 'relative', width: '100%', height: '100%' }}>
           <Bar options={finalOptions} data={chartData} />
         </div>
 
-        {/* Legenda ao lado, nunca por cima do gráfico */}
+        {/* Legenda ao lado, nunca por cima do grÃ¡fico */}
         {showLegend && chartData?.datasets?.length > 1 && (
           <div
             className={styles.customLegend}
@@ -134,3 +134,4 @@ const ActivityChart = ({
 };
 
 export default ActivityChart;
+

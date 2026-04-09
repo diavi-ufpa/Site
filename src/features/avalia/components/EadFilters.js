@@ -1,6 +1,6 @@
-'use client';
+﻿'use client';
 import { useState } from 'react';
-import styles from '../../../../styles/dados.module.css';
+import styles from '@/styles/dados.module.css';
 import { Filter, ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function EadFilters({
@@ -10,7 +10,7 @@ export default function EadFilters({
   visibleFields,
   // novos props (com defaults seguros)
   poloPlaceholder = 'Selecione o polo desejado',
-  disablePlaceholderOption = true,      // impede placeholder de ser clicável
+  disablePlaceholderOption = true,      // impede placeholder de ser clicÃ¡vel
   showAllPolosOption = true,            // mostra "Todos os Polos"
   allPolosLabel = 'Todos os Polos',
 }) {
@@ -22,7 +22,7 @@ export default function EadFilters({
     return visibleFields.includes(key);
   };
 
-  // Novo: esconde Polo quando ano = 2023 ou quando não há polos disponíveis
+  // Novo: esconde Polo quando ano = 2023 ou quando nÃ£o hÃ¡ polos disponÃ­veis
   const is2023 = selectedFilters?.ano === '2023';
   const hasPolos = Array.isArray(filters?.polos) && filters.polos.length > 0;
   const shouldShowPolo = !is2023 && hasPolos;
@@ -34,7 +34,7 @@ export default function EadFilters({
   const dimensoes = Array.isArray(filters?.dimensoes) ? filters.dimensoes : [];
   const anos = Array.isArray(filters?.anos) ? filters.anos : [];
 
-  // valores controlados (vazio significa "placeholder visível")
+  // valores controlados (vazio significa "placeholder visÃ­vel")
   const poloValue = selectedFilters?.polo || '';
   const cursoValue = selectedFilters?.curso || '';
   const disciplinaValue = selectedFilters?.disciplina || '';
@@ -54,7 +54,7 @@ export default function EadFilters({
       </button>
 
       <div className={`${styles.filtersContent} ${isOpen ? styles.open : ''}`}>
-        {/* Filtro de Polo (escondido em 2023 e quando não há polos) */}
+        {/* Filtro de Polo (escondido em 2023 e quando nÃ£o hÃ¡ polos) */}
         {show('polo') && shouldShowPolo && (
           <select
             name="polo"
@@ -63,7 +63,7 @@ export default function EadFilters({
             className={styles.filterSelect}
             aria-label="Polo"
           >
-            {/* Placeholder não-clicável: value="" + disabled + hidden */}
+            {/* Placeholder nÃ£o-clicÃ¡vel: value="" + disabled + hidden */}
             {disablePlaceholderOption && (
               <option value="" disabled hidden>
                 {poloPlaceholder}
@@ -81,8 +81,8 @@ export default function EadFilters({
           </select>
         )}
 
-        {/* Filtro de Curso (em 2025 some na UI porque visibleFields não inclui 'curso';
-            aqui apenas respeitamos visibleFields, sem lógica de ano) */}
+        {/* Filtro de Curso (em 2025 some na UI porque visibleFields nÃ£o inclui 'curso';
+            aqui apenas respeitamos visibleFields, sem lÃ³gica de ano) */}
         {show('curso') && (
           <select
             name="curso"
@@ -121,16 +121,16 @@ export default function EadFilters({
           </select>
         )}
 
-        {/* Filtro de Dimensão */}
+        {/* Filtro de DimensÃ£o */}
         {show('dimensao') && (
           <select
             name="dimensao"
             value={dimensaoValue}
             onChange={onFilterChange}
             className={`${styles.filterSelect} ${styles.filterSelectWide}`}
-            aria-label="Dimensão"
+            aria-label="DimensÃ£o"
           >
-            <option value="todos">Todas as Dimensões</option>
+            <option value="todos">Todas as DimensÃµes</option>
             {dimensoes.map((dimensao) => (
               <option key={dimensao} value={dimensao}>
                 {dimensao}
@@ -159,3 +159,4 @@ export default function EadFilters({
     </div>
   );
 }
+

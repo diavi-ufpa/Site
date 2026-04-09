@@ -1,28 +1,25 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
-import styles from '../../../../styles/dados.module.css';
+import styles from '@/styles/dados.module.css';
 import { Filter, ChevronDown, ChevronUp } from 'lucide-react';
 
-export default function AvaliacaoInLocoFilters({
+export default function DiscenteFilters({
   filters,
   selectedFilters,
   onFilterChange,
   showRanking = false,
   onToggleRanking = () => {},
+  showDimensionFilter = true,
+  showRankingToggle = true,
   loadingCampus = false,
   loadingCurso = false,
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const { anos, undAcad, campi, cursos, modalidades } = filters;
+  const { campus, cursos, anos, dimensoes } = filters;
   const hasYearSelected = Boolean(selectedFilters?.ano);
-  const hasUndAcadSelected = Boolean(selectedFilters?.undAcad);
-  const hasModalidadeSelected = Boolean(selectedFilters?.modalidade);
-
-  const undAcadOptions = Array.isArray(undAcad) ? undAcad : [];
-  const campusOptions = Array.isArray(campi) ? campi : [];
+  const campusOptions = Array.isArray(campus) ? campus : [];
   const cursoOptions = Array.isArray(cursos) ? cursos : [];
-  const modalidadeOptions = Array.isArray(modalidades) ? modalidades : [];
 
   return (
     <div className={styles.filtersWrapper}>
@@ -46,7 +43,6 @@ export default function AvaliacaoInLocoFilters({
           <option value="" disabled hidden>
             Escolha um ano
           </option>
-          <option value="todos">Todos os anos</option>
           {anos?.map((a, i) => (
             <option key={`ano-${a}-${i}`} value={a}>
               {a}
@@ -55,64 +51,18 @@ export default function AvaliacaoInLocoFilters({
         </select>
 
         <select
-          disabled={!hasYearSelected}
-          name="undAcad"
-          value={selectedFilters.undAcad ?? ''}
-          onChange={onFilterChange}
-          className={styles.filterSelect}
-        >
-          <option value="" disabled>
-            {hasYearSelected
-              ? 'Selecione a unidade acadêmica'
-              : 'Selecione o ano primeiro'}
-          </option>
-          <option value="todos">Todas as Unidades</option>
-          {undAcadOptions.map((u, i) => (
-            <option key={`undAcad-${u}-${i}`} value={u}>
-              {u}
-            </option>
-          ))}
-        </select>
-
-        <select
-          disabled={!hasYearSelected || !hasUndAcadSelected}
-          name="modalidade"
-          value={selectedFilters.modalidade ?? ''}
-          onChange={onFilterChange}
-          className={styles.filterSelect}
-        >
-          <option value="" disabled>
-            {!hasYearSelected
-              ? 'Selecione o ano primeiro'
-              : !hasUndAcadSelected
-                ? 'Selecione a unidade acadêmica primeiro'
-                : 'Selecione a modalidade'}
-          </option>
-          <option value="todos">Todas as Modalidades</option>
-          {modalidadeOptions.map((m, i) => (
-            <option key={`modalidade-${m}-${i}`} value={m}>
-              {m}
-            </option>
-          ))}
-        </select>
-
-        <select
-          disabled={!hasYearSelected || !hasUndAcadSelected || !hasModalidadeSelected || loadingCampus}
+          disabled={!hasYearSelected || loadingCampus}
           name="campus"
           value={selectedFilters.campus ?? ''}
           onChange={onFilterChange}
           className={styles.filterSelect}
         >
           <option value="" disabled>
-            {!hasYearSelected
-              ? 'Selecione o ano primeiro'
-              : !hasUndAcadSelected
-                ? 'Selecione a unidade acadêmica primeiro'
-                : !hasModalidadeSelected
-                  ? 'Selecione a modalidade primeiro'
-                  : loadingCampus
-                    ? 'Carregando campi...'
-                    : 'Selecione o campus'}
+            {hasYearSelected
+              ? loadingCampus
+                ? 'Carregando campi...'
+                : 'Selecione o campus'
+              : 'Selecione o ano primeiro'}
           </option>
           {!loadingCampus ? <option value="todos">Todos os Campi</option> : null}
           {campusOptions.map((c, i) => (
@@ -148,8 +98,32 @@ export default function AvaliacaoInLocoFilters({
           ))}
         </select>
 
-        {showRanking && (
-          <label className="inloco-ranking-toggle">
+        {showDimensionFilter && (
+          <select
+            name="dimensao"
+            value={selectedFilters.dimensao ?? ''}
+            onChange={onFilterChange}
+            className={styles.filterSelect}
+          >
+            <option value="">Todas as DimensÃµes</option>
+            {(dimensoes ?? []).map((d) => (
+              <option key={`dim-${d.value}`} value={d.value}>
+                {d.label}
+              </option>
+            ))}
+          </select>
+        )}
+
+        {showRankingToggle && (
+          <label
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              fontWeight: 600,
+              padding: '0.35rem 0.2rem',
+            }}
+          >
             <input
               type="checkbox"
               checked={showRanking}

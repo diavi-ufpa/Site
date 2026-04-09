@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { Line } from 'react-chartjs-2';
 import {
@@ -11,7 +11,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import styles from '../../../../styles/dados.module.css';
+import styles from '@/styles/dados.module.css';
 
 ChartJS.register(
   CategoryScale,
@@ -23,9 +23,9 @@ ChartJS.register(
   Legend
 );
 
-export default function GraficoEvolucaoD123LineChart({ data }) {
+export default function GraficoEvolucaoLineChart({ data }) {
   const dimensionDescriptions = {
-    D1: 'ORGANIZAÇÃO DIDÁTICO-PEDAGÓGICA',
+    D1: 'ORGANIZAÃ‡ÃƒO DIDÃTICO-PEDAGÃ“GICA',
     D2: 'CORPO DOCENTE E TUTORIAL',
     D3: 'INFRAESTRUTURA',
   };
@@ -69,6 +69,30 @@ export default function GraficoEvolucaoD123LineChart({ data }) {
           display: false,
         },
       },
+      {
+        label: 'CC',
+        data: data?.series?.cc ?? [],
+        borderColor: 'rgba(245, 158, 11, 1)',
+        backgroundColor: 'rgba(245, 158, 11, 1)',
+        tension: 0,
+        pointRadius: 4,
+        pointHoverRadius: 5,
+        datalabels: {
+          display: false,
+        },
+      },
+      {
+        label: 'AVAL',
+        data: data?.series?.aval ?? [],
+        borderColor: 'rgba(59, 130, 246, 1)',
+        backgroundColor: 'rgba(59, 130, 246, 1)',
+        tension: 0,
+        pointRadius: 4,
+        pointHoverRadius: 5,
+        datalabels: {
+          display: false,
+        },
+      },
     ],
   };
 
@@ -86,9 +110,14 @@ export default function GraficoEvolucaoD123LineChart({ data }) {
         callbacks: {
           label: (context) => {
             const dimension = context.dataset.label;
-            const description = dimensionDescriptions[dimension] ?? '';
+            const description = dimensionDescriptions[dimension];
             const value = Number(context.raw ?? 0).toFixed(2).replace('.', ',');
-            return `${dimension} - ${description}: ${value}`;
+
+            if (description) {
+              return `${dimension} - ${description}: ${value}`;
+            }
+
+            return `${dimension}: ${value}`;
           },
         },
       },
@@ -106,10 +135,11 @@ export default function GraficoEvolucaoD123LineChart({ data }) {
 
   return (
     <>
-      <h3 className={styles.chartTitle}>Média anual de D1, D2 e D3</h3>
+      <h3 className={styles.chartTitle}>MÃ©dia anual de D1, D2, D3, CC e AVAL</h3>
       <div className={styles.chartContainer}>
         <Line data={chartData} options={options} />
       </div>
     </>
   );
 }
+

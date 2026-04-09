@@ -1,6 +1,6 @@
-// src/app/dados/components/Header.js
+﻿// src/app/dados/components/Header.js
 import { Search, Bell } from 'lucide-react';
-import styles from '../../../../styles/dados.module.css';
+import styles from '@/styles/dados.module.css';
 
 const Header = ({ title }) => {
   const today = new Date().toLocaleDateString('pt-BR', {
