@@ -132,7 +132,7 @@ function toSortedArray(values, sortAsNumber = false) {
 }
 
 function loadAvaliacaoInLocoWorkbook() {
-  const dataDir = join(process.cwd(), 'public/data');
+  const dataDir = join(process.cwd(), 'data');
   const files = readdirSync(dataDir);
   const xlsxFile = files.find((file) => file.endsWith('.xlsx'));
 

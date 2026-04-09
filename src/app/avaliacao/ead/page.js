@@ -24,7 +24,7 @@ const isBadDisc = (s) => {
 // Função para ler e processar o arquivo CSV
 async function getEadInitialData() {
   try {
-    const filePath = path.join(process.cwd(), 'src', 'app', 'banco', 'AUTOAVALIAÇÃO DOS CURSOS DE GRADUAÇÃO A DISTÂNCIA - 2025-2.csv');
+    const filePath = path.join(process.cwd(), 'data', 'AUTOAVALIAÇÃO DOS CURSOS DE GRADUAÇÃO A DISTÂNCIA - 2025-2.csv');
     const csvData = fs.readFileSync(filePath, 'utf8');
 
     const parsedData = Papa.parse(csvData, { header: true, skipEmptyLines: true });
@@ -259,7 +259,7 @@ async function getEadInitialData() {
     };
 
     try {
-      const filePath2023 = path.join(process.cwd(), 'src', 'app', 'banco', 'AUTOAVALIAÇÃO DOS CURSOS DE GRADUAÇÃO A DISTÂNCIA - 2023-4 .csv');
+      const filePath2023 = path.join(process.cwd(), 'data', 'AUTOAVALIAÇÃO DOS CURSOS DE GRADUAÇÃO A DISTÂNCIA - 2023-4 .csv');
       const csvData2023 = fs.readFileSync(filePath2023, 'utf8');
       const parsed2023 = Papa.parse(csvData2023, { header: false, skipEmptyLines: true });
       const rows2023 = parsed2023.data || [];
