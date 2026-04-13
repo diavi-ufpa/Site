@@ -7,7 +7,7 @@ import Papa from 'papaparse';
 import EadDashboardClient from './EadDashboardClient';
 import styles from '../../../styles/dados.module.css';
 import { Users, BarChart, HardDrive, BookOpen } from 'lucide-react';
-import { dimensionMapEad } from '../lib/questionMappingEad';
+import { dimensionMapEad } from '@/lib/questionMappingEad';
 
 // helpers para limpar valores ruins de disciplina (remove "-- / 0" e afins)
 const hasLetters = (s) => /[A-Za-zÀ-ÿ]/.test(String(s || ''));

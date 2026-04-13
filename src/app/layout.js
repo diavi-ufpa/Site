@@ -4,7 +4,7 @@ import '../styles/globals.css';
 import '../styles/avaliacaoinloco.css';
 import Sidebar from '../components/Sidebar';
 import Footer from '../components/Footer';
-import { DataProvider } from '../app/avaliacao/minhaopiniao/context/DataContext'; 
+import { DataProvider } from '@/contexts/DataContext';
 
 const poppins = Poppins({
   subsets: ['latin'],

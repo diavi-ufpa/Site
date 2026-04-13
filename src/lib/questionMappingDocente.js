@@ -1,4 +1,4 @@
-// src/app/lib/questionMappingDocente.js
+// src/lib/questionMappingDocente.js
 
 // Mapeamento completo das perguntas dos docentes baseado no documento fornecido.
 export const questionMappingDocente = {

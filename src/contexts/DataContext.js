@@ -1,4 +1,4 @@
-// src/context/DataContext.js
+// src/contexts/DataContext.js
 'use client';
 import { createContext, useContext, useState } from 'react';
 

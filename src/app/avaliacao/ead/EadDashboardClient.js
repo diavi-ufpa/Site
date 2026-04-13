@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import EadFilters from '@/features/avalia/components/EadFilters';
 import ActivityChart from '@/components/charts/ActivityChart';
 import styles from '../../../styles/dados.module.css';
-import { questionMapEad } from '../../avaliacao/lib/questionMappingEad';
+import { questionMapEad } from '@/lib/questionMappingEad';
 import StatCard from '@/components/ui/StatCard';
 import { Users, TrendingUp, TrendingDown } from 'lucide-react';
 import BoxplotChart from '@/components/charts/BoxplotChart';

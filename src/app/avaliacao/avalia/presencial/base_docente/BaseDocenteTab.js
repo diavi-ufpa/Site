@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import ActivityChart from '@/components/charts/ActivityChart';
-import { QUESTION_MAPPING_AVALIA } from '../../lib/questionMappingAvalia';
+import { QUESTION_MAPPING_AVALIA } from '@/lib/questionMappingAvalia';
 
 export default function BaseDocenteTab({
   // ui

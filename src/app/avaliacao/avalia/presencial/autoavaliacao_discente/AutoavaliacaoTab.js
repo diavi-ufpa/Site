@@ -2,7 +2,7 @@
 
 import ActivityChart from '@/components/charts/ActivityChart';
 import BoxplotChart from '@/components/charts/BoxplotChart';
-import { QUESTION_MAPPING_AVALIA } from '../../lib/questionMappingAvalia';
+import { QUESTION_MAPPING_AVALIA } from '@/lib/questionMappingAvalia';
 
 export default function AutoavaliacaoTab({
   // estilos / helpers

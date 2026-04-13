@@ -1,4 +1,4 @@
-// src/app/avaliacao/minhaopiniao/lib/prefetchCache.js
+// src/lib/prefetchCache.js
 const cache = new Map();
 
 /**
