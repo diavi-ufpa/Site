@@ -16,7 +16,7 @@ export const runtime = 'nodejs';
 const uniqSorted = (arr = []) =>
   [...new Set((arr || []).filter(Boolean))].sort();
 
-const hasLetters = (s) => /[A-Za-zÀ-ÿ]/.test(String(s || ''));
+const hasLetters = (s) => /[A-Za-z\u00C0-\u00FF]/.test(String(s || ''));
 const isBadDisc = (s) => {
   const v = String(s || '').trim();
   if (!v) return true;

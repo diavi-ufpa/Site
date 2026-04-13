@@ -10,7 +10,7 @@ import { Users, BarChart, HardDrive, BookOpen } from 'lucide-react';
 import { dimensionMapEad } from '@/lib/questionMappingEad';
 
 // helpers para limpar valores ruins de disciplina (remove "-- / 0" e afins)
-const hasLetters = (s) => /[A-Za-zÀ-ÿ]/.test(String(s || ''));
+const hasLetters = (s) => /[A-Za-z\u00C0-\u00FF]/.test(String(s || ''));
 const isBadDisc = (s) => {
   const v = String(s || '').trim();
   if (!v) return true;
