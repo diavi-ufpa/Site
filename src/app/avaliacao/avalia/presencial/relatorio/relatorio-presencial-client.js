@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import { flushSync } from 'react-dom';
@@ -22,7 +22,7 @@ import {
 } from './capa/texto';
 
 // ============================================================================
-// UTILITÃRIOS
+// UTILITÁRIOS
 // ============================================================================
 
 function safeNum(val) {
@@ -161,7 +161,7 @@ function compareItemCodes(a, b) {
 function normalizeFigureTitle(title) {
   const raw = String(title ?? '');
   return raw
-    .replace(/[\u0012âˆ’â€“â€”]/g, '-')
+    .replace(/[\u0012−–—]/g, '-')
     .replace(/(Figura\s+\d+)\s*-\s*/i, '$1 - ')
     .replace(/\s{2,}/g, ' ')
     .trim();
@@ -334,12 +334,12 @@ function drawGroupedProportionChart(doc, y, pageWidth, title, data, dimensionFie
 
   const normalizedTitle = normalizeFigureTitle(title);
 
-  // Detectar se Ã© uma figura de "por DimensÃ£o" para aplicar formataÃ§Ã£o especial
-  const isDimensaoChart = normalizedTitle.includes('por DimensÃ£o');
+  // Detectar se é uma figura de "por Dimensão" para aplicar formatação especial
+  const isDimensaoChart = normalizedTitle.includes('por Dimensão');
 
   let titleSpacing = 20;
 
-  // Preparar a altura do tÃ­tulo com quebra de linhas se necessÃ¡rio
+  // Preparar a altura do título com quebra de linhas se necessário
   let titleLines = [normalizedTitle];
   if (isDimensaoChart) {
     doc.setFont('Arial', 'bold');
@@ -350,7 +350,7 @@ function drawGroupedProportionChart(doc, y, pageWidth, title, data, dimensionFie
 
   y = ensurePageSpace(doc, y, 310 + titleSpacing);
 
-  // Renderizar o tÃ­tulo
+  // Renderizar o título
   if (isDimensaoChart) {
     doc.setFont('Arial', 'bold');
     doc.setFontSize(12);
@@ -497,7 +497,7 @@ function inferCourseType(curso) {
   const raw = String(curso ?? '').toLowerCase();
   if (raw.includes('licenciatura')) return 'LICENCIATURA';
   if (raw.includes('bacharelado')) return 'BACHARELADO';
-  return 'NÃƒO INFORMADO';
+  return 'NÃO INFORMADO';
 }
 
 function extractCourseName(curso) {
@@ -520,7 +520,7 @@ async function imageSrcToDataUrl(src) {
       : src?.src || src?.default?.src || src?.default || '';
 
   if (!resolvedSrc) {
-    throw new Error('Fonte da imagem da capa invÃ¡lida');
+    throw new Error('Fonte da imagem da capa inválida');
   }
 
   if (resolvedSrc.startsWith('data:')) {
@@ -548,7 +548,7 @@ async function srcToUint8Array(src) {
       : src?.src || src?.default?.src || src?.default || '';
 
   if (!resolvedSrc) {
-    throw new Error('Fonte de arquivo invÃ¡lida');
+    throw new Error('Fonte de arquivo inválida');
   }
 
   const res = await fetch(resolvedSrc, { cache: 'no-store' });
@@ -591,7 +591,7 @@ async function addCoverPage(doc, year) {
     const dataUrl = await imageSrcToDataUrl(coverSrc);
     doc.addImage(dataUrl, 'PNG', 0, 0, pageWidth, pageHeight);
   } catch (err) {
-    console.error('NÃ£o foi possÃ­vel renderizar a capa:', err);
+    console.error('Não foi possível renderizar a capa:', err);
   }
 }
 
@@ -635,7 +635,7 @@ async function addIntroTextPage(doc, selected) {
     doc.addImage(boxplotDataUrl, 'JPEG', left, y, imageWidth, imageHeight);
     y += imageHeight + 18;
   } catch (err) {
-    console.error('NÃ£o foi possÃ­vel renderizar a imagem do boxplot na introduÃ§Ã£o:', err);
+    console.error('Não foi possível renderizar a imagem do boxplot na introdução:', err);
   }
 
   const footerLines = doc.splitTextToSize(INTRO_FOOTER_TEXT, textWidth);
@@ -654,9 +654,9 @@ function addReportOpeningPage(doc, selected) {
   const isAllCourses = courseName.toUpperCase() === 'TODOS OS CURSOS';
 
   const lines = isAllCourses
-    ? [`RELATÃ“RIO AVALIA ${period}`, 'TODOS OS CURSOS']
+    ? [`RELATÓRIO AVALIA ${period}`, 'TODOS OS CURSOS']
     : [
-        `RELATÃ“RIO AVALIA ${period}`,
+        `RELATÓRIO AVALIA ${period}`,
         `${courseName.toUpperCase()} -`,
         `${courseType} - ${campus}`,
       ];
@@ -698,7 +698,7 @@ export default function RelatorioPresencialClient({
 
   const [blocking, setBlocking] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [progressText, setProgressText] = useState('Preparandoâ€¦');
+  const [progressText, setProgressText] = useState('Preparando…');
 
   const [pdfUrl, setPdfUrl] = useState('');
   const [pdfError, setPdfError] = useState('');
@@ -781,7 +781,7 @@ export default function RelatorioPresencialClient({
       await sleep(120);
     }
 
-    throw new Error('O boxplot nÃ£o renderizou a tempo para captura.');
+    throw new Error('O boxplot não renderizou a tempo para captura.');
   }
 
   async function captureBoxplotPng({ key, title, apiData }) {
@@ -814,12 +814,12 @@ export default function RelatorioPresencialClient({
   }
 
   function extractTableDataFrom(source, primaryKey, secondaryKey, fallbackKey) {
-    if (!source) return 'â€”';
+    if (!source) return '—';
     const dataObj = Array.isArray(source) ? source[0] : source;
     let val = dataObj?.[primaryKey] ?? dataObj?.[secondaryKey] ?? dataObj?.[fallbackKey];
     if (Array.isArray(val)) val = val[0];
     if (val === 'NA' || val === 'NaN' || val === null || val === undefined || val === '') {
-      return 'â€”';
+      return '—';
     }
     return val;
   }
@@ -840,7 +840,7 @@ export default function RelatorioPresencialClient({
     try {
       const image = await captureBoxplotPng({
         key: normalizedFigureTitle,
-        title: normalizedFigureTitle.replace(/^Figura \d+\s+[\u0012âˆ’-]\s+/, ''),
+        title: normalizedFigureTitle.replace(/^Figura \d+\s+[\u0012−-]\s+/, ''),
         apiData: boxplotData,
       });
 
@@ -849,7 +849,7 @@ export default function RelatorioPresencialClient({
         doc.setFontSize(10);
         doc.setTextColor(150, 50, 50);
         doc.text(
-          'Dados insuficientes para gerar o boxplot nesta seleÃ§Ã£o.',
+          'Dados insuficientes para gerar o boxplot nesta seleção.',
           pageWidth / 2,
           y + 20,
           { align: 'center' }
@@ -869,7 +869,7 @@ export default function RelatorioPresencialClient({
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(10);
       doc.setTextColor(150, 50, 50);
-      doc.text('NÃ£o foi possÃ­vel capturar este boxplot para o PDF.', pageWidth / 2, y + 20, {
+      doc.text('Não foi possível capturar este boxplot para o PDF.', pageWidth / 2, y + 20, {
         align: 'center',
       });
       doc.setTextColor(0, 0, 0);
@@ -888,7 +888,7 @@ export default function RelatorioPresencialClient({
       doc.setFontSize(10);
       doc.setTextColor(150, 50, 50);
       doc.text(
-        'EstatÃ­sticas descritivas nÃ£o disponÃ­veis para esta seleÃ§Ã£o.',
+        'Estatísticas descritivas não disponíveis para esta seleção.',
         pageWidth / 2,
         y + 20,
         { align: 'center' }
@@ -901,29 +901,29 @@ export default function RelatorioPresencialClient({
 
     const isTabela2 =
       title.includes('Tabela 2') ||
-      lowerTitle.includes('mÃ©dias das avaliaÃ§Ãµes das turmas/docentes por dimensÃ£o');
+      lowerTitle.includes('médias das avaliações das turmas/docentes por dimensão');
 
     const isTabela3 =
       title.includes('Tabela 3') ||
-      lowerTitle.includes('subdimensÃ£o da aÃ§Ã£o docente') ||
-      lowerTitle.includes('subdimensÃµes da aÃ§Ã£o docente');
+      lowerTitle.includes('subdimensão da ação docente') ||
+      lowerTitle.includes('subdimensões da ação docente');
 
     const isTabela4 =
       title.includes('Tabela 4') ||
-      lowerTitle.includes('item relacionado Ã  autoavaliaÃ§Ã£o discente') ||
-      lowerTitle.includes('itens relacionados Ã  autoavaliaÃ§Ã£o discente');
+      lowerTitle.includes('item relacionado à autoavaliação discente') ||
+      lowerTitle.includes('itens relacionados à autoavaliação discente');
 
     const isTabela5 =
       title.includes('Tabela 5') ||
-      lowerTitle.includes('item relacionado Ã  atitude profissional') ||
-      lowerTitle.includes('itens relacionados Ã  atitude profissional');
+      lowerTitle.includes('item relacionado à atitude profissional') ||
+      lowerTitle.includes('itens relacionados à atitude profissional');
 
     const isTabela6 =
       title.includes('Tabela 6') ||
-      lowerTitle.includes('item relacionado Ã  gestÃ£o didÃ¡tica') ||
-      lowerTitle.includes('itens relacionados Ã  gestÃ£o didÃ¡tica') ||
-      lowerTitle.includes('item relacionado Ã  gestao didatica') ||
-      lowerTitle.includes('itens relacionados Ã  gestao didatica');
+      lowerTitle.includes('item relacionado à gestão didática') ||
+      lowerTitle.includes('itens relacionados à gestão didática') ||
+      lowerTitle.includes('item relacionado à gestao didatica') ||
+      lowerTitle.includes('itens relacionados à gestao didatica');
 
     const isTabela7 =
       title.includes('Tabela 7') ||
@@ -932,12 +932,12 @@ export default function RelatorioPresencialClient({
 
     const isTabela8 =
       title.includes('Tabela 8') ||
-      lowerTitle.includes('item relacionado Ã s instalaÃ§Ãµes fÃ­sicas') ||
-      lowerTitle.includes('itens relacionados Ã s instalaÃ§Ãµes fÃ­sicas') ||
-      lowerTitle.includes('item relacionado as instalaÃ§Ãµes fÃ­sicas') ||
-      lowerTitle.includes('itens relacionados as instalaÃ§Ãµes fÃ­sicas') ||
-      lowerTitle.includes('item relacionado Ã s instalacoes fisicas') ||
-      lowerTitle.includes('itens relacionados Ã s instalacoes fisicas') ||
+      lowerTitle.includes('item relacionado às instalações físicas') ||
+      lowerTitle.includes('itens relacionados às instalações físicas') ||
+      lowerTitle.includes('item relacionado as instalações físicas') ||
+      lowerTitle.includes('itens relacionados as instalações físicas') ||
+      lowerTitle.includes('item relacionado às instalacoes fisicas') ||
+      lowerTitle.includes('itens relacionados às instalacoes fisicas') ||
       lowerTitle.includes('item relacionado as instalacoes fisicas') ||
       lowerTitle.includes('itens relacionados as instalacoes fisicas');
 
@@ -968,12 +968,12 @@ export default function RelatorioPresencialClient({
         { value: 'Min', keys: ['Min', 'min', 'MIN'] },
         { value: 'Q1', keys: ['Q1', 'q1', '1st Qu.', '1st Qu', '1st_qu', '1st_qu.'] },
         { value: 'Mediana', keys: ['Mediana', 'mediana', 'Median', 'median'] },
-        { value: 'MÃ©dia', keys: ['Media', 'media', 'MÃ©dia', 'mÃ©dia', 'Mean', 'mean'] },
+        { value: 'Média', keys: ['Media', 'media', 'Média', 'média', 'Mean', 'mean'] },
         { value: 'Q3', keys: ['Q3', 'q3', '3rd Qu.', '3rd Qu', '3rd_qu', '3rd_qu.'] },
         { value: 'Max', keys: ['Max', 'max', 'MAX'] },
       ];
 
-      const headers = ['EstatÃ­stica', ...items];
+      const headers = ['Estatística', ...items];
       const body = stats.map((st) => [
         st.value,
         ...items.map((it) => {
@@ -1005,11 +1005,11 @@ export default function RelatorioPresencialClient({
 
     if (isTabela2) {
       const preferredOrder = [
-        'EstatÃ­stica',
+        'Estatística',
         'Estatistica',
-        'AutoavaliaÃ§Ã£o Discente',
-        'AÃ§Ã£o Docente',
-        'InstalaÃ§Ãµes FÃ­sicas',
+        'Autoavaliação Discente',
+        'Ação Docente',
+        'Instalações Físicas',
       ];
 
       const ordered = [];
@@ -1024,10 +1024,10 @@ export default function RelatorioPresencialClient({
 
     if (isTabela3) {
       const preferredOrder = [
-        'EstatÃ­stica',
+        'Estatística',
         'Estatistica',
         'Atitude Profissional',
-        'GestÃ£o DidÃ¡tica',
+        'Gestão Didática',
         'Processo Avaliativo',
       ];
 
@@ -1209,11 +1209,11 @@ export default function RelatorioPresencialClient({
       setBlocking(true);
       setIsGeneratingPreview(true);
       setProgress((prev) => (prev > 0 ? prev : 1));
-      setProgressText('Iniciando geraÃ§Ã£o do relatÃ³rio. NÃ£o saia desta tela.');
+      setProgressText('Iniciando geração do relatório. Não saia desta tela.');
     } else {
       setBlocking(false);
       setProgress(0);
-      setProgressText('Preparandoâ€¦');
+      setProgressText('Preparando…');
     }
 
     setSelected(next);
@@ -1275,7 +1275,7 @@ export default function RelatorioPresencialClient({
       setProgress(14);
 
       // ---------------------------------------------------------------------
-      // BLOCO SUBDIMENSÃ•ES DA AÃ‡ÃƒO DOCENTE
+      // BLOCO SUBDIMENSÕES DA AÇÃO DOCENTE
       // ---------------------------------------------------------------------
       const acaoDocSubMedDisc = await fetchJsonOptional(
         '/discente/acaodocente/subdimensoes/medias',
@@ -1320,7 +1320,7 @@ export default function RelatorioPresencialClient({
       setProgress(30);
 
       // ---------------------------------------------------------------------
-      // BLOCO ITENS AUTOAVALIAÃ‡ÃƒO / AVALIAÃ‡ÃƒO DA TURMA
+      // BLOCO ITENS AUTOAVALIAÇÃO / AVALIAÇÃO DA TURMA
       // ---------------------------------------------------------------------
       const autoavaliacaoItensMedias = await fetchJsonOptional(
         '/discente/autoavaliacao/itens/medias',
@@ -1386,7 +1386,7 @@ export default function RelatorioPresencialClient({
       setProgress(60);
 
       // ---------------------------------------------------------------------
-      // BLOCO GESTÃƒO DIDÃTICA
+      // BLOCO GESTÃO DIDÁTICA
       // ---------------------------------------------------------------------
       const gestaoDidaticaItensMedias = await fetchJsonOptional(
         '/discente/gestaodidatica/itens/medias',
@@ -1452,7 +1452,7 @@ export default function RelatorioPresencialClient({
       setProgress(86);
 
       // ---------------------------------------------------------------------
-      // BLOCO INSTALAÃ‡Ã•ES FÃSICAS
+      // BLOCO INSTALAÇÕES FÍSICAS
       // ---------------------------------------------------------------------
       const instalacoesItensMediasDisc = await fetchJsonOptional(
         '/discente/instalacoes/itens/medias',
@@ -1485,7 +1485,7 @@ export default function RelatorioPresencialClient({
       setProgress(92);
 
       // ---------------------------------------------------------------------
-      // BLOCO ATIVIDADES ACADÃŠMICAS
+      // BLOCO ATIVIDADES ACADÊMICAS
       // ---------------------------------------------------------------------
       const atividadesDiscente = await fetchJsonOptional(
         '/discente/atividades/percentual',
@@ -1500,7 +1500,7 @@ export default function RelatorioPresencialClient({
       setProgress(95);
 
       // ---------------------------------------------------------------------
-      // BOXPLOT DIMENSÃ•ES E DESCRITIVAS
+      // BOXPLOT DIMENSÕES E DESCRITIVAS
       // ---------------------------------------------------------------------
       let turmaDimBoxplot = await fetchJsonOptional(
         '/docente/avaliacaoturma/dimensoes/boxplot',
@@ -1552,7 +1552,7 @@ export default function RelatorioPresencialClient({
 
       let y = 60;
 
-      y = addSectionTableTitle(doc, y, pageWidth, 'Tabela 1: InformaÃ§Ãµes Gerais da AvaliaÃ§Ã£o');
+      y = addSectionTableTitle(doc, y, pageWidth, 'Tabela 1: Informações Gerais da Avaliação');
 
       const numDocentes = extractTableDataFrom(summarySnapshot, 'n_docente', 'nDocente', 'n_docente');
       const numDiscentes = extractTableDataFrom(summarySnapshot, 'n_discente', 'nDiscente', 'total_respondentes');
@@ -1560,11 +1560,11 @@ export default function RelatorioPresencialClient({
 
       autoTable(doc, {
         startY: y,
-        head: [['VariÃ¡vel', 'Quantitativo']],
+        head: [['Variável', 'Quantitativo']],
         body: [
-          ['NÃºmero de Docentes', numDocentes],
-          ['NÃºmero de Discentes', numDiscentes],
-          ['NÃºmero de Turmas', numTurmas],
+          ['Número de Docentes', numDocentes],
+          ['Número de Discentes', numDiscentes],
+          ['Número de Turmas', numTurmas],
         ],
         theme: 'striped',
         headStyles: { fillColor: [40, 143, 180] },
@@ -1578,7 +1578,7 @@ export default function RelatorioPresencialClient({
         doc,
         y,
         pageWidth,
-        'Figura 1 âˆ’ MÃ©dias por dimensÃ£o (Discente)',
+        'Figura 1 − Médias por dimensão (Discente)',
         mediasData,
         { valueField: 'media', labelField: 'dimensao' }
       );
@@ -1587,7 +1587,7 @@ export default function RelatorioPresencialClient({
         doc,
         y,
         pageWidth,
-        'Figura 2 âˆ’ MÃ©dias por dimensÃ£o (Docente)',
+        'Figura 2 − Médias por dimensão (Docente)',
         docMediasData,
         { valueField: 'media', labelField: 'dimensao' }
       );
@@ -1599,7 +1599,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Figura 3 âˆ’ ProporÃ§Ãµes de respostas dadas por DimensÃ£o (Discente)',
+              'Figura 3 − Proporções de respostas dadas por Dimensão (Discente)',
               proporcoesData,
               'dimensao'
             ),
@@ -1610,7 +1610,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Figura 4 âˆ’ ProporÃ§Ãµes de respostas dadas por DimensÃ£o (Docente)',
+              'Figura 4 − Proporções de respostas dadas por Dimensão (Docente)',
               docProporcoesData,
               'dimensao'
             ),
@@ -1621,7 +1621,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Figura 5 âˆ’ DistribuiÃ§Ã£o das MÃ©dias das AvaliaÃ§Ãµes das Turmas/Docente por DimensÃ£o',
+              'Figura 5 − Distribuição das Médias das Avaliações das Turmas/Docente por Dimensão',
               turmaDimBoxplot
             ),
         },
@@ -1631,7 +1631,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Tabela 2: EstatÃ­sticas Descritivas das MÃ©dias das AvaliaÃ§Ãµes das Turmas/Docentes por DimensÃ£o',
+              'Tabela 2: Estatísticas Descritivas das Médias das Avaliações das Turmas/Docentes por Dimensão',
               turmaDimDescritivas
             ),
         },
@@ -1641,7 +1641,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Figura 6 âˆ’ MÃ©dias por SubdimensÃ£o da AvaliaÃ§Ã£o da AÃ§Ã£o Docente',
+              'Figura 6 − Médias por Subdimensão da Avaliação da Ação Docente',
               acaoDocSubMedDisc,
               { valueField: 'media', labelField: 'subdimensao' }
             ),
@@ -1652,7 +1652,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Figura 7 âˆ’ MÃ©dias por SubdimensÃ£o da AutoavaliaÃ§Ã£o da AÃ§Ã£o Docente',
+              'Figura 7 − Médias por Subdimensão da Autoavaliação da Ação Docente',
               autoAcaoDocSubMed,
               { valueField: 'media', labelField: 'subdimensao' }
             ),
@@ -1663,7 +1663,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Figura 8 âˆ’ ProporÃ§Ãµes de respostas dadas por SubdimensÃ£o da AvaliaÃ§Ã£o da AÃ§Ã£o Docente',
+              'Figura 8 − Proporções de respostas dadas por Subdimensão da Avaliação da Ação Docente',
               acaoDocSubPropDisc,
               'subdimensao'
             ),
@@ -1674,7 +1674,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Figura 9 âˆ’ ProporÃ§Ãµes de respostas dadas por SubdimensÃ£o da AutoavaliaÃ§Ã£o da AÃ§Ã£o Docente',
+              'Figura 9 − Proporções de respostas dadas por Subdimensão da Autoavaliação da Ação Docente',
               autoAcaoDocSubProp,
               'subdimensao'
             ),
@@ -1685,7 +1685,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Figura 10 âˆ’ DistribuiÃ§Ã£o das MÃ©dias das AvaliaÃ§Ãµes das Turmas/Docentes por SubdimensÃ£o da AÃ§Ã£o Docente',
+              'Figura 10 − Distribuição das Médias das Avaliações das Turmas/Docentes por Subdimensão da Ação Docente',
               turmaSubdimBoxplot
             ),
         },
@@ -1695,7 +1695,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Tabela 3: EstatÃ­sticas descritivas das MÃ©dias das AvaliaÃ§Ãµes das Turmas/Docentes por SubdimensÃ£o da AÃ§Ã£o Docente',
+              'Tabela 3: Estatísticas descritivas das Médias das Avaliações das Turmas/Docentes por Subdimensão da Ação Docente',
               turmaSubdimBoxplot
             ),
         },
@@ -1705,7 +1705,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Figura 11 âˆ’ MÃ©dias dos itens relacionados Ã  AutoavaliaÃ§Ã£o Discente',
+              'Figura 11 − Médias dos itens relacionados à Autoavaliação Discente',
               autoavaliacaoItensMedias,
               { valueField: 'media', labelField: 'item' }
             ),
@@ -1716,7 +1716,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Figura 12 âˆ’ MÃ©dias dos itens relacionados Ã  AvaliaÃ§Ã£o da Turma',
+              'Figura 12 − Médias dos itens relacionados à Avaliação da Turma',
               avaliacaoTurmaItensMedias,
               { valueField: 'media', labelField: 'item' }
             ),
@@ -1727,7 +1727,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Figura 13 âˆ’ ProporÃ§Ãµes de respostas dadas aos itens relacionados Ã  AutoavaliaÃ§Ã£o Discente',
+              'Figura 13 − Proporções de respostas dadas aos itens relacionados à Autoavaliação Discente',
               autoavaliacaoItensProporcoes,
               'item'
             ),
@@ -1738,7 +1738,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Figura 14 âˆ’ ProporÃ§Ãµes de respostas dadas aos itens relacionados Ã  AvaliaÃ§Ã£o da Turma',
+              'Figura 14 − Proporções de respostas dadas aos itens relacionados à Avaliação da Turma',
               avaliacaoTurmaItensProporcoes,
               'item'
             ),
@@ -1749,7 +1749,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Figura 15 âˆ’ DistribuiÃ§Ã£o das MÃ©dias das AvaliaÃ§Ãµes das Turmas/Docentes por Item relacionado Ã  AutoavaliaÃ§Ã£o Discente',
+              'Figura 15 − Distribuição das Médias das Avaliações das Turmas/Docentes por Item relacionado à Autoavaliação Discente',
               autoavaliacaoItensBox
             ),
         },
@@ -1759,7 +1759,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Tabela 4: EstatÃ­sticas descritivas das MÃ©dias das AvaliaÃ§Ãµes das Turmas/Docentes por Item relacionado Ã  AutoavaliaÃ§Ã£o Discente',
+              'Tabela 4: Estatísticas descritivas das Médias das Avaliações das Turmas/Docentes por Item relacionado à Autoavaliação Discente',
               autoavaliacaoItensBox
             ),
         },
@@ -1769,7 +1769,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Figura 16 âˆ’ MÃ©dias dos itens relacionados Ã  Atitude Profissional (Discente)',
+              'Figura 16 − Médias dos itens relacionados à Atitude Profissional (Discente)',
               atitudeProfissionalItensMedias,
               { valueField: 'media', labelField: 'item' }
             ),
@@ -1780,7 +1780,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Figura 17 âˆ’ MÃ©dias dos itens relacionados Ã  Atitude Profissional (Docente)',
+              'Figura 17 − Médias dos itens relacionados à Atitude Profissional (Docente)',
               atitudeProfissionalItensMediasDoc,
               { valueField: 'media', labelField: 'item' }
             ),
@@ -1791,7 +1791,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Figura 18 âˆ’ ProporÃ§Ãµes de respostas dadas aos itens relacionados Ã  Atitude Profissional (Discente)',
+              'Figura 18 − Proporções de respostas dadas aos itens relacionados à Atitude Profissional (Discente)',
               atitudeProfissionalItensProporcoes,
               'item'
             ),
@@ -1802,7 +1802,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Figura 19 âˆ’ ProporÃ§Ãµes de respostas dadas aos itens relacionados Ã  Atitude Profissional (Docente)',
+              'Figura 19 − Proporções de respostas dadas aos itens relacionados à Atitude Profissional (Docente)',
               atitudeProfissionalItensProporcoesDoc,
               'item'
             ),
@@ -1813,7 +1813,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Figura 20 âˆ’ DistribuiÃ§Ã£o das MÃ©dias das AvaliaÃ§Ãµes das Turmas/Docentes por Item relacionado Ã  Atitude Profissional',
+              'Figura 20 − Distribuição das Médias das Avaliações das Turmas/Docentes por Item relacionado à Atitude Profissional',
               atitudeProfissionalBoxplot
             ),
         },
@@ -1823,7 +1823,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Tabela 5: EstatÃ­sticas descritivas das MÃ©dias das AvaliaÃ§Ãµes das Turmas/Docentes por Item relacionado Ã  Atitude Profissional',
+              'Tabela 5: Estatísticas descritivas das Médias das Avaliações das Turmas/Docentes por Item relacionado à Atitude Profissional',
               atitudeProfissionalBoxplot
             ),
         },
@@ -1833,7 +1833,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Figura 21 âˆ’ MÃ©dias dos itens relacionados Ã  GestÃ£o DidÃ¡tica (Discente)',
+              'Figura 21 − Médias dos itens relacionados à Gestão Didática (Discente)',
               gestaoDidaticaItensMedias,
               { valueField: 'media', labelField: 'item' }
             ),
@@ -1844,7 +1844,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Figura 22 âˆ’ MÃ©dias dos itens relacionados Ã  GestÃ£o DidÃ¡tica (Docente)',
+              'Figura 22 − Médias dos itens relacionados à Gestão Didática (Docente)',
               gestaoDidaticaItensMediasDoc,
               { valueField: 'media', labelField: 'item' }
             ),
@@ -1855,7 +1855,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Figura 23 âˆ’ ProporÃ§Ãµes de respostas dadas aos itens relacionados Ã  GestÃ£o DidÃ¡tica (Discente)',
+              'Figura 23 − Proporções de respostas dadas aos itens relacionados à Gestão Didática (Discente)',
               gestaoDidaticaItensProporcoes,
               'item'
             ),
@@ -1866,7 +1866,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Figura 24 âˆ’ ProporÃ§Ãµes de respostas dadas aos itens relacionados Ã  GestÃ£o DidÃ¡tica (Docente)',
+              'Figura 24 − Proporções de respostas dadas aos itens relacionados à Gestão Didática (Docente)',
               gestaoDidaticaItensProporcoesDoc,
               'item'
             ),
@@ -1877,7 +1877,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Figura 25 âˆ’ DistribuiÃ§Ã£o das MÃ©dias das AvaliaÃ§Ãµes das Turmas/Docentes por Item relacionado Ã  GestÃ£o DidÃ¡tica',
+              'Figura 25 − Distribuição das Médias das Avaliações das Turmas/Docentes por Item relacionado à Gestão Didática',
               gestaoDidaticaBoxplot
             ),
         },
@@ -1887,7 +1887,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Tabela 6: EstatÃ­sticas descritivas das MÃ©dias das AvaliaÃ§Ãµes das Turmas/Docentes por Item relacionado Ã  GestÃ£o DidÃ¡tica',
+              'Tabela 6: Estatísticas descritivas das Médias das Avaliações das Turmas/Docentes por Item relacionado à Gestão Didática',
               gestaoDidaticaBoxplot
             ),
         },
@@ -1897,7 +1897,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Figura 26 âˆ’ MÃ©dias dos itens relacionados ao Processo Avaliativo (Discente)',
+              'Figura 26 − Médias dos itens relacionados ao Processo Avaliativo (Discente)',
               processoAvaliativoItensMediasDisc,
               { valueField: 'media', labelField: 'item' }
             ),
@@ -1908,7 +1908,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Figura 27 âˆ’ MÃ©dias dos itens relacionados ao Processo Avaliativo (Docente)',
+              'Figura 27 − Médias dos itens relacionados ao Processo Avaliativo (Docente)',
               processoAvaliativoItensMediasDoc,
               { valueField: 'media', labelField: 'item' }
             ),
@@ -1919,7 +1919,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Figura 28 âˆ’ ProporÃ§Ãµes de respostas dadas aos itens relacionados ao Processo Avaliativo (Discente)',
+              'Figura 28 − Proporções de respostas dadas aos itens relacionados ao Processo Avaliativo (Discente)',
               processoAvaliativoItensProporcoesDisc,
               'item'
             ),
@@ -1930,7 +1930,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Figura 29 âˆ’ ProporÃ§Ãµes de respostas dadas aos itens relacionados ao Processo Avaliativo (Docente)',
+              'Figura 29 − Proporções de respostas dadas aos itens relacionados ao Processo Avaliativo (Docente)',
               processoAvaliativoItensProporcoesDoc,
               'item'
             ),
@@ -1941,7 +1941,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Figura 30 âˆ’ DistribuiÃ§Ã£o das MÃ©dias das AvaliaÃ§Ãµes das Turmas/Docentes por Item relacionado ao Processo Avaliativo',
+              'Figura 30 − Distribuição das Médias das Avaliações das Turmas/Docentes por Item relacionado ao Processo Avaliativo',
               processoAvaliativoBoxplot
             ),
         },
@@ -1951,7 +1951,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Tabela 7: EstatÃ­sticas descritivas das MÃ©dias das AvaliaÃ§Ãµes das Turmas/Docentes por Item relacionado ao Processo Avaliativo',
+              'Tabela 7: Estatísticas descritivas das Médias das Avaliações das Turmas/Docentes por Item relacionado ao Processo Avaliativo',
               processoAvaliativoBoxplot
             ),
         },
@@ -1961,7 +1961,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Figura 31 âˆ’ MÃ©dias dos itens relacionados Ã s InstalaÃ§Ãµes fÃ­sicas (Discente)',
+              'Figura 31 − Médias dos itens relacionados às Instalações físicas (Discente)',
               instalacoesItensMediasDisc,
               { valueField: 'media', labelField: 'item' }
             ),
@@ -1972,7 +1972,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Figura 32 âˆ’ MÃ©dias dos itens relacionados Ã s InstalaÃ§Ãµes fÃ­sicas (Docente)',
+              'Figura 32 − Médias dos itens relacionados às Instalações físicas (Docente)',
               instalacoesItensMediasDoc,
               { valueField: 'media', labelField: 'item' }
             ),
@@ -1983,7 +1983,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Figura 33 âˆ’ ProporÃ§Ãµes de respostas dadas aos itens relacionados Ã s InstalaÃ§Ãµes fÃ­sicas (Discente)',
+              'Figura 33 − Proporções de respostas dadas aos itens relacionados às Instalações físicas (Discente)',
               instalacoesItensProporcoesDisc,
               'item'
             ),
@@ -1994,7 +1994,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Figura 34 âˆ’ ProporÃ§Ãµes de respostas dadas aos itens relacionados Ã s InstalaÃ§Ãµes fÃ­sicas (Docente)',
+              'Figura 34 − Proporções de respostas dadas aos itens relacionados às Instalações físicas (Docente)',
               instalacoesItensProporcoesDoc,
               'item'
             ),
@@ -2005,7 +2005,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Figura 35 âˆ’ DistribuiÃ§Ã£o das MÃ©dias das AvaliaÃ§Ãµes das Turmas/Docentes por Item relacionado Ã s InstalaÃ§Ãµes FÃ­sicas',
+              'Figura 35 − Distribuição das Médias das Avaliações das Turmas/Docentes por Item relacionado às Instalações Físicas',
               instalacoesBoxplot
             ),
         },
@@ -2015,7 +2015,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Tabela 8: EstatÃ­sticas descritivas das MÃ©dias das AvaliaÃ§Ãµes das Turmas/Docentes por Item relacionado Ã s InstalaÃ§Ãµes FÃ­sicas',
+              'Tabela 8: Estatísticas descritivas das Médias das Avaliações das Turmas/Docentes por Item relacionado às Instalações Físicas',
               instalacoesBoxplot
             ),
         },
@@ -2025,7 +2025,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Figura 36 âˆ’ Percentual de ParticipaÃ§Ã£o em Atividades AcadÃªmicas por Atividade (Discente)',
+              'Figura 36 − Percentual de Participação em Atividades Acadêmicas por Atividade (Discente)',
               atividadesDiscente,
               {
                 valueField: 'percentual',
@@ -2041,7 +2041,7 @@ export default function RelatorioPresencialClient({
               d,
               yy,
               pw,
-              'Figura 37 âˆ’ Percentual de ParticipaÃ§Ã£o em Atividades AcadÃªmicas por Atividade (Docente)',
+              'Figura 37 − Percentual de Participação em Atividades Acadêmicas por Atividade (Docente)',
               atividadesDocente,
               {
                 valueField: 'percentual',
@@ -2083,7 +2083,7 @@ export default function RelatorioPresencialClient({
 
       addPageNumbers(doc);
 
-      setProgressText('Finalizando PDFâ€¦');
+      setProgressText('Finalizando PDF…');
       setProgress(100);
 
       const baseBlob = doc.output('blob');
@@ -2099,7 +2099,7 @@ export default function RelatorioPresencialClient({
       lastBuiltKeyRef.current = buildKey;
     } catch (err) {
       console.error('Erro ao gerar PDF:', err);
-      setPdfError('NÃ£o foi possÃ­vel gerar o PDF. Verifique os filtros ou recarregue a pÃ¡gina.');
+      setPdfError('Não foi possível gerar o PDF. Verifique os filtros ou recarregue a página.');
       setPdfUrl('');
     } finally {
       buildingRef.current = false;
@@ -2148,10 +2148,10 @@ export default function RelatorioPresencialClient({
   const clampPct = (v) => Math.floor(Math.max(0, Math.min(100, v)));
 
   const MissingMsg = () => {
-    if (!selected.ano) return <>Selecione <strong>Ano</strong> para comeÃ§ar.</>;
+    if (!selected.ano) return <>Selecione <strong>Ano</strong> para começar.</>;
     if (!selected.campus) return <>Selecione <strong>Campus</strong> para continuar.</>;
     if (!selected.curso) return <>Selecione <strong>Curso</strong> para continuar.</>;
-    return <>Aguarde a preparaÃ§Ã£o do relatÃ³rio.</>;
+    return <>Aguarde a preparação do relatório.</>;
   };
 
   return (

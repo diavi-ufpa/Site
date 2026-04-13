@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useMemo } from 'react';
 import { Users, Building, Loader2 } from 'lucide-react';
@@ -26,7 +26,7 @@ const DEFAULT_FILTERS = {
 };
 
 /* ==========================================================================
-   PARSER DE CSV ROBUSTO (MÃ¡quina de Estado)
+   PARSER DE CSV ROBUSTO (Máquina de Estado)
    ========================================================================== */
 function parseCSV(text) {
   const rows = [];
@@ -75,7 +75,7 @@ function parseCSV(text) {
   return dataRows.map(columns => {
     if (columns.length < 30) return null;
 
-    // REGRA DE DESCARTE: Mais de 3 nulos nas perguntas (Ãndices 9 a 36 no CSV)
+    // REGRA DE DESCARTE: Mais de 3 nulos nas perguntas (Índices 9 a 36 no CSV)
     let nullCount = 0;
     for (let j = 9; j <= 36; j++) {
       const val = columns[j];
@@ -114,8 +114,8 @@ function LoadingOverlay({ progress }) {
     }}>
       <div style={{ width: 'min(350px, 100%)', textAlign: 'center', padding: '2rem' }}>
         <Loader2 style={{ width: '48px', height: '48px', color: '#FF8E29', marginBottom: '1.5rem', animation: 'spin 1s linear infinite' }} />
-        <h2 style={{ fontSize: '1.5rem', color: '#1a1a1a', marginBottom: '0.5rem', fontWeight: '700' }}>Carregando TÃ©cnicos</h2>
-        <p style={{ color: '#666', marginBottom: '2rem', fontSize: '1rem' }}>Preparando anÃ¡lise institucional...</p>
+        <h2 style={{ fontSize: '1.5rem', color: '#1a1a1a', marginBottom: '0.5rem', fontWeight: '700' }}>Carregando Técnicos</h2>
+        <p style={{ color: '#666', marginBottom: '2rem', fontSize: '1rem' }}>Preparando análise institucional...</p>
         <div style={{ width: '100%', height: '12px', backgroundColor: '#f0f0f0', borderRadius: '10px', overflow: 'hidden' }}>
           <div style={{ width: `${progress}%`, height: '100%', backgroundColor: '#FF8E29', transition: 'width 0.4s' }} />
         </div>
@@ -191,17 +191,17 @@ export default function TecnicoPage() {
   return (
     <div className={styles.container}>
       {loading && <LoadingOverlay progress={progress} />}
-      <Header title="AnÃ¡lise de Respostas dos TÃ©cnicos" subtitle="Dados referentes ao questionÃ¡rio de autoavaliaÃ§Ã£o" />
+      <Header title="Análise de Respostas dos Técnicos" subtitle="Dados referentes ao questionário de autoavaliação" />
       
       <div style={{ opacity: loading ? 0 : 1, transition: 'opacity 0.8s ease-in-out', pointerEvents: loading ? 'none' : 'auto' }}>
         
         <div className={`${styles.statsGrid} ${compareEnabled ? styles.statsGridCompare : ''}`}>
           <StatCard title={compareEnabled ? 'Total Participantes (A)' : 'Total de Participantes'} value={filteredDataA.length.toLocaleString('pt-BR')} icon={<Users />} />
-          <StatCard title={compareEnabled ? 'Top LotaÃ§Ã£o (A)' : 'LotaÃ§Ã£o com Mais Participantes'} value={`${topLotacaoA.name} â€” ${topLotacaoA.count.toLocaleString('pt-BR')}`} icon={<Building />} />
+          <StatCard title={compareEnabled ? 'Top Lotação (A)' : 'Lotação com Mais Participantes'} value={`${topLotacaoA.name} — ${topLotacaoA.count.toLocaleString('pt-BR')}`} icon={<Building />} />
           {compareEnabled && (
             <>
               <StatCard title="Total Participantes (B)" value={filteredDataB.length.toLocaleString('pt-BR')} icon={<Users />} />
-              <StatCard title="Top LotaÃ§Ã£o (B)" value={`${topLotacaoB.name} â€” ${topLotacaoB.count.toLocaleString('pt-BR')}`} icon={<Building />} />
+              <StatCard title="Top Lotação (B)" value={`${topLotacaoB.name} — ${topLotacaoB.count.toLocaleString('pt-BR')}`} icon={<Building />} />
             </>
           )}
         </div>
@@ -264,7 +264,7 @@ function applyFiltersTecnico(data, f) {
 
 function buildTecnicoFilterOptions(data) {
   if (!data.length) return { lotacoes: [], exercicios: [], cargos: [] };
-  const uniq = (k) => [...new Set(data.map(r => r[k]))].filter(v => v && !/^(nÃ£o informado|n\/i|\d+)$/i.test(v)).sort();
+  const uniq = (k) => [...new Set(data.map(r => r[k]))].filter(v => v && !/^(não informado|n\/i|\d+)$/i.test(v)).sort();
   return { lotacoes: uniq('UND_LOTACAO_TECNICO'), exercicios: uniq('UND_EXERCICIO_TECNICO'), cargos: uniq('CARGO_TECNICO') };
 }
 
@@ -302,6 +302,6 @@ function buildChartsTecnico(filteredData, f, isB) {
           points.push(Number((scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2)));
         }
       }
-      return labels.length ? { dimensionName: name, chartData: { labels, datasets: [{ label: 'MÃ©dia', data: points, backgroundColor: bg, borderColor: border, borderWidth: 1 }] } } : null;
+      return labels.length ? { dimensionName: name, chartData: { labels, datasets: [{ label: 'Média', data: points, backgroundColor: bg, borderColor: border, borderWidth: 1 }] } } : null;
     }).filter(Boolean);
 }

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useMemo } from 'react';
 import styles from '@/styles/dados.module.css';
@@ -12,7 +12,7 @@ export default function TecnicoFilters({
   questionMap,
   dimensionMap,
 
-  // ComparaÃ§Ã£o (opcional; sÃ³ o card A usa)
+  // Comparação (opcional; só o card A usa)
   showCompareToggle = false,
   compareEnabled = false,
   onCompareChange = () => {},
@@ -33,7 +33,7 @@ export default function TecnicoFilters({
     return questionMap;
   }, [selectedFilters.dimensao, questionMap, dimensionMap]);
 
-  // ConsistÃªncia DimensÃ£o -> Pergunta (igual Discente/Docente)
+  // Consistência Dimensão -> Pergunta (igual Discente/Docente)
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -76,7 +76,7 @@ export default function TecnicoFilters({
           onChange={handleChange}
           className={styles.filterSelect}
         >
-          <option value="todos">Todas as LotaÃ§Ãµes</option>
+          <option value="todos">Todas as Lotações</option>
           {lotacoes?.map((l, i) => (
             <option key={`lot-${l}-${i}`} value={l}>
               {l}
@@ -90,7 +90,7 @@ export default function TecnicoFilters({
           onChange={handleChange}
           className={styles.filterSelect}
         >
-          <option value="todos">Todas as Unidades de ExercÃ­cio</option>
+          <option value="todos">Todas as Unidades de Exercício</option>
           {exercicios?.map((ex, i) => (
             <option key={`ex-${ex}-${i}`} value={ex}>
               {ex}
@@ -118,7 +118,7 @@ export default function TecnicoFilters({
           onChange={handleChange}
           className={`${styles.filterSelect} ${styles.filterSelectWide}`}
         >
-          <option value="todas">Todas as DimensÃµes</option>
+          <option value="todas">Todas as Dimensões</option>
           {dimensionMap && Object.keys(dimensionMap).map((dim, i) => (
             <option key={`dim-${dim}-${i}`} value={dim}>
               {dim}
@@ -126,7 +126,7 @@ export default function TecnicoFilters({
           ))}
         </select>
 
-        {/* Linha final: Pergunta + ComparaÃ§Ã£o (lado a lado) */}
+        {/* Linha final: Pergunta + Comparação (lado a lado) */}
         <div className={styles.questionCompareRow}>
           <select
             name="pergunta"
@@ -154,7 +154,7 @@ export default function TecnicoFilters({
                 checked={compareEnabled}
                 onChange={(e) => onCompareChange(e.target.checked)}
               />
-              ComparaÃ§Ã£o
+              Comparação
             </label>
           )}
         </div>

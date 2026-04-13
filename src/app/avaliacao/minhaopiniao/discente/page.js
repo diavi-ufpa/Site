@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useMemo } from 'react';
 import { Users, Building2, Loader2 } from 'lucide-react';
@@ -26,7 +26,7 @@ const DEFAULT_FILTERS = {
 };
 
 /* ==========================================================================
-   PARSER DE CSV ROBUSTO (MÃ¡quina de Estado)
+   PARSER DE CSV ROBUSTO (Máquina de Estado)
    Ajustado para o novo layout: Curso (3), Campus (4), Unidade/Instituto (5)
    ========================================================================== */
 function parseCSV(text) {
@@ -69,11 +69,11 @@ function parseCSV(text) {
 
   const dataRows = rows.slice(1);
   return dataRows.map(columns => {
-    // VerificaÃ§Ã£o de seguranÃ§a para o nÃºmero de colunas
+    // Verificação de segurança para o número de colunas
     if (columns.length < 10) return null;
 
     /* Mapeamento baseado na sua estrutura enviada:
-       0: nome, 1: sexo, 2: tipo, 3: curso, 4: campus, 5: unidade (Instituto), 6: sugestÃ£o
+       0: nome, 1: sexo, 2: tipo, 3: curso, 4: campus, 5: unidade (Instituto), 6: sugestão
     */
     const rowObj = {
       CURSO_DISCENTE: columns[3] || 'N/I',
@@ -81,7 +81,7 @@ function parseCSV(text) {
       UNIDADE_DISCENTE: columns[5] ? columns[5].replace(/^"|"$/g, '') : 'N/I', // <--- Agora captura o Instituto
     };
 
-    // Perguntas comeÃ§am apÃ³s a SugestÃ£o (Ãndice 6), portanto no Ãndice 7
+    // Perguntas começam após a Sugestão (Índice 6), portanto no Índice 7
     for (let q = 1; q <= 34; q++) {
       rowObj[`Pergunta_${q}`] = columns[6 + q]; 
     }
@@ -201,18 +201,18 @@ export default function DiscentePage() {
     <div className={styles.container}>
       {loading && <LoadingOverlay progress={progress} />}
 
-      <Header title="AnÃ¡lise de Respostas dos Discentes" subtitle="Dados referentes ao questionÃ¡rio 'Minha OpiniÃ£o'" />
+      <Header title="Análise de Respostas dos Discentes" subtitle="Dados referentes ao questionário 'Minha Opinião'" />
 
       <div style={{ opacity: loading ? 0 : 1, transition: 'opacity 0.8s ease-in-out', pointerEvents: loading ? 'none' : 'auto' }}>
         
         <div className={`${styles.statsGrid} ${compareEnabled ? styles.statsGridCompare : ''}`}>
           <StatCard title={compareEnabled ? 'Total Participantes (A)' : 'Total de Participantes'} value={filteredDataA.length.toLocaleString('pt-BR')} icon={<Users />} />
-          <StatCard title={compareEnabled ? 'Top Unidade (A)' : 'Unidade com mais participantes'} value={`${topUnitA.name} â€” ${topUnitA.count.toLocaleString('pt-BR')}`} icon={<Building2 />} />
+          <StatCard title={compareEnabled ? 'Top Unidade (A)' : 'Unidade com mais participantes'} value={`${topUnitA.name} — ${topUnitA.count.toLocaleString('pt-BR')}`} icon={<Building2 />} />
 
           {compareEnabled && (
             <>
               <StatCard title="Total Participantes (B)" value={filteredDataB.length.toLocaleString('pt-BR')} icon={<Users />} />
-              <StatCard title="Top Unidade (B)" value={`${topUnitB.name} â€” ${topUnitB.count.toLocaleString('pt-BR')}`} icon={<Building2 />} />
+              <StatCard title="Top Unidade (B)" value={`${topUnitB.name} — ${topUnitB.count.toLocaleString('pt-BR')}`} icon={<Building2 />} />
             </>
           )}
         </div>
@@ -270,7 +270,7 @@ export default function DiscentePage() {
 }
 
 /* ==========================================================================
-   LÃ³gica de ComparaÃ§Ã£o e Helpers
+   Lógica de Comparação e Helpers
    ========================================================================== */
 function CompareDimensions({ chartsA, chartsB, questionMap, styles }) {
   const aMap = new Map((chartsA || []).map((c) => [c.dimensionName, c]));
@@ -326,7 +326,7 @@ function buildFilterOptions(allData, selectedFilters) {
     if (str.length < 2 || str.length > 80) return false; 
     if (/^\d+$/.test(str)) return false; 
     const lower = str.toLowerCase();
-    return !['nÃ£o informado', 'nao informado', 'n/i', 'ni'].includes(lower);
+    return !['não informado', 'nao informado', 'n/i', 'ni'].includes(lower);
   }
 
   function uniq(key) {
@@ -383,6 +383,6 @@ function buildChartsByDimension(filteredData, bgColor, borderColor, selectedFilt
           data.push(Number(avg.toFixed(2)));
         }
       }
-      return labels.length ? { dimensionName: name, chartData: { labels, datasets: [{ label: 'MÃ©dia', data, backgroundColor: bgColor, borderColor: borderColor, borderWidth: 1 }] } } : null;
+      return labels.length ? { dimensionName: name, chartData: { labels, datasets: [{ label: 'Média', data, backgroundColor: bgColor, borderColor: borderColor, borderWidth: 1 }] } } : null;
     }).filter(Boolean);
 }

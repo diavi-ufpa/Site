@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { Bar } from 'react-chartjs-2';
 import {
@@ -79,7 +79,7 @@ ChartJS.register(
 
 export default function MediaDimensoesChart({ data, title }) {
   const dimensionDescriptions = {
-    D1: 'ORGANIZAÃ‡ÃƒO DIDÃTICO-PEDAGÃ“GICA',
+    D1: 'ORGANIZAÇÃO DIDÁTICO-PEDAGÓGICA',
     D2: 'CORPO DOCENTE E TUTORIAL',
     D3: 'INFRAESTRUTURA',
   };
@@ -164,7 +164,7 @@ export default function MediaDimensoesChart({ data, title }) {
         max: 5,
         title: {
           display: true,
-          text: 'MÃ©dia',
+          text: 'Média',
         },
       },
     },

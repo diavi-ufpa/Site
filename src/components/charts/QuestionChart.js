@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { Bar } from 'react-chartjs-2';
 import {
@@ -99,12 +99,12 @@ function externalTooltipHandler(context, questionMap) {
   tooltipEl.__activeCanvas = chart.canvas;
   const item = tooltip.dataPoints[0];
   
-  // Ajuste de robustez: Trata casos onde o label vem como array ou tem espaÃ§os extras
+  // Ajuste de robustez: Trata casos onde o label vem como array ou tem espaços extras
   const rawLabel = item?.label || '';
   const key = Array.isArray(rawLabel) ? rawLabel.join(' ') : String(rawLabel).trim();
   
   // Busca o texto da pergunta ou exibe um aviso para facilitar o debug
-  const fullText = questionMap?.[key] || `Pergunta nÃ£o encontrada para: "${key}"`;
+  const fullText = questionMap?.[key] || `Pergunta não encontrada para: "${key}"`;
   const wrapped = wrapLines(fullText, 70);
   
   const value = item?.parsed?.y;
@@ -115,7 +115,7 @@ function externalTooltipHandler(context, questionMap) {
     ${wrapped.length ? `<div style="opacity:0.95; margin-bottom:8px;">${wrapped.map((l) => `<div>${l}</div>`).join('')}</div>` : ''}
     ${formatted ? `<div style="display:flex; gap:8px; align-items:center;">
              <span style="width:10px; height:10px; background:#ff8e29; display:inline-block; border-radius:2px;"></span>
-             <span>MÃ©dia: ${formatted} de 5</span>
+             <span>Média: ${formatted} de 5</span>
            </div>` : ''}
   `;
 
@@ -182,7 +182,7 @@ export default function QuestionChart({
       y: {
         beginAtZero: true,
         min: 0,
-        max: 5, // Limite mÃ¡ximo ajustado estritamente para 5
+        max: 5, // Limite máximo ajustado estritamente para 5
         ticks: { stepSize: 1 },
       },
       x: {
@@ -191,7 +191,7 @@ export default function QuestionChart({
     },
   };
 
-  // Merge profundo das opÃ§Ãµes
+  // Merge profundo das opções
   const options = {
     ...defaultOptions,
     ...customOptions,

@@ -1,4 +1,4 @@
-﻿// src/app/avaliacao/ead/relatorioEAD/relatorio-eadead-client.js
+// src/app/avaliacao/ead/relatorioEAD/relatorio-eadead-client.js
 'use client';
 
 import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
@@ -142,17 +142,17 @@ function getGroupKeyForEad(row = {}, year = '2025', idx = 0) {
     '';
 
   const curso =
-    row['Qual Ã© o seu Curso?'] ??
+    row['Qual é o seu Curso?'] ??
     row.curso ??
     '';
 
-  const polo = year === '2025' ? (row['Qual o seu Polo de VinculaÃ§Ã£o?'] ?? '') : '';
+  const polo = year === '2025' ? (row['Qual o seu Polo de Vinculação?'] ?? '') : '';
   const disciplina = getDisciplinaFromRow(row);
 
   const key = [turmaOuDocente, curso, polo, disciplina]
     .map((v) => String(v || '').trim())
     .filter(Boolean)
-    .join(' â€¢ ');
+    .join(' • ');
 
   return key || `row_${idx}`;
 }
@@ -177,7 +177,7 @@ function aggregateFromRows2025(rows, qHeadersFull) {
     if (a.startsWith('Bom')) return 'Bom';
     if (a.startsWith('Regular')) return 'Regular';
     if (a.startsWith('Insuficiente')) return 'Insuficiente';
-    if (/^n(Ã£|a)o se aplica/i.test(a)) return null;
+    if (/^n(ã|a)o se aplica/i.test(a)) return null;
     return null;
   };
 
@@ -188,14 +188,14 @@ function aggregateFromRows2025(rows, qHeadersFull) {
     if (a.startsWith('Bom')) return 3;
     if (a.startsWith('Regular')) return 2;
     if (a.startsWith('Insuficiente')) return 1;
-    if (/^n(Ã£|a)o se aplica/i.test(a)) return null;
+    if (/^n(ã|a)o se aplica/i.test(a)) return null;
     return null;
   };
 
   const dims = {
-    'AutoavaliaÃ§Ã£o Discente': headers.slice(0, 13),
-    'AvaliaÃ§Ã£o da AÃ§Ã£o Docente': headers.slice(13, 35),
-    'InstalaÃ§Ãµes FÃ­sicas e Recursos de TI': headers.slice(35, 45),
+    'Autoavaliação Discente': headers.slice(0, 13),
+    'Avaliação da Ação Docente': headers.slice(13, 35),
+    'Instalações Físicas e Recursos de TI': headers.slice(35, 45),
   };
 
   const groupedRows = groupRowsForBoxplot(rows, '2025');
@@ -288,7 +288,7 @@ function aggregateFromRows2025(rows, qHeadersFull) {
       }));
     });
 
-  const autoHs = dims['AutoavaliaÃ§Ã£o Discente'];
+  const autoHs = dims['Autoavaliação Discente'];
   const atiHs = headers.slice(13, 19);
   const gesHs = headers.slice(19, 30);
   const proHs = headers.slice(30, 35);
@@ -357,9 +357,9 @@ function aggregateFromRows2023(rows, qHeadersInput) {
   const endInfra = Math.min(Math.min(45, qHeaders.length), 43);
 
   const dims = {
-    'AutoavaliaÃ§Ã£o Discente': qHeaders.slice(0, endAuto),
-    'AvaliaÃ§Ã£o da AÃ§Ã£o Docente': qHeaders.slice(13, endAcao),
-    'InstalaÃ§Ãµes FÃ­sicas e Recursos de TI': qHeaders.slice(35, endInfra),
+    'Autoavaliação Discente': qHeaders.slice(0, endAuto),
+    'Avaliação da Ação Docente': qHeaders.slice(13, endAcao),
+    'Instalações Físicas e Recursos de TI': qHeaders.slice(35, endInfra),
   };
 
   const groupedRows = groupRowsForBoxplot(rows, '2023');
@@ -452,11 +452,11 @@ function aggregateFromRows2023(rows, qHeadersInput) {
       }));
     });
 
-  const autoHs = dims['AutoavaliaÃ§Ã£o Discente'];
+  const autoHs = dims['Autoavaliação Discente'];
   const atiHs = qHeaders.slice(13, Math.min(19, qHeaders.length));
   const gesHs = qHeaders.slice(19, Math.min(30, qHeaders.length));
   const proHs = qHeaders.slice(30, Math.min(35, qHeaders.length));
-  const infHs = dims['InstalaÃ§Ãµes FÃ­sicas e Recursos de TI'];
+  const infHs = dims['Instalações Físicas e Recursos de TI'];
 
   const boxplotItensAutoRaw = boxplotForHeaders(autoHs);
   const boxplotItensAtitudeRaw = boxplotForHeaders(atiHs);
@@ -518,7 +518,7 @@ function ensurePageSpace(doc, y, needed = 120, top = 56, bottom = 40) {
 
 function addFigureCaption(doc, y, pageWidth, caption, figRef) {
   if (!caption) return y;
-  const text = `Figura ${figRef.current} â€” ${caption}`;
+  const text = `Figura ${figRef.current} — ${caption}`;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   const lines = doc.splitTextToSize(text, pageWidth - 80);
@@ -793,7 +793,7 @@ function addStatsTable(doc, autoTable, y, pageWidth, title, rows) {
     return String(a?.item ?? '').localeCompare(String(b?.item ?? ''), 'pt-BR');
   });
 
-  const headers = ['EstatÃ­stica', ...sortedRows.map((r) => String(r.item ?? ''))];
+  const headers = ['Estatística', ...sortedRows.map((r) => String(r.item ?? ''))];
 
   const metricRows = [
     {
@@ -809,7 +809,7 @@ function addStatsTable(doc, autoTable, y, pageWidth, title, rows) {
       values: sortedRows.map((r) => Number(r.median ?? 0).toFixed(2).replace('.', ',')),
     },
     {
-      label: 'MÃ©dia',
+      label: 'Média',
       values: sortedRows.map((r) => Number(r.mean ?? 0).toFixed(2).replace('.', ',')),
     },
     {
@@ -941,7 +941,7 @@ export default function RelatorioEadClient({
   const [blocking, setBlocking] = useState(false);
   const [forceBlocking, setForceBlocking] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [progressText, setProgressText] = useState('Preparandoâ€¦');
+  const [progressText, setProgressText] = useState('Preparando…');
 
   const [pdfUrl, setPdfUrl] = useState('');
   const [pdfError, setPdfError] = useState('');
@@ -968,7 +968,7 @@ export default function RelatorioEadClient({
     if (shouldBlock) {
       if (!forceBlocking) {
         setProgress((p) => (p > 0 ? p : 3));
-        setProgressText(isAllPolos ? 'Preparando geraÃ§Ã£o para todos os polosâ€¦' : 'Gerando PDFâ€¦');
+        setProgressText(isAllPolos ? 'Preparando geração para todos os polos…' : 'Gerando PDF…');
       }
       try {
         document.activeElement?.blur?.();
@@ -988,7 +988,7 @@ export default function RelatorioEadClient({
       } catch {}
       if (!isAllPolos) {
         setProgress(0);
-        setProgressText('Preparandoâ€¦');
+        setProgressText('Preparando…');
       }
     }
   }, [forceBlocking, isAllPolos, yearDef.hasPolos, pdfUrl]);
@@ -1070,11 +1070,11 @@ export default function RelatorioEadClient({
       if (selectingAllPolosNow) {
         setForceBlocking(false);
         setProgress((p) => (p < 8 ? 8 : p));
-        setProgressText('Preparando geraÃ§Ã£o para todos os polosâ€¦');
+        setProgressText('Preparando geração para todos os polos…');
       } else {
         setForceBlocking(true);
         setProgress(8);
-        setProgressText('Gerando PDFâ€¦');
+        setProgressText('Gerando PDF…');
       }
     }
 
@@ -1083,11 +1083,11 @@ export default function RelatorioEadClient({
       if (!def.hasPolos && value) {
         setForceBlocking(true);
         setProgress((p) => (p < 8 ? 8 : p));
-        setProgressText('Gerando PDFâ€¦');
+        setProgressText('Gerando PDF…');
       } else if (!value) {
         setForceBlocking(false);
         setProgress(0);
-        setProgressText('Preparandoâ€¦');
+        setProgressText('Preparando…');
       }
     }
 
@@ -1096,7 +1096,7 @@ export default function RelatorioEadClient({
       next.polo = '';
       setForceBlocking(false);
       setProgress(0);
-      setProgressText('Preparandoâ€¦');
+      setProgressText('Preparando…');
     }
 
     if (key === 'curso' && !selected.ano) next.curso = '';
@@ -1188,13 +1188,13 @@ export default function RelatorioEadClient({
     let filtered = rows;
 
     if (ano === '2025') {
-      if (curso) filtered = filtered.filter((r) => r['Qual Ã© o seu Curso?'] === curso);
-      if (poloName) filtered = filtered.filter((r) => r['Qual o seu Polo de VinculaÃ§Ã£o?'] === poloName);
+      if (curso) filtered = filtered.filter((r) => r['Qual é o seu Curso?'] === curso);
+      if (poloName) filtered = filtered.filter((r) => r['Qual o seu Polo de Vinculação?'] === poloName);
       const qHeadersFull = yearData.qHeadersFull || [];
       return { ...aggregateFromRows2025(filtered, qHeadersFull), filteredRows: filtered };
     }
 
-    const cursoKey = rows[0]?.['Qual Ã© o seu Curso?'] !== undefined ? 'Qual Ã© o seu Curso?' : 'curso';
+    const cursoKey = rows[0]?.['Qual é o seu Curso?'] !== undefined ? 'Qual é o seu Curso?' : 'curso';
     if (curso) filtered = filtered.filter((r) => String(r?.[cursoKey] || '') === String(curso));
 
     const qHeaders = (yearData.qHeadersFull && yearData.qHeadersFull.length)
@@ -1483,7 +1483,7 @@ export default function RelatorioEadClient({
 
     if (isAllPolos || forceBlocking) {
       setProgress((p) => (p > 12 ? p : 12));
-      setProgressText(isAllPolos ? 'Preparando geraÃ§Ã£o para todos os polosâ€¦' : 'Gerando PDFâ€¦');
+      setProgressText(isAllPolos ? 'Preparando geração para todos os polos…' : 'Gerando PDF…');
     }
 
     try {
@@ -1506,7 +1506,7 @@ export default function RelatorioEadClient({
       let y = margin;
       doc.setFont('Arial', 'bold');
       doc.setFontSize(15);
-      doc.text(`APRESENTAÃ‡ÃƒO DO RELATÃ“RIO AVALIA ${selected.ano}`, pageWidth / 2, y, { align: 'center' });
+      doc.text(`APRESENTAÇÃO DO RELATÓRIO AVALIA ${selected.ano}`, pageWidth / 2, y, { align: 'center' });
       y += 22;
 
       doc.setFont('Arial', 'normal');
@@ -1518,11 +1518,11 @@ export default function RelatorioEadClient({
           : `${selected.ano}`;
 
       const paragraphs = [
-        'A AutoavaliaÃ§Ã£o dos Cursos de GraduaÃ§Ã£o a DistÃ¢ncia da UFPA (AVALIA EAD) Ã© coordenada pela CPA em parceria com a DIAVI/PROPLAN.',
-        'O AVALIA-EAD visa captar a percepÃ§Ã£o discente sobre o curso, apoiando melhorias nas condiÃ§Ãµes de ensino e aprendizagem.',
-        'O formulÃ¡rio contempla 3 dimensÃµes: AutoavaliaÃ§Ã£o, AÃ§Ã£o Docente (Atitude, GestÃ£o e Processo Avaliativo) e Infra/Recursos de TI.',
-        `Resultados referentes ao PerÃ­odo Letivo ${periodoLetivo}, com escala de 1 (Insuficiente) a 4 (Excelente) e opÃ§Ã£o â€œNÃ£o se Aplicaâ€.`,
-        'RepresentaÃ§Ãµes grÃ¡ficas: barras (percentuais e mÃ©dias), boxplots e estatÃ­sticas descritivas.',
+        'A Autoavaliação dos Cursos de Graduação a Distância da UFPA (AVALIA EAD) é coordenada pela CPA em parceria com a DIAVI/PROPLAN.',
+        'O AVALIA-EAD visa captar a percepção discente sobre o curso, apoiando melhorias nas condições de ensino e aprendizagem.',
+        'O formulário contempla 3 dimensões: Autoavaliação, Ação Docente (Atitude, Gestão e Processo Avaliativo) e Infra/Recursos de TI.',
+        `Resultados referentes ao Período Letivo ${periodoLetivo}, com escala de 1 (Insuficiente) a 4 (Excelente) e opção “Não se Aplica”.`,
+        'Representações gráficas: barras (percentuais e médias), boxplots e estatísticas descritivas.',
       ];
 
       paragraphs.forEach((p, idx) => {
@@ -1613,8 +1613,8 @@ export default function RelatorioEadClient({
         const poloName = polosToRender[idx];
         setProgressText(
           isAllPolos
-            ? `Preparando dados do polo ${idx + 1}/${polosToRender.length}â€¦`
-            : 'Preparando dados do polo selecionadoâ€¦'
+            ? `Preparando dados do polo ${idx + 1}/${polosToRender.length}…`
+            : 'Preparando dados do polo selecionado…'
         );
 
         const agg = computeAggregation(selected.ano, selected.curso, poloName);
@@ -1630,7 +1630,7 @@ export default function RelatorioEadClient({
         ]);
 
         doc.addPage();
-        const titulo1 = `RELATÃ“RIO AVALIA ${selected.ano}`;
+        const titulo1 = `RELATÓRIO AVALIA ${selected.ano}`;
         const campus = poloName || 'Campus/Polo';
         const titulo2 = `${selected.curso || 'Curso'} - ${campus}`;
 
@@ -1647,38 +1647,38 @@ export default function RelatorioEadClient({
           doc.addPage();
           doc.setFont('helvetica', 'bold');
           doc.setFontSize(14);
-          doc.text('Sem dados para esta seleÃ§Ã£o', pageWidth / 2, 90, { align: 'center' });
+          doc.text('Sem dados para esta seleção', pageWidth / 2, 90, { align: 'center' });
           continue;
         }
 
-        await addSection('DimensÃµes Gerais', agg, {
+        await addSection('Dimensões Gerais', agg, {
           propKey: 'dimensoes',
           meanKey: 'mediasPorDim',
           statsKey: 'boxplotDimStats',
           labelField: 'dimensao',
           boxContainerId: 'chart-boxplot-dimensoes',
-          propTitle: `ProporÃ§Ãµes de Respostas por DimensÃ£o (${selected.ano})`,
-          boxTitle: `Boxplot das MÃ©dias por DimensÃ£o (${selected.ano})`,
-          meanTitle: `MÃ©dias por DimensÃ£o (${selected.ano})`,
-          propCaption: `ProporÃ§Ãµes por DimensÃ£o (${selected.ano})`,
-          boxCaption: `Boxplot das MÃ©dias por DimensÃ£o (${selected.ano})`,
-          meanCaption: `MÃ©dias por DimensÃ£o (${selected.ano})`,
-          tableTitle: 'EstatÃ­sticas â€” DimensÃµes',
+          propTitle: `Proporções de Respostas por Dimensão (${selected.ano})`,
+          boxTitle: `Boxplot das Médias por Dimensão (${selected.ano})`,
+          meanTitle: `Médias por Dimensão (${selected.ano})`,
+          propCaption: `Proporções por Dimensão (${selected.ano})`,
+          boxCaption: `Boxplot das Médias por Dimensão (${selected.ano})`,
+          meanCaption: `Médias por Dimensão (${selected.ano})`,
+          tableTitle: 'Estatísticas — Dimensões',
         });
 
-        await addSection('AutoavaliaÃ§Ã£o Discente', agg, {
+        await addSection('Autoavaliação Discente', agg, {
           propKey: 'autoavaliacaoItens',
           meanKey: 'mediasItensAuto',
           statsKey: 'boxplotAutoStats',
           labelField: 'item',
           boxContainerId: 'chart-boxplot-autoav',
-          propTitle: `ProporÃ§Ãµes de Respostas por Item (${selected.ano})`,
-          boxTitle: `Boxplot das MÃ©dias por Item (${selected.ano})`,
-          meanTitle: `MÃ©dias dos Itens (${selected.ano})`,
-          propCaption: `ProporÃ§Ãµes por Item â€” AutoavaliaÃ§Ã£o (${selected.ano})`,
-          boxCaption: `Boxplot por Item â€” AutoavaliaÃ§Ã£o (${selected.ano})`,
-          meanCaption: `MÃ©dias dos Itens â€” AutoavaliaÃ§Ã£o (${selected.ano})`,
-          tableTitle: 'EstatÃ­sticas â€” AutoavaliaÃ§Ã£o',
+          propTitle: `Proporções de Respostas por Item (${selected.ano})`,
+          boxTitle: `Boxplot das Médias por Item (${selected.ano})`,
+          meanTitle: `Médias dos Itens (${selected.ano})`,
+          propCaption: `Proporções por Item — Autoavaliação (${selected.ano})`,
+          boxCaption: `Boxplot por Item — Autoavaliação (${selected.ano})`,
+          meanCaption: `Médias dos Itens — Autoavaliação (${selected.ano})`,
+          tableTitle: 'Estatísticas — Autoavaliação',
         });
 
         await addSection('Atitude Profissional', agg, {
@@ -1687,28 +1687,28 @@ export default function RelatorioEadClient({
           statsKey: 'boxplotAtitudeStats',
           labelField: 'item',
           boxContainerId: 'chart-boxplot-atitude',
-          propTitle: `ProporÃ§Ãµes de Respostas por Item (${selected.ano})`,
-          boxTitle: `Boxplot das MÃ©dias por Item (${selected.ano})`,
-          meanTitle: `MÃ©dias dos Itens (${selected.ano})`,
-          propCaption: `ProporÃ§Ãµes por Item â€” Atitude (${selected.ano})`,
-          boxCaption: `Boxplot por Item â€” Atitude (${selected.ano})`,
-          meanCaption: `MÃ©dias dos Itens â€” Atitude (${selected.ano})`,
-          tableTitle: 'EstatÃ­sticas â€” Atitude Profissional',
+          propTitle: `Proporções de Respostas por Item (${selected.ano})`,
+          boxTitle: `Boxplot das Médias por Item (${selected.ano})`,
+          meanTitle: `Médias dos Itens (${selected.ano})`,
+          propCaption: `Proporções por Item — Atitude (${selected.ano})`,
+          boxCaption: `Boxplot por Item — Atitude (${selected.ano})`,
+          meanCaption: `Médias dos Itens — Atitude (${selected.ano})`,
+          tableTitle: 'Estatísticas — Atitude Profissional',
         });
 
-        await addSection('GestÃ£o DidÃ¡tica', agg, {
+        await addSection('Gestão Didática', agg, {
           propKey: 'acaoDocenteGestao',
           meanKey: 'mediasItensGestao',
           statsKey: 'boxplotGestaoStats',
           labelField: 'item',
           boxContainerId: 'chart-boxplot-gestao',
-          propTitle: `ProporÃ§Ãµes de Respostas por Item (${selected.ano})`,
-          boxTitle: `Boxplot das MÃ©dias por Item (${selected.ano})`,
-          meanTitle: `MÃ©dias dos Itens (${selected.ano})`,
-          propCaption: `ProporÃ§Ãµes por Item â€” GestÃ£o (${selected.ano})`,
-          boxCaption: `Boxplot por Item â€” GestÃ£o (${selected.ano})`,
-          meanCaption: `MÃ©dias dos Itens â€” GestÃ£o (${selected.ano})`,
-          tableTitle: 'EstatÃ­sticas â€” GestÃ£o DidÃ¡tica',
+          propTitle: `Proporções de Respostas por Item (${selected.ano})`,
+          boxTitle: `Boxplot das Médias por Item (${selected.ano})`,
+          meanTitle: `Médias dos Itens (${selected.ano})`,
+          propCaption: `Proporções por Item — Gestão (${selected.ano})`,
+          boxCaption: `Boxplot por Item — Gestão (${selected.ano})`,
+          meanCaption: `Médias dos Itens — Gestão (${selected.ano})`,
+          tableTitle: 'Estatísticas — Gestão Didática',
         });
 
         await addSection('Processo Avaliativo', agg, {
@@ -1717,40 +1717,40 @@ export default function RelatorioEadClient({
           statsKey: 'boxplotProcessoStats',
           labelField: 'item',
           boxContainerId: 'chart-boxplot-processo',
-          propTitle: `ProporÃ§Ãµes de Respostas por Item (${selected.ano})`,
-          boxTitle: `Boxplot das MÃ©dias por Item (${selected.ano})`,
-          meanTitle: `MÃ©dias dos Itens (${selected.ano})`,
-          propCaption: `ProporÃ§Ãµes por Item â€” Processo (${selected.ano})`,
-          boxCaption: `Boxplot por Item â€” Processo (${selected.ano})`,
-          meanCaption: `MÃ©dias dos Itens â€” Processo (${selected.ano})`,
-          tableTitle: 'EstatÃ­sticas â€” Processo Avaliativo',
+          propTitle: `Proporções de Respostas por Item (${selected.ano})`,
+          boxTitle: `Boxplot das Médias por Item (${selected.ano})`,
+          meanTitle: `Médias dos Itens (${selected.ano})`,
+          propCaption: `Proporções por Item — Processo (${selected.ano})`,
+          boxCaption: `Boxplot por Item — Processo (${selected.ano})`,
+          meanCaption: `Médias dos Itens — Processo (${selected.ano})`,
+          tableTitle: 'Estatísticas — Processo Avaliativo',
         });
 
-        await addSection('InstalaÃ§Ãµes FÃ­sicas e Recursos de TI', agg, {
+        await addSection('Instalações Físicas e Recursos de TI', agg, {
           propKey: 'infraestruturaItens',
           meanKey: 'mediasItensInfra',
           statsKey: 'boxplotInfraStats',
           labelField: 'item',
           boxContainerId: 'chart-boxplot-infra',
-          propTitle: `ProporÃ§Ãµes de Respostas por Item (${selected.ano})`,
-          boxTitle: `Boxplot das MÃ©dias por Item (${selected.ano})`,
-          meanTitle: `MÃ©dias dos Itens (${selected.ano})`,
-          propCaption: `ProporÃ§Ãµes por Item â€” Infraestrutura (${selected.ano})`,
-          boxCaption: `Boxplot por Item â€” Infraestrutura (${selected.ano})`,
-          meanCaption: `MÃ©dias dos Itens â€” Infraestrutura (${selected.ano})`,
-          tableTitle: 'EstatÃ­sticas â€” Infraestrutura',
+          propTitle: `Proporções de Respostas por Item (${selected.ano})`,
+          boxTitle: `Boxplot das Médias por Item (${selected.ano})`,
+          meanTitle: `Médias dos Itens (${selected.ano})`,
+          propCaption: `Proporções por Item — Infraestrutura (${selected.ano})`,
+          boxCaption: `Boxplot por Item — Infraestrutura (${selected.ano})`,
+          meanCaption: `Médias dos Itens — Infraestrutura (${selected.ano})`,
+          tableTitle: 'Estatísticas — Infraestrutura',
         });
 
         if (isAllPolos && yearDef.hasPolos) {
           const totalPolos = polosToRender.length || 1;
           const pct = Math.min(95, Math.round(((idx + 1) / totalPolos) * 100));
-          setProgressText(`Gerando pÃ¡ginas ${idx + 1}/${totalPolos}â€¦`);
+          setProgressText(`Gerando páginas ${idx + 1}/${totalPolos}…`);
           setProgress(pct);
         }
       }
 
       if (isAllPolos && yearDef.hasPolos) {
-        setProgressText('Anexando questionÃ¡rioâ€¦');
+        setProgressText('Anexando questionário…');
         setProgress((p) => Math.max(p, 96));
       }
 
@@ -1768,7 +1768,7 @@ export default function RelatorioEadClient({
         setPdfUrl(url);
         lastBuiltSigRef.current = requestSig;
 
-        setProgressText('ConcluÃ­do!');
+        setProgressText('Concluído!');
         setProgress(100);
       } else {
         URL.revokeObjectURL(url);
@@ -1776,7 +1776,7 @@ export default function RelatorioEadClient({
     } catch (err) {
       if (isStale()) return;
       console.error('Erro ao gerar PDF:', err);
-      setPdfError('NÃ£o foi possÃ­vel gerar o PDF. Verifique os filtros ou recarregue a pÃ¡gina.');
+      setPdfError('Não foi possível gerar o PDF. Verifique os filtros ou recarregue a página.');
       if (prevUrlRef.current) {
         URL.revokeObjectURL(prevUrlRef.current);
         prevUrlRef.current = '';
@@ -1852,7 +1852,7 @@ export default function RelatorioEadClient({
   const clampPct = (v) => Math.floor(Math.max(0, Math.min(100, v)));
 
   const MissingMsg = () => {
-    if (!selected.ano) return <>Selecione <strong>Ano</strong> para comeÃ§ar.</>;
+    if (!selected.ano) return <>Selecione <strong>Ano</strong> para começar.</>;
     if (yearDef.hasPolos) return <>Selecione <strong>Polo</strong> para gerar o PDF.</>;
     return <>Selecione <strong>Curso</strong> para gerar o PDF.</>;
   };

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { Bar } from 'react-chartjs-2';
 import {
@@ -61,7 +61,7 @@ ChartJS.register(
 
 export default function MediaDimensaoAnualChart({ data }) {
   const dimensionDescriptions = {
-    D1: 'ORGANIZAÃ‡ÃƒO DIDÃTICO-PEDAGÃ“GICA',
+    D1: 'ORGANIZAÇÃO DIDÁTICO-PEDAGÓGICA',
     D2: 'CORPO DOCENTE E TUTORIAL',
     D3: 'INFRAESTRUTURA',
   };
@@ -135,7 +135,7 @@ export default function MediaDimensaoAnualChart({ data }) {
 
   return (
     <>
-      <h3 className={styles.chartTitle}>MÃ©dia por DimensÃ£o Anual</h3>
+      <h3 className={styles.chartTitle}>Média por Dimensão Anual</h3>
       <div className={styles.chartContainer}>
         <Bar data={chartData} options={options} />
       </div>

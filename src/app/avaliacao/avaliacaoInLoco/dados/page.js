@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import AvaliacaoInLocoFilters from '@/features/avaliacaoInLoco/components/AvaliacaoInLocoFilters';
@@ -55,8 +55,8 @@ function buildGraficoEvolucaoUrl(filters = {}) {
 export default function AvaliacaoInLocoDadosPage() {
   const [activeSubmenu, setActiveSubmenu] = useState('media');
   const tabs = [
-    { key: 'media', label: 'MÃ©dia' },
-    { key: 'grafico-evolucao', label: 'GrÃ¡fico-EvoluÃ§Ã£o' },
+    { key: 'media', label: 'Média' },
+    { key: 'grafico-evolucao', label: 'Gráfico-Evolução' },
   ];
 
   const [selectedFilters, setSelectedFilters] = useState({
@@ -110,7 +110,7 @@ export default function AvaliacaoInLocoDadosPage() {
     Boolean(selectedFilters.campus) &&
     Boolean(selectedFilters.curso);
 
-  // Carregar opÃ§Ãµes iniciais
+  // Carregar opções iniciais
   useEffect(() => {
     const loadInitialFilters = async () => {
       try {
@@ -163,7 +163,7 @@ export default function AvaliacaoInLocoDadosPage() {
     loadUndAcadAndModalidades();
   }, [selectedFilters.ano, selectedFilters.undAcad]);
 
-  // Carregar campi ao selecionar ano, unidade acadÃªmica e modalidade
+  // Carregar campi ao selecionar ano, unidade acadêmica e modalidade
   useEffect(() => {
     if (!selectedFilters.ano || !selectedFilters.undAcad || !selectedFilters.modalidade) {
       setFiltersOptions((prev) => ({
@@ -256,7 +256,7 @@ export default function AvaliacaoInLocoDadosPage() {
           d3: data?.mediasPorDimensao?.d3 ?? [],
         });
       } catch (error) {
-        console.error('Erro ao carregar mÃ©dia das dimensÃµes:', error);
+        console.error('Erro ao carregar média das dimensões:', error);
         setMediaDimensoes({ labels: [], d1: [], d2: [], d3: [] });
       } finally {
         setLoadingMedia(false);
@@ -287,7 +287,7 @@ export default function AvaliacaoInLocoDadosPage() {
           },
         });
       } catch (error) {
-        console.error('Erro ao carregar grÃ¡fico de evoluÃ§Ã£o:', error);
+        console.error('Erro ao carregar gráfico de evolução:', error);
         setGraficoEvolucaoData({
           anos: [],
           series: {},
@@ -312,7 +312,7 @@ export default function AvaliacaoInLocoDadosPage() {
           undAcad: data?.undAcad ?? [],
         }));
       } catch (error) {
-        console.error('Erro ao carregar filtros da evoluÃ§Ã£o:', error);
+        console.error('Erro ao carregar filtros da evolução:', error);
       }
     };
 
@@ -340,7 +340,7 @@ export default function AvaliacaoInLocoDadosPage() {
           cursos: data?.cursos ?? [],
         }));
       } catch (error) {
-        console.error('Erro ao carregar cursos da evoluÃ§Ã£o:', error);
+        console.error('Erro ao carregar cursos da evolução:', error);
       } finally {
         setLoadingEvolucaoCursos(false);
       }
@@ -439,10 +439,10 @@ export default function AvaliacaoInLocoDadosPage() {
 
   const labelOrTodos = (value, fallback) => (value && value !== 'todos' ? value : fallback);
 
-  const mediaChartTitle = `MÃ©dia das dimensÃµes no ano ${labelOrTodos(
+  const mediaChartTitle = `Média das dimensões no ano ${labelOrTodos(
     selectedFilters.ano,
     'Todos os anos'
-  )}, unidade acadÃªmica ${labelOrTodos(
+  )}, unidade acadêmica ${labelOrTodos(
     selectedFilters.undAcad,
     'Todas as unidades'
   )}, modalidade ${labelOrTodos(
@@ -489,7 +489,7 @@ export default function AvaliacaoInLocoDadosPage() {
                 onChange={handleEvolucaoFilterChange}
                 className={styles.filterSelect}
               >
-                <option value="">Todas as unidades acadÃªmicas</option>
+                <option value="">Todas as unidades acadêmicas</option>
                 {(evolucaoFilterOptions.undAcad ?? []).map((unidade, index) => (
                   <option key={`evolucao-und-${unidade}-${index}`} value={unidade}>
                     {unidade}
@@ -539,15 +539,15 @@ export default function AvaliacaoInLocoDadosPage() {
             <section className="inloco-chart-section">
               {!allFiltersSelected ? (
                 <p className="inloco-status-message">
-                  Selecione todos os filtros para visualizar o grÃ¡fico de mÃ©dia das dimensÃµes.
+                  Selecione todos os filtros para visualizar o gráfico de média das dimensões.
                 </p>
               ) : loadingMedia ? (
                 <p className="inloco-status-message">
-                  Carregando mÃ©dia das dimensÃµes...
+                  Carregando média das dimensões...
                 </p>
               ) : !mediaDimensoes.labels.length ? (
                 <p className="inloco-status-message">
-                  NÃ£o hÃ¡ dados para os filtros selecionados.
+                  Não há dados para os filtros selecionados.
                 </p>
               ) : (
                 <MediaDimensoesChart data={mediaDimensoes} title={mediaChartTitle} />
@@ -560,11 +560,11 @@ export default function AvaliacaoInLocoDadosPage() {
               <section className="inloco-chart-section">
                 {loadingEvolucao ? (
                   <p className="inloco-status-message">
-                    Carregando grÃ¡fico de evoluÃ§Ã£o...
+                    Carregando gráfico de evolução...
                   </p>
                 ) : !graficoEvolucaoData.anos?.length ? (
                   <p className="inloco-status-message">
-                    NÃ£o hÃ¡ dados para o grÃ¡fico de evoluÃ§Ã£o.
+                    Não há dados para o gráfico de evolução.
                   </p>
                 ) : (
                   <>

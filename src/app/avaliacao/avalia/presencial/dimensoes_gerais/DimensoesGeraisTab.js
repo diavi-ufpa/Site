@@ -1,4 +1,4 @@
-﻿// DimensoesGeraisTab.js
+// DimensoesGeraisTab.js
 'use client';
 
 import ActivityChart from '@/components/charts/ActivityChart';
@@ -21,11 +21,11 @@ export default function DimensoesGeraisTab({
       }}
     >
       <div className={styles.singleGrid}>
-        {/* Linha 1: MÃ©dias */}
+        {/* Linha 1: Médias */}
         <div id="chart-medias-dimensoes" className={styles.chartContainer}>
           <ActivityChart
             chartData={datasets.discMedias}
-            title="MÃ©dias por dimensÃ£o (Discente)"
+            title="Médias por dimensão (Discente)"
             customOptions={{
               ...disableZoomOptions,
               plugins: {
@@ -40,7 +40,7 @@ export default function DimensoesGeraisTab({
           {dashboardData.docDimMedias ? (
             <ActivityChart
               chartData={datasets.docMedias}
-              title="MÃ©dias por dimensÃ£o (Docente)"
+              title="Médias por dimensão (Docente)"
               customOptions={{
                 ...disableZoomOptions,
                 plugins: {
@@ -50,15 +50,15 @@ export default function DimensoesGeraisTab({
               }}
             />
           ) : (
-            <p>Dados de mÃ©dias por dimensÃ£o (Docente) nÃ£o disponÃ­veis.</p>
+            <p>Dados de médias por dimensão (Docente) não disponíveis.</p>
           )}
         </div>
 
-        {/* Linha 2: ProporÃ§Ãµes */}
+        {/* Linha 2: Proporções */}
         <div id="chart-dimensoes" className={styles.chartContainer}>
           <ActivityChart
             chartData={datasets.discProporcoes}
-            title="ProporÃ§Ãµes de respostas dadas por DimensÃ£o (Discente)"
+            title="Proporções de respostas dadas por Dimensão (Discente)"
             legendPosition="overlayTopRight"
             customOptions={{
               ...disableZoomOptions,
@@ -71,7 +71,7 @@ export default function DimensoesGeraisTab({
           {dashboardData.docDimProporcoes ? (
             <ActivityChart
               chartData={datasets.docProporcoes}
-              title="ProporÃ§Ãµes de respostas dadas por DimensÃ£o (Docente)"
+              title="Proporções de respostas dadas por Dimensão (Docente)"
               legendPosition="overlayTopRight"
               customOptions={{
                 ...disableZoomOptions,
@@ -79,12 +79,12 @@ export default function DimensoesGeraisTab({
               }}
             />
           ) : (
-            <p>Dados de proporÃ§Ãµes por dimensÃ£o (Docente) nÃ£o disponÃ­veis.</p>
+            <p>Dados de proporções por dimensão (Docente) não disponíveis.</p>
           )}
         </div>
       </div>
 
-      {/* ADICIONADO id="chart-boxplot-dimensoes" PARA O PDF ENCONTRAR O GRÃFICO */}
+      {/* ADICIONADO id="chart-boxplot-dimensoes" PARA O PDF ENCONTRAR O GRÁFICO */}
       <div
         id="chart-boxplot-dimensoes"
         className={styles.chartContainer}
@@ -93,15 +93,15 @@ export default function DimensoesGeraisTab({
         {dashboardData.turmaDimBoxplot ? (
           <BoxplotChart
             apiData={dashboardData.turmaDimBoxplot}
-            title="DistribuiÃ§Ã£o das MÃ©dias das AvaliaÃ§Ãµes das Turmas/Docente por DimensÃ£o"
+            title="Distribuição das Médias das Avaliações das Turmas/Docente por Dimensão"
             customOptions={disableZoomOptions}
           />
         ) : (
-          <p>Dados de boxplot (Turmas/Docente por DimensÃ£o) nÃ£o disponÃ­veis.</p>
+          <p>Dados de boxplot (Turmas/Docente por Dimensão) não disponíveis.</p>
         )}
       </div>
 
-      {/* Caixa 2: A tabela em um container separado, para nÃ£o dar sobreposiÃ§Ã£o */}
+      {/* Caixa 2: A tabela em um container separado, para não dar sobreposição */}
       <div
         className={styles.chartContainer}
         style={{ gridColumn: '1 / -1', height: 'auto', padding: '1.5rem' }}
@@ -113,8 +113,8 @@ export default function DimensoesGeraisTab({
             width: '100%',
           }}
         >
-          EstatÃ­sticas Descritivas das MÃ©dias das AvaliaÃ§Ãµes das Turmas/Docentes por
-          DimensÃ£o
+          Estatísticas Descritivas das Médias das Avaliações das Turmas/Docentes por
+          Dimensão
         </h3>
 
         <div style={{ display: 'flex', justifyContent: 'center' }}>

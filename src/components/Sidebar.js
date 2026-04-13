@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -28,7 +28,7 @@ const Sidebar = () => {
     presencialEnabled: true,
   };
 
-  // CORREÃ‡ÃƒO AQUI: presencial precisa estar true
+  // CORREÇÃO AQUI: presencial precisa estar true
   const reportEnabled = {
     ead: true,
     presencial: true,
@@ -170,7 +170,7 @@ const Sidebar = () => {
             <li className={pathname === '/' ? styles.activeParent : ''}>
               <Link href="/" className={styles.menuHeader}>
                 <Home size={18} />
-                <span>PÃ¡gina Inicial</span>
+                <span>Página Inicial</span>
               </Link>
             </li>
 
@@ -180,7 +180,7 @@ const Sidebar = () => {
                 onClick={() => handleMenuClick('avaliacao')}
               >
                 <ClipboardCheck size={18} />
-                <span>AvaliaÃ§Ã£o</span>
+                <span>Avaliação</span>
                 {openMenus.avaliacao ? (
                   <ChevronUp size={16} className={styles.chevron} />
                 ) : (
@@ -208,7 +208,7 @@ const Sidebar = () => {
                           : styles.subMenuItem
                       }
                     >
-                      <Link href="/avaliacao/minhaopiniao">Minha OpiniÃ£o</Link>
+                      <Link href="/avaliacao/minhaopiniao">Minha Opinião</Link>
                     </li>
                   )}
 
@@ -219,7 +219,7 @@ const Sidebar = () => {
                         : styles.subMenuItem
                     }
                   >
-                    <Link href="/avaliacao/avaliacaoInLoco">AvaliaÃ§Ã£o In Loco</Link>
+                    <Link href="/avaliacao/avaliacaoInLoco">Avaliação In Loco</Link>
                   </li>
                 </ul>
               )}
@@ -274,7 +274,7 @@ const Sidebar = () => {
                           }
                         >
                           <Link href="/avaliacao/minhaopiniao/tecnico">
-                            TÃ©cnico
+                            Técnico
                           </Link>
                         </li>
                       </>
@@ -335,13 +335,13 @@ const Sidebar = () => {
             <div className={styles.generateReportContainer}>
               <Link
                 href={reportHref}
-                aria-label="Gerar relatÃ³rio"
+                aria-label="Gerar relatório"
                 className={styles.generateReportBtn}
                 style={activeReportBtnStyle}
                 onClick={() => setIsLoading(true)}
               >
                 <Download size={18} />
-                <span>Gerar relatÃ³rio</span>
+                <span>Gerar relatório</span>
               </Link>
             </div>
           )}

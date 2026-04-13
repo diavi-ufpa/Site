@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -23,7 +23,7 @@ const ActivityChart = ({
   showLegend = true,
   legendPosition = 'side'
 }) => {
-  const isPercentual = title.includes('ProporÃ§Ãµes') || title.includes('Atividades');
+  const isPercentual = title.includes('Proporções') || title.includes('Atividades');
 
   const defaultOptions = {
     responsive: true,
@@ -79,7 +79,7 @@ const ActivityChart = ({
     <div className={styles.chartWrapper}>
       <h2 className={styles.chartTitle}>{title}</h2>
 
-      {/* Ãrea do grÃ¡fico em layout flex com altura controlada */}
+      {/* Área do gráfico em layout flex com altura controlada */}
       <div
         className={styles.chartCanvasWrapper}
         style={{
@@ -90,12 +90,12 @@ const ActivityChart = ({
           height
         }}
       >
-        {/* Canvas ocupa todo o espaÃ§o disponÃ­vel */}
+        {/* Canvas ocupa todo o espaço disponível */}
         <div style={{ position: 'relative', width: '100%', height: '100%' }}>
           <Bar options={finalOptions} data={chartData} />
         </div>
 
-        {/* Legenda ao lado, nunca por cima do grÃ¡fico */}
+        {/* Legenda ao lado, nunca por cima do gráfico */}
         {showLegend && chartData?.datasets?.length > 1 && (
           <div
             className={styles.customLegend}

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import styles from '@/styles/dados.module.css';
@@ -63,7 +63,7 @@ export default function AvaliacaoInLocoFilters({
         >
           <option value="" disabled>
             {hasYearSelected
-              ? 'Selecione a unidade acadÃªmica'
+              ? 'Selecione a unidade acadêmica'
               : 'Selecione o ano primeiro'}
           </option>
           <option value="todos">Todas as Unidades</option>
@@ -85,7 +85,7 @@ export default function AvaliacaoInLocoFilters({
             {!hasYearSelected
               ? 'Selecione o ano primeiro'
               : !hasUndAcadSelected
-                ? 'Selecione a unidade acadÃªmica primeiro'
+                ? 'Selecione a unidade acadêmica primeiro'
                 : 'Selecione a modalidade'}
           </option>
           <option value="todos">Todas as Modalidades</option>
@@ -107,7 +107,7 @@ export default function AvaliacaoInLocoFilters({
             {!hasYearSelected
               ? 'Selecione o ano primeiro'
               : !hasUndAcadSelected
-                ? 'Selecione a unidade acadÃªmica primeiro'
+                ? 'Selecione a unidade acadêmica primeiro'
                 : !hasModalidadeSelected
                   ? 'Selecione a modalidade primeiro'
                   : loadingCampus

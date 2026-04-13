@@ -1,4 +1,4 @@
-﻿import Header from '@/components/ui/Header';
+import Header from '@/components/ui/Header';
 import DiscenteDashboardClient from './DiscenteDashboardClient';
 
 export const dynamic = 'force-dynamic';
@@ -86,7 +86,7 @@ export default async function DiscentePage() {
   return (
     <div>
       <Header
-        title="VisÃ£o Geral do Avalia Presencial"
+        title="Visão Geral do Avalia Presencial"
         date="17 de setembro de 2025"
       />
       <DiscenteDashboardClient

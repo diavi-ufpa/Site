@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { useState, useMemo, useEffect } from 'react';
 import styles from '@/styles/dados.module.css';
 import { Filter, ChevronDown, ChevronUp } from 'lucide-react';
@@ -11,7 +11,7 @@ export default function DiscenteFilters({
   questionMap,
   dimensionMap,
 
-  // ComparaÃ§Ã£o (opcional; sÃ³ o card A usa)
+  // Comparação (opcional; só o card A usa)
   showCompareToggle = false,
   compareEnabled = false,
   onCompareChange = () => {}
@@ -39,7 +39,7 @@ export default function DiscenteFilters({
     return () => { alive = false; };
   }, []);
 
-  const reNaoInformado = /^(nao|nÃ£o)\s*informado$/i;
+  const reNaoInformado = /^(nao|não)\s*informado$/i;
 
   function normalizeNoAccents(str) {
     return String(str || '')
@@ -52,7 +52,7 @@ export default function DiscenteFilters({
 
   function beautifyLabel(raw) {
     const v = raw == null ? '' : String(raw).trim();
-    if (reNaoInformado.test(v)) return 'NÃ£o Informado';
+    if (reNaoInformado.test(v)) return 'Não Informado';
     if (ibgeDict) {
       const norm = normalizeNoAccents(v);
       if (ibgeDict[norm]) return ibgeDict[norm];
@@ -90,7 +90,7 @@ export default function DiscenteFilters({
     return questionMap;
   }, [selectedFilters.dimensao, questionMap, dimensionMap]);
 
-  // Garante consistÃªncia DimensÃ£o -> Pergunta
+  // Garante consistência Dimensão -> Pergunta
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -176,7 +176,7 @@ export default function DiscenteFilters({
           onChange={handleChange}
           className={`${styles.filterSelect} ${styles.filterSelectWide}`}
         >
-          <option value="todas">Todas as DimensÃµes</option>
+          <option value="todas">Todas as Dimensões</option>
           {dimensionMap && Object.keys(dimensionMap).map((dim, i) => (
             <option key={`${dim}-${i}`} value={dim}>
               {dim}
@@ -184,7 +184,7 @@ export default function DiscenteFilters({
           ))}
         </select>
 
-        {/* Linha final: Pergunta + ComparaÃ§Ã£o (lado a lado) */}
+        {/* Linha final: Pergunta + Comparação (lado a lado) */}
         <div className={styles.questionCompareRow}>
           <select
             name="pergunta"
@@ -211,7 +211,7 @@ export default function DiscenteFilters({
                 checked={compareEnabled}
                 onChange={(e) => onCompareChange(e.target.checked)}
               />
-              ComparaÃ§Ã£o
+              Comparação
             </label>
           )}
         </div>

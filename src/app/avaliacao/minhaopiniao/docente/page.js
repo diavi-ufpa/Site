@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useMemo } from 'react';
 import { Users, Building, Loader2 } from 'lucide-react';
@@ -25,7 +25,7 @@ const DEFAULT_FILTERS = {
 };
 
 /* ==========================================================================
-   PARSER ROBUSTO (MÃQUINA DE ESTADO)
+   PARSER ROBUSTO (MÁQUINA DE ESTADO)
    Filtra docentes com mais de 3 respostas nulas (NULL).
    ========================================================================== */
 function parseCSV(text) {
@@ -73,8 +73,8 @@ function parseCSV(text) {
   return dataRows.map(columns => {
     if (columns.length < 40) return null;
 
-    // --- LÃ“GICA DE FILTRAGEM DE NULLS ---
-    // Ãndices 9 a 56 sÃ£o Pergunta_35 a Pergunta_82
+    // --- LÓGICA DE FILTRAGEM DE NULLS ---
+    // Índices 9 a 56 são Pergunta_35 a Pergunta_82
     let nullCount = 0;
     for (let j = 9; j <= 56; j++) {
       const val = columns[j];
@@ -83,7 +83,7 @@ function parseCSV(text) {
       }
     }
 
-    // Se tiver mais de 3 nulls, o docente nÃ£o entra na contagem nem na anÃ¡lise
+    // Se tiver mais de 3 nulls, o docente não entra na contagem nem na análise
     if (nullCount > 3) return null;
 
     const rowObj = {
@@ -116,7 +116,7 @@ function LoadingOverlay({ progress }) {
       <div style={{ width: 'min(350px, 100%)', textAlign: 'center', padding: '2rem' }}>
         <Loader2 style={{ width: '48px', height: '48px', color: '#FF8E29', marginBottom: '1.5rem', animation: 'spin 1s linear infinite' }} />
         <h2 style={{ fontSize: '1.5rem', color: '#1a1a1a', marginBottom: '0.5rem', fontWeight: '700' }}>Carregando Docentes</h2>
-        <p style={{ color: '#666', marginBottom: '2rem', fontSize: '1rem' }}>Sincronizando dados e filtrando inconsistÃªncias...</p>
+        <p style={{ color: '#666', marginBottom: '2rem', fontSize: '1rem' }}>Sincronizando dados e filtrando inconsistências...</p>
         <div style={{ width: '100%', height: '12px', backgroundColor: '#f0f0f0', borderRadius: '10px', overflow: 'hidden', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.1)' }}>
           <div style={{ width: `${progress}%`, height: '100%', backgroundColor: '#FF8E29', transition: 'width 0.4s cubic-bezier(0.1, 0.7, 0.1, 1)' }} />
         </div>
@@ -214,18 +214,18 @@ export default function DocentePage() {
     <div className={styles.container}>
       {loading && <LoadingOverlay progress={progress} />}
 
-      <Header title="AnÃ¡lise de Respostas dos Docentes" subtitle="Dados referentes ao questionÃ¡rio de autoavaliaÃ§Ã£o" />
+      <Header title="Análise de Respostas dos Docentes" subtitle="Dados referentes ao questionário de autoavaliação" />
 
       <div style={{ opacity: loading ? 0 : 1, transition: 'opacity 0.8s ease-in-out', pointerEvents: loading ? 'none' : 'auto' }}>
         
         <div className={`${styles.statsGrid} ${compareEnabled ? styles.statsGridCompare : ''}`}>
           <StatCard title={compareEnabled ? 'Total Participantes (A)' : 'Total de Participantes'} value={filteredDataA.length.toLocaleString('pt-BR')} icon={<Users />} />
-          <StatCard title={compareEnabled ? 'Top LotaÃ§Ã£o (A)' : 'LotaÃ§Ã£o com Mais Participantes'} value={topLotacaoA} icon={<Building />} />
+          <StatCard title={compareEnabled ? 'Top Lotação (A)' : 'Lotação com Mais Participantes'} value={topLotacaoA} icon={<Building />} />
 
           {compareEnabled && (
             <>
               <StatCard title="Total Participantes (B)" value={filteredDataB.length.toLocaleString('pt-BR')} icon={<Users />} />
-              <StatCard title="Top LotaÃ§Ã£o (B)" value={topLotacaoB} icon={<Building />} />
+              <StatCard title="Top Lotação (B)" value={topLotacaoB} icon={<Building />} />
             </>
           )}
         </div>
@@ -296,7 +296,7 @@ function applyFiltersDocente(allData, selectedFilters) {
 function buildDocenteFilterOptions(allData, selectedFilters) {
   if (!Array.isArray(allData) || !allData.length) return { lotacoes: [], cargos: [] };
   
-  const uniq = (key, data) => [...new Set(data.map(r => r[key]))].filter(v => v && v !== 'N/I' && v !== 'NÃƒO INFORMADO').sort();
+  const uniq = (key, data) => [...new Set(data.map(r => r[key]))].filter(v => v && v !== 'N/I' && v !== 'NÃO INFORMADO').sort();
 
   return { 
     lotacoes: uniq('UND_LOTACAO_DOCENTE', allData), 
@@ -308,7 +308,7 @@ function calcTopLotacao(filteredData) {
   if (!filteredData?.length) return 'N/A';
   const counts = filteredData.reduce((acc, r) => { const l = r.UND_LOTACAO_DOCENTE || 'N/I'; acc[l] = (acc[l] || 0) + 1; return acc; }, {});
   const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
-  return `${top[0]} â€” ${top[1].toLocaleString('pt-BR')}`;
+  return `${top[0]} — ${top[1].toLocaleString('pt-BR')}`;
 }
 
 function buildChartsByDimensionDocente(filteredData, selectedFilters, isB = false) {
@@ -337,6 +337,6 @@ function buildChartsByDimensionDocente(filteredData, selectedFilters, isB = fals
           dataPoints.push(Number((scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2))); 
         }
       }
-      return labels.length ? { dimensionName, chartData: { labels, datasets: [{ label: 'MÃ©dia de Respostas', data: dataPoints, backgroundColor: isB ? 'rgba(54, 162, 235, 0.8)' : 'rgba(255, 142, 41, 0.8)', borderColor: isB ? 'rgba(54, 162, 235, 1)' : 'rgba(255, 142, 41, 1)', borderWidth: 1 }] } } : null;
+      return labels.length ? { dimensionName, chartData: { labels, datasets: [{ label: 'Média de Respostas', data: dataPoints, backgroundColor: isB ? 'rgba(54, 162, 235, 0.8)' : 'rgba(255, 142, 41, 0.8)', borderColor: isB ? 'rgba(54, 162, 235, 1)' : 'rgba(255, 142, 41, 1)', borderWidth: 1 }] } } : null;
     }).filter(Boolean);
 }

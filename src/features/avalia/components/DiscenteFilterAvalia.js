@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import styles from '@/styles/dados.module.css';
@@ -105,7 +105,7 @@ export default function DiscenteFilters({
             onChange={onFilterChange}
             className={styles.filterSelect}
           >
-            <option value="">Todas as DimensÃµes</option>
+            <option value="">Todas as Dimensões</option>
             {(dimensoes ?? []).map((d) => (
               <option key={`dim-${d.value}`} value={d.value}>
                 {d.label}

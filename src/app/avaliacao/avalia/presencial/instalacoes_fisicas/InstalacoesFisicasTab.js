@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import ActivityChart from '@/components/charts/ActivityChart';
 import BoxplotChart from '@/components/charts/BoxplotChart';
@@ -27,7 +27,7 @@ export default function InstalacoesFisicasTab({
     Min: 'Min',
     Q1: 'Q1',
     Mediana: 'Mediana',
-    Media: 'MÃ©dia',
+    Media: 'Média',
     Q3: 'Q3',
     Max: 'Max',
   };
@@ -44,7 +44,7 @@ export default function InstalacoesFisicasTab({
         className={styles.dashboardLayout}
         style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}
       >
-        {/* GrÃ¡ficos de MÃ©dias */}
+        {/* Gráficos de Médias */}
         <div
           style={{
             display: 'grid',
@@ -56,7 +56,7 @@ export default function InstalacoesFisicasTab({
             {itensInstalacoesMed ? (
               <ActivityChart
                 chartData={formatMediasItensChartData(itensInstalacoesMed)}
-                title="MÃ©dias â€” Itens de InstalaÃ§Ãµes FÃ­sicas (Discente)"
+                title="Médias — Itens de Instalações Físicas (Discente)"
                 customOptions={{
                   ...disableZoomOptions,
                   plugins: {
@@ -67,7 +67,7 @@ export default function InstalacoesFisicasTab({
                 }}
               />
             ) : (
-              <p>Dados nÃ£o disponÃ­veis.</p>
+              <p>Dados não disponíveis.</p>
             )}
           </div>
 
@@ -75,7 +75,7 @@ export default function InstalacoesFisicasTab({
             {itensInstalacoesMedDoc ? (
               <ActivityChart
                 chartData={formatMediasItensChartData(itensInstalacoesMedDoc)}
-                title="MÃ©dias â€” Itens de InstalaÃ§Ãµes FÃ­sicas (Docente)"
+                title="Médias — Itens de Instalações Físicas (Docente)"
                 customOptions={{
                   ...disableZoomOptions,
                   plugins: {
@@ -86,17 +86,17 @@ export default function InstalacoesFisicasTab({
                 }}
               />
             ) : (
-              <p>MÃ©dias (Docente) nÃ£o disponÃ­veis.</p>
+              <p>Médias (Docente) não disponíveis.</p>
             )}
           </div>
         </div>
 
-        {/* GrÃ¡ficos de ProporÃ§Ãµes */}
+        {/* Gráficos de Proporções */}
         <div className={styles.chartContainer}>
           {itensInstalacoesProp ? (
             <ActivityChart
               chartData={formatProporcoesItensChartData(itensInstalacoesProp)}
-              title="ProporÃ§Ãµes â€” Itens de InstalaÃ§Ãµes FÃ­sicas (Discente)"
+              title="Proporções — Itens de Instalações Físicas (Discente)"
               customOptions={{
                 ...disableZoomOptions,
                 plugins: {
@@ -105,7 +105,7 @@ export default function InstalacoesFisicasTab({
               }}
             />
           ) : (
-            <p>Dados nÃ£o disponÃ­veis.</p>
+            <p>Dados não disponíveis.</p>
           )}
         </div>
 
@@ -113,7 +113,7 @@ export default function InstalacoesFisicasTab({
           {itensInstalacoesPropDoc ? (
             <ActivityChart
               chartData={formatProporcoesItensChartData(itensInstalacoesPropDoc)}
-              title="ProporÃ§Ãµes â€” Itens de InstalaÃ§Ãµes FÃ­sicas (Docente)"
+              title="Proporções — Itens de Instalações Físicas (Docente)"
               customOptions={{
                 ...disableZoomOptions,
                 plugins: {
@@ -122,7 +122,7 @@ export default function InstalacoesFisicasTab({
               }}
             />
           ) : (
-            <p>ProporÃ§Ãµes (Docente) nÃ£o disponÃ­veis.</p>
+            <p>Proporções (Docente) não disponíveis.</p>
           )}
         </div>
 
@@ -134,15 +134,15 @@ export default function InstalacoesFisicasTab({
           {itensInstalacoesBoxDisc ? (
             <BoxplotChart
               apiData={itensInstalacoesBoxDisc}
-              title="Boxplot â€” DistribuiÃ§Ã£o das MÃ©dias por Item (InstalaÃ§Ãµes FÃ­sicas â€¢ Discente)"
+              title="Boxplot — Distribuição das Médias por Item (Instalações Físicas • Discente)"
               customOptions={disableZoomOptions}
             />
           ) : (
-            <p>Boxplot (Discente) nÃ£o disponÃ­vel.</p>
+            <p>Boxplot (Discente) não disponível.</p>
           )}
         </div>
 
-        {/* CAIXA 2: A tabela em um container separado (mesma lÃ³gica de DimensoesGeraisTab) */}
+        {/* CAIXA 2: A tabela em um container separado (mesma lógica de DimensoesGeraisTab) */}
         <div 
           className={styles.chartContainer} 
           style={{ gridColumn: '1 / -1', height: 'auto', padding: '1.5rem' }}
@@ -155,7 +155,7 @@ export default function InstalacoesFisicasTab({
               fontSize: '1rem',
             }}
           >
-            EstatÃ­sticas Descritivas das MÃ©dias por Item (InstalaÃ§Ãµes FÃ­sicas â€¢ Discente)
+            Estatísticas Descritivas das Médias por Item (Instalações Físicas • Discente)
           </h3>
 
           <div style={{ display: 'flex', justifyContent: 'center' }}>
@@ -191,7 +191,7 @@ export default function InstalacoesFisicasTab({
                             zIndex: 3,
                           }}
                         >
-                          EstatÃ­stica
+                          Estatística
                         </th>
                         {itens.map((it, idx) => (
                           <th
@@ -250,7 +250,7 @@ export default function InstalacoesFisicasTab({
                 </div>
               ) : (
                 <p style={{ textAlign: 'center' }}>
-                  Tabela descritiva nÃ£o disponÃ­vel.
+                  Tabela descritiva não disponível.
                 </p>
               )}
             </div>

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { Line } from 'react-chartjs-2';
 import {
@@ -25,7 +25,7 @@ ChartJS.register(
 
 export default function GraficoEvolucaoLineChart({ data }) {
   const dimensionDescriptions = {
-    D1: 'ORGANIZAÃ‡ÃƒO DIDÃTICO-PEDAGÃ“GICA',
+    D1: 'ORGANIZAÇÃO DIDÁTICO-PEDAGÓGICA',
     D2: 'CORPO DOCENTE E TUTORIAL',
     D3: 'INFRAESTRUTURA',
   };
@@ -135,7 +135,7 @@ export default function GraficoEvolucaoLineChart({ data }) {
 
   return (
     <>
-      <h3 className={styles.chartTitle}>MÃ©dia anual de D1, D2, D3, CC e AVAL</h3>
+      <h3 className={styles.chartTitle}>Média anual de D1, D2, D3, CC e AVAL</h3>
       <div className={styles.chartContainer}>
         <Line data={chartData} options={options} />
       </div>

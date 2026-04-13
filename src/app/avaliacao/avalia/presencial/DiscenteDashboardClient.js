@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useMemo } from 'react';
 import DiscenteFilters from '@/features/avalia/components/DiscenteFilterAvalia';
@@ -7,7 +7,7 @@ import LoadingOverlay from '@/components/ui/LoadingOverlay';
 import styles from '../../../../styles/dados.module.css';
 import { Users, TrendingUp, TrendingDown } from 'lucide-react';
 
-// âœ… Abas modularizadas
+// ✅ Abas modularizadas
 import DimensoesGeraisTab from './dimensoes_gerais/DimensoesGeraisTab';
 import AutoavaliacaoTab from './autoavaliacao_discente/AutoavaliacaoTab';
 import AtividadesAcademicasTab from './atividades_academicas/AtividadesAcademicasTab';
@@ -67,7 +67,7 @@ const makeCourseFilters = (ano, campus) => {
 };
 
 // ======================================================
-// LIMITADOR GLOBAL DE CONCORRÃŠNCIA (2â€“3 simultÃ¢neos)
+// LIMITADOR GLOBAL DE CONCORRÊNCIA (2–3 simultâneos)
 // ======================================================
 const MAX_CONCURRENT_REQUESTS = 3;
 
@@ -290,7 +290,7 @@ function formatMediasChartData(apiData) {
     labels: apiData.map((d) => wrapLabel(d.dimensao)),
     datasets: [
       {
-        label: 'MÃ©dia',
+        label: 'Média',
         data: apiData.map((d) => d.media),
         backgroundColor: 'rgba(40,143,180,.7)',
       },
@@ -304,7 +304,7 @@ function formatAtividadesChartData(apiData) {
     labels: apiData.map((d) => wrapLabel(d.atividade, 25)),
     datasets: [
       {
-        label: 'Percentual de ParticipaÃ§Ã£o',
+        label: 'Percentual de Participação',
         data: apiData.map((d) => d.percentual),
         backgroundColor: 'rgba(40,143,180,.7)',
       },
@@ -343,7 +343,7 @@ function formatMediasItensChartData(apiData) {
     labels: sorted.map((d) => wrapLabel(formatItemCodeLabel(d.item), 25)),
     datasets: [
       {
-        label: 'MÃ©dia',
+        label: 'Média',
         data: sorted.map((d) => d.media),
         backgroundColor: 'rgba(40,143,180,.7)',
       },
@@ -387,7 +387,7 @@ function formatMediasSubdimChartData(apiData) {
     labels: sorted.map((d) => wrapLabel(d.subdimensao)),
     datasets: [
       {
-        label: 'MÃ©dia',
+        label: 'Média',
         data: sorted.map((d) => Number(Number(d.media ?? 0).toFixed(2))),
         backgroundColor: 'rgba(40,143,180,.7)',
       },
@@ -521,7 +521,7 @@ function renderDescritivasTable(apiData) {
   if (!rows.length) {
     return (
       <p style={{ textAlign: 'center' }}>
-        EstatÃ­sticas descritivas nÃ£o disponÃ­veis.
+        Estatísticas descritivas não disponíveis.
       </p>
     );
   }
@@ -578,10 +578,10 @@ function renderDescritivasTable(apiData) {
 
     const stats = [
       { label: 'Min', keys: ['Min', 'min', 'MIN'] },
-      { label: '1Âº Q.', keys: ['Q1', 'q1', '1st Qu.', '1st Qu', '1st_qu', '1st_qu.'] },
+      { label: '1º Q.', keys: ['Q1', 'q1', '1st Qu.', '1st Qu', '1st_qu', '1st_qu.'] },
       { label: 'Mediana', keys: ['Mediana', 'mediana', 'Median', 'median'] },
-      { label: 'MÃ©dia', keys: ['Media', 'media', 'Mean', 'mean'] },
-      { label: '3Âº Q.', keys: ['Q3', 'q3', '3rd Qu.', '3rd Qu', '3rd_qu', '3rd_qu.'] },
+      { label: 'Média', keys: ['Media', 'media', 'Mean', 'mean'] },
+      { label: '3º Q.', keys: ['Q3', 'q3', '3rd Qu.', '3rd Qu', '3rd_qu', '3rd_qu.'] },
       { label: 'Max', keys: ['Max', 'max', 'MAX'] },
     ];
 
@@ -606,7 +606,7 @@ function renderDescritivasTable(apiData) {
                   fontWeight: 600,
                 }}
               >
-                EstatÃ­stica
+                Estatística
               </th>
               {items.map((it) => (
                 <th
@@ -665,7 +665,7 @@ function renderDescritivasTable(apiData) {
 
   const keys = Object.keys(rows[0] || {});
   const preferredOrder = [
-    'EstatÃ­stica',
+    'Estatística',
     'Estatistica',
     'estatistica',
     'Estatistica.',
@@ -791,7 +791,7 @@ function RankingDimensaoSection({ title, description, groups = [] }) {
         const entityKey = group.entityKey ?? 'curso';
         const entityLabel = group.entityLabel ?? 'Curso';
         const valueKey = group.valueKey ?? 'media';
-        const valueLabel = group.valueLabel ?? 'MÃ©dia';
+        const valueLabel = group.valueLabel ?? 'Média';
 
         return (
           <div
@@ -809,7 +809,7 @@ function RankingDimensaoSection({ title, description, groups = [] }) {
             </h3>
 
             {!rows.length ? (
-              <p style={{ margin: 0 }}>Nenhum ranking disponÃ­vel.</p>
+              <p style={{ margin: 0 }}>Nenhum ranking disponível.</p>
             ) : (
               <table
                 style={{
@@ -881,7 +881,7 @@ function RankingDimensaoSection({ title, description, groups = [] }) {
                           borderBottom: '1px solid rgba(0,0,0,0.06)',
                         }}
                       >
-                        {row?.[entityKey] ?? 'â€”'}
+                        {row?.[entityKey] ?? '—'}
                       </td>
                       <td
                         style={{
@@ -924,10 +924,10 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
 
   const [dynamicFilters, setDynamicFilters] = useState({
     dimensoes: [
-      { value: '1', label: 'DimensÃ£o 1' },
-      { value: '2', label: 'DimensÃ£o 2' },
-      { value: '3', label: 'DimensÃ£o 3' },
-      { value: '4', label: 'DimensÃ£o 4' },
+      { value: '1', label: 'Dimensão 1' },
+      { value: '2', label: 'Dimensão 2' },
+      { value: '3', label: 'Dimensão 3' },
+      { value: '4', label: 'Dimensão 4' },
     ],
     anos: filtersOptions?.anos ?? [],
     campus: filtersOptions?.campus ?? [],
@@ -1008,10 +1008,10 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
 
         setDynamicFilters((prev) => ({
           dimensoes: prev?.dimensoes ?? [
-            { value: '1', label: 'DimensÃ£o 1' },
-            { value: '2', label: 'DimensÃ£o 2' },
-            { value: '3', label: 'DimensÃ£o 3' },
-            { value: '4', label: 'DimensÃ£o 4' },
+            { value: '1', label: 'Dimensão 1' },
+            { value: '2', label: 'Dimensão 2' },
+            { value: '3', label: 'Dimensão 3' },
+            { value: '4', label: 'Dimensão 4' },
           ],
           anos: data?.anos ?? [],
           campus: [],
@@ -1057,10 +1057,10 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
 
         setDynamicFilters((prev) => ({
           dimensoes: prev?.dimensoes ?? [
-            { value: '1', label: 'DimensÃ£o 1' },
-            { value: '2', label: 'DimensÃ£o 2' },
-            { value: '3', label: 'DimensÃ£o 3' },
-            { value: '4', label: 'DimensÃ£o 4' },
+            { value: '1', label: 'Dimensão 1' },
+            { value: '2', label: 'Dimensão 2' },
+            { value: '3', label: 'Dimensão 3' },
+            { value: '4', label: 'Dimensão 4' },
           ],
           anos: prev?.anos ?? filtersOptions?.anos ?? [],
           campus: data?.campus ?? [],
@@ -1331,24 +1331,24 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
           ] = await Promise.all([
             pFetch(
               make('/discente/autoavaliacao/itens/proporcoes', selectedFilters),
-              'Falha (AutoavaliaÃ§Ã£o proporÃ§Ãµes)'
+              'Falha (Autoavaliação proporções)'
             ),
             pFetch(
               make('/discente/autoavaliacao/itens/medias', selectedFilters),
-              'Falha (AutoavaliaÃ§Ã£o mÃ©dias)'
+              'Falha (Autoavaliação médias)'
             ),
             pFetch(
               make('/discente/autoavaliacao/itens/boxplot', selectedFilters),
-              'Falha (AutoavaliaÃ§Ã£o boxplot)'
+              'Falha (Autoavaliação boxplot)'
             ),
 
             pFetch(
               make('/discente/acaodocente/subdimensoes/proporcoes', selectedFilters),
-              'Falha (AÃ§Ã£o Docente subdim proporÃ§Ãµes)'
+              'Falha (Ação Docente subdim proporções)'
             ),
             pFetch(
               make('/discente/acaodocente/subdimensoes/medias', selectedFilters),
-              'Falha (AÃ§Ã£o Docente subdim mÃ©dias)'
+              'Falha (Ação Docente subdim médias)'
             ),
             pFetchOpt(
               make('/discente/acaodocente/subdimensoes/boxplot', selectedFilters)
@@ -1356,24 +1356,24 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
 
             pFetch(
               make('/docente/autoavaliacao/subdimensoes/proporcoes', selectedFilters),
-              'Falha (AÃ§Ã£o Docente docente proporÃ§Ãµes)'
+              'Falha (Ação Docente docente proporções)'
             ),
             pFetch(
               make('/docente/autoavaliacao/subdimensoes/medias', selectedFilters),
-              'Falha (AÃ§Ã£o Docente docente mÃ©dias)'
+              'Falha (Ação Docente docente médias)'
             ),
             pFetch(
               make('/docente/autoavaliacao/subdimensoes/boxplot', selectedFilters),
-              'Falha (AÃ§Ã£o Docente docente boxplot)'
+              'Falha (Ação Docente docente boxplot)'
             ),
 
             pFetch(
               make('/discente/atitudeprofissional/itens/proporcoes', selectedFilters),
-              'Falha (Atitude proporÃ§Ãµes)'
+              'Falha (Atitude proporções)'
             ),
             pFetch(
               make('/discente/atitudeprofissional/itens/medias', selectedFilters),
-              'Falha (Atitude mÃ©dias)'
+              'Falha (Atitude médias)'
             ),
             pFetch(
               make('/discente/atitudeprofissional/itens/boxplot', selectedFilters),
@@ -1382,24 +1382,24 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
 
             pFetch(
               make('/discente/gestaodidatica/itens/proporcoes', selectedFilters),
-              'Falha (GestÃ£o proporÃ§Ãµes)'
+              'Falha (Gestão proporções)'
             ),
             pFetch(
               make('/discente/gestaodidatica/itens/medias', selectedFilters),
-              'Falha (GestÃ£o mÃ©dias)'
+              'Falha (Gestão médias)'
             ),
             pFetch(
               make('/discente/gestaodidatica/itens/boxplot', selectedFilters),
-              'Falha (GestÃ£o boxplot)'
+              'Falha (Gestão boxplot)'
             ),
 
             pFetch(
               make('/discente/processoavaliativo/itens/proporcoes', selectedFilters),
-              'Falha (Processo proporÃ§Ãµes)'
+              'Falha (Processo proporções)'
             ),
             pFetch(
               make('/discente/processoavaliativo/itens/medias', selectedFilters),
-              'Falha (Processo mÃ©dias)'
+              'Falha (Processo médias)'
             ),
             pFetch(
               make('/discente/processoavaliativo/itens/boxplot', selectedFilters),
@@ -1408,15 +1408,15 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
 
             pFetch(
               make('/discente/instalacoes/itens/proporcoes', selectedFilters),
-              'Falha (InstalaÃ§Ãµes proporÃ§Ãµes)'
+              'Falha (Instalações proporções)'
             ),
             pFetch(
               make('/discente/instalacoes/itens/medias', selectedFilters),
-              'Falha (InstalaÃ§Ãµes mÃ©dias)'
+              'Falha (Instalações médias)'
             ),
             pFetch(
               make('/discente/instalacoes/itens/boxplot', selectedFilters),
-              'Falha (InstalaÃ§Ãµes boxplot)'
+              'Falha (Instalações boxplot)'
             ),
           ]);
 
@@ -1475,27 +1475,27 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
           ] = await Promise.all([
             pFetch(
               make('/docente/avaliacaoturma/itens/medias', selectedFilters),
-              'Falha (turma mÃ©dias)'
+              'Falha (turma médias)'
             ),
             pFetch(
               make('/docente/avaliacaoturma/itens/proporcoes', selectedFilters),
-              'Falha (turma proporÃ§Ãµes)'
+              'Falha (turma proporções)'
             ),
             pFetch(
               make('/docente_base/autoavaliacao/subdimensoes/medias', selectedFilters),
-              'Falha (subdim mÃ©dias)'
+              'Falha (subdim médias)'
             ),
             pFetch(
               make('/docente_base/autoavaliacao/subdimensoes/proporcoes', selectedFilters),
-              'Falha (subdim proporÃ§Ãµes)'
+              'Falha (subdim proporções)'
             ),
             pFetch(
               make('/docente/dimensoes/medias', selectedFilters),
-              'Falha (dim mÃ©dias)'
+              'Falha (dim médias)'
             ),
             pFetch(
               make('/docente/dimensoes/proporcoes', selectedFilters),
-              'Falha (dim proporÃ§Ãµes)'
+              'Falha (dim proporções)'
             ),
 
             pFetch(
@@ -1509,11 +1509,11 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
 
             pFetch(
               make('/docente/gestaodidatica/itens/proporcoes', selectedFilters),
-              'Falha (GestÃ£o docente prop)'
+              'Falha (Gestão docente prop)'
             ),
             pFetch(
               make('/docente/gestaodidatica/itens/medias', selectedFilters),
-              'Falha (GestÃ£o docente med)'
+              'Falha (Gestão docente med)'
             ),
 
             pFetch(
@@ -1527,11 +1527,11 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
 
             pFetch(
               make('/docente/instalacoes/itens/medias', selectedFilters),
-              'Falha (InstalaÃ§Ãµes docente med)'
+              'Falha (Instalações docente med)'
             ),
             pFetch(
               make('/docente/instalacoes/itens/proporcoes', selectedFilters),
-              'Falha (InstalaÃ§Ãµes docente prop)'
+              'Falha (Instalações docente prop)'
             ),
           ]);
 
@@ -1552,23 +1552,23 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
           const [medItens, propItens, boxDisc, medDoc, propDoc] = await Promise.all([
             pFetch(
               make('/discente/instalacoes/itens/medias', selectedFilters),
-              'Falha ao buscar instalaÃ§Ãµes (discente mÃ©dias)'
+              'Falha ao buscar instalações (discente médias)'
             ),
             pFetch(
               make('/discente/instalacoes/itens/proporcoes', selectedFilters),
-              'Falha ao buscar instalaÃ§Ãµes (discente proporÃ§Ãµes)'
+              'Falha ao buscar instalações (discente proporções)'
             ),
             pFetch(
               make('/discente/instalacoes/itens/boxplot', selectedFilters),
-              'Falha ao buscar instalaÃ§Ãµes (discente boxplot)'
+              'Falha ao buscar instalações (discente boxplot)'
             ),
             pFetch(
               make('/docente/instalacoes/itens/medias', selectedFilters),
-              'Falha ao buscar instalaÃ§Ãµes (docente mÃ©dias)'
+              'Falha ao buscar instalações (docente médias)'
             ),
             pFetch(
               make('/docente/instalacoes/itens/proporcoes', selectedFilters),
-              'Falha ao buscar instalaÃ§Ãµes (docente proporÃ§Ãµes)'
+              'Falha ao buscar instalações (docente proporções)'
             ),
           ]);
 
@@ -1732,11 +1732,11 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
 
   const tabs = useMemo(
     () => [
-      { key: 'dimensoes', label: 'DimensÃµes Gerais' },
-      { key: 'autoavaliacao', label: 'AutoavaliaÃ§Ã£o Discente' },
-      { key: 'base_docente', label: 'AvaliaÃ§Ã£o da AÃ§Ã£o Docente' },
-      { key: 'instalacoes', label: 'InstalaÃ§Ãµes FÃ­sicas' },
-      { key: 'atividades', label: 'Atividades AcadÃªmicas' },
+      { key: 'dimensoes', label: 'Dimensões Gerais' },
+      { key: 'autoavaliacao', label: 'Autoavaliação Discente' },
+      { key: 'base_docente', label: 'Avaliação da Ação Docente' },
+      { key: 'instalacoes', label: 'Instalações Físicas' },
+      { key: 'atividades', label: 'Atividades Acadêmicas' },
     ],
     []
   );
@@ -1794,58 +1794,58 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
 
   const xTicksNoRot = { maxRotation: 0, minRotation: 0, autoSkip: false };
   const missingFiltersMessage = !hasSelectedYear
-    ? 'Selecione o ano para mostrar os grÃ¡ficos e estatÃ­sticas.'
+    ? 'Selecione o ano para mostrar os gráficos e estatísticas.'
     : !hasSelectedCampus
-      ? 'Selecione o campus para mostrar os grÃ¡ficos e estatÃ­sticas.'
-      : 'Selecione o curso para mostrar os grÃ¡ficos e estatÃ­sticas.';
+      ? 'Selecione o campus para mostrar os gráficos e estatísticas.'
+      : 'Selecione o curso para mostrar os gráficos e estatísticas.';
 
   const rankingConfig = {
     dimensoes: {
-      title: 'Ranking dos melhores cursos â€” DimensÃµes Gerais',
+      title: 'Ranking dos melhores cursos — Dimensões Gerais',
       description:
-        'Mostra a mÃ©dia por curso nas dimensÃµes gerais, considerando os filtros selecionados.',
+        'Mostra a média por curso nas dimensões gerais, considerando os filtros selecionados.',
       groups: [
         {
           key: 'autoavaliacao_discente',
-          title: 'AutoavaliaÃ§Ã£o Discente',
+          title: 'Autoavaliação Discente',
           rows: rankingData?.dimensoes?.autoavaliacao_discente ?? [],
         },
         {
           key: 'acao_docente_discente',
-          title: 'AÃ§Ã£o Docente (Discente)',
+          title: 'Ação Docente (Discente)',
           rows: rankingData?.dimensoes?.acao_docente_discente ?? [],
         },
         {
           key: 'instalacoes_discente',
-          title: 'InstalaÃ§Ãµes FÃ­sicas (Discente)',
+          title: 'Instalações Físicas (Discente)',
           rows: rankingData?.dimensoes?.instalacoes_discente ?? [],
         },
         {
           key: 'avaliacao_turma_docente',
-          title: 'AvaliaÃ§Ã£o da Turma (Docente)',
+          title: 'Avaliação da Turma (Docente)',
           rows: rankingData?.dimensoes?.avaliacao_turma_docente ?? [],
         },
         {
           key: 'autoavaliacao_acao_docente',
-          title: 'AutoavaliaÃ§Ã£o da AÃ§Ã£o Docente',
+          title: 'Autoavaliação da Ação Docente',
           rows: rankingData?.dimensoes?.autoavaliacao_acao_docente ?? [],
         },
         {
           key: 'instalacoes_docente',
-          title: 'InstalaÃ§Ãµes FÃ­sicas (Docente)',
+          title: 'Instalações Físicas (Docente)',
           rows: rankingData?.dimensoes?.instalacoes_docente ?? [],
         },
       ],
     },
 
     autoavaliacao: {
-      title: 'Ranking dos melhores cursos â€” AutoavaliaÃ§Ã£o Discente',
+      title: 'Ranking dos melhores cursos — Autoavaliação Discente',
       description:
-        'Mostra a mÃ©dia por curso na autoavaliaÃ§Ã£o discente e nas subdimensÃµes relacionadas.',
+        'Mostra a média por curso na autoavaliação discente e nas subdimensões relacionadas.',
       groups: [
         {
           key: 'autoavaliacao_discente',
-          title: 'AutoavaliaÃ§Ã£o Discente',
+          title: 'Autoavaliação Discente',
           rows: rankingData?.autoavaliacao?.autoavaliacao_discente ?? [],
         },
         {
@@ -1855,7 +1855,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
         },
         {
           key: 'gestao_didatica',
-          title: 'GestÃ£o DidÃ¡tica',
+          title: 'Gestão Didática',
           rows: rankingData?.autoavaliacao?.gestao_didatica ?? [],
         },
         {
@@ -1867,18 +1867,18 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
     },
 
     base_docente: {
-      title: 'Ranking dos melhores cursos â€” AvaliaÃ§Ã£o da AÃ§Ã£o Docente',
+      title: 'Ranking dos melhores cursos — Avaliação da Ação Docente',
       description:
-        'Mostra a mÃ©dia por curso na avaliaÃ§Ã£o da aÃ§Ã£o docente e nas subdimensÃµes docentes.',
+        'Mostra a média por curso na avaliação da ação docente e nas subdimensões docentes.',
       groups: [
         {
           key: 'avaliacao_turma_docente',
-          title: 'AvaliaÃ§Ã£o da Turma',
+          title: 'Avaliação da Turma',
           rows: rankingData?.base_docente?.avaliacao_turma_docente ?? [],
         },
         {
           key: 'autoavaliacao_acao_docente',
-          title: 'AutoavaliaÃ§Ã£o da AÃ§Ã£o Docente',
+          title: 'Autoavaliação da Ação Docente',
           rows: rankingData?.base_docente?.autoavaliacao_acao_docente ?? [],
         },
         {
@@ -1888,7 +1888,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
         },
         {
           key: 'gestao_didatica_docente',
-          title: 'GestÃ£o DidÃ¡tica',
+          title: 'Gestão Didática',
           rows: rankingData?.base_docente?.gestao_didatica_docente ?? [],
         },
         {
@@ -1900,41 +1900,41 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
     },
 
     instalacoes: {
-      title: 'Ranking dos melhores cursos â€” InstalaÃ§Ãµes FÃ­sicas',
+      title: 'Ranking dos melhores cursos — Instalações Físicas',
       description:
-        'Mostra a mÃ©dia por curso nas avaliaÃ§Ãµes de instalaÃ§Ãµes fÃ­sicas.',
+        'Mostra a média por curso nas avaliações de instalações físicas.',
       groups: [
         {
           key: 'instalacoes_discente',
-          title: 'InstalaÃ§Ãµes FÃ­sicas (Discente)',
+          title: 'Instalações Físicas (Discente)',
           rows: rankingData?.instalacoes?.instalacoes_discente ?? [],
         },
         {
           key: 'instalacoes_docente',
-          title: 'InstalaÃ§Ãµes FÃ­sicas (Docente)',
+          title: 'Instalações Físicas (Docente)',
           rows: rankingData?.instalacoes?.instalacoes_docente ?? [],
         },
       ],
     },
 
     atividades: {
-      title: 'Ranking dos cursos â€” Atividades AcadÃªmicas',
+      title: 'Ranking dos cursos — Atividades Acadêmicas',
       description:
-        'Mostra o percentual mÃ©dio de participaÃ§Ã£o por curso nas atividades acadÃªmicas.',
+        'Mostra o percentual médio de participação por curso nas atividades acadêmicas.',
       groups: [
         {
           key: 'atividades_discente',
-          title: 'Atividades AcadÃªmicas (Discente)',
+          title: 'Atividades Acadêmicas (Discente)',
           rows: rankingData?.atividades?.atividades_discente ?? [],
           valueKey: 'percentual',
-          valueLabel: 'Percentual mÃ©dio (%)',
+          valueLabel: 'Percentual médio (%)',
         },
         {
           key: 'atividades_docente',
-          title: 'Atividades AcadÃªmicas (Docente)',
+          title: 'Atividades Acadêmicas (Docente)',
           rows: rankingData?.atividades?.atividades_docente ?? [],
           valueKey: 'percentual',
-          valueLabel: 'Percentual mÃ©dio (%)',
+          valueLabel: 'Percentual médio (%)',
         },
       ],
     },
@@ -2036,7 +2036,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
                 <StatCard
                   title="Campus Melhor Avaliado"
                   value={hasRequiredFilters ? bestCampus?.campus ?? 'N/D' : 'N/D'}
-                  subtitle={`MÃ©dia: ${
+                  subtitle={`Média: ${
                     hasRequiredFilters &&
                     bestCampus?.media !== null &&
                     bestCampus?.media !== undefined
@@ -2049,7 +2049,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
                 <StatCard
                   title="Campus Pior Avaliado"
                   value={hasRequiredFilters ? worstCampus?.campus ?? 'N/D' : 'N/D'}
-                  subtitle={`MÃ©dia: ${
+                  subtitle={`Média: ${
                     hasRequiredFilters &&
                     worstCampus?.media !== null &&
                     worstCampus?.media !== undefined

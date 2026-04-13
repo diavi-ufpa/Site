@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -28,8 +28,8 @@ function sanitizeList(list = []) {
     if (!v) return true;
     if (v === 'todos') return true;
     if (/^qual\b/i.test(v)) return true;
-    if (v === '-- / 0' || v === '--/0' || v === '--' || v === '-' || v === 'â€”' || v === '0') return true;
-    if (/^[\sâ€“â€”\-_/]*0?\s*$/.test(v)) return true;
+    if (v === '-- / 0' || v === '--/0' || v === '--' || v === '-' || v === '—' || v === '0') return true;
+    if (/^[\s–—\-_/]*0?\s*$/.test(v)) return true;
     if (/^--/.test(v) || /\/\s*0$/.test(v)) return true;
 
     if (!hasLetters(v) && !/^\d{2,4}$/.test(v)) return true;
@@ -59,10 +59,10 @@ function getQHeadersFromRows2023(rows) {
   return Array.from({ length: max }, (_, i) => `${i + 1})`);
 }
 
-/* ================== helpers de identificaÃ§Ã£o p/ contagem ================== */
+/* ================== helpers de identificação p/ contagem ================== */
 function getIdKeyForYear(year, sampleRow) {
   if (year === '2025') {
-    if (sampleRow && 'Nome de usuÃ¡rio' in sampleRow) return 'Nome de usuÃ¡rio';
+    if (sampleRow && 'Nome de usuário' in sampleRow) return 'Nome de usuário';
   }
   if (sampleRow && 'Carimbo de data/hora' in sampleRow) return 'Carimbo de data/hora';
   return null;
@@ -80,7 +80,7 @@ function countUniqueRespondentsByYear(year, rows) {
   return set.size || rows.length;
 }
 
-/* ============ helpers para boxplot e estatÃ­sticas ============ */
+/* ============ helpers para boxplot e estatísticas ============ */
 function percentile(sorted, p) {
   if (!sorted.length) return 0;
   const pos = (sorted.length - 1) * p;
@@ -223,12 +223,12 @@ function getGroupKeyForEad(row = {}, year = '2025', idx = 0) {
 
   const curso =
     year === '2025'
-      ? (row['Qual Ã© o seu Curso?'] ?? '')
-      : (row['Qual Ã© o seu Curso?'] ?? row['curso'] ?? '');
+      ? (row['Qual é o seu Curso?'] ?? '')
+      : (row['Qual é o seu Curso?'] ?? row['curso'] ?? '');
 
   const polo =
     year === '2025'
-      ? (row['Qual o seu Polo de VinculaÃ§Ã£o?'] ?? '')
+      ? (row['Qual o seu Polo de Vinculação?'] ?? '')
       : '';
 
   const disciplina = getDisciplinaFromRow(row);
@@ -236,7 +236,7 @@ function getGroupKeyForEad(row = {}, year = '2025', idx = 0) {
   const key = [turmaOuDocente, curso, polo, disciplina]
     .map(v => String(v || '').trim())
     .filter(Boolean)
-    .join(' â€¢ ');
+    .join(' • ');
 
   return key || `row_${idx}`;
 }
@@ -253,7 +253,7 @@ function groupRowsForBoxplot(rows = [], year = '2025') {
   return grouped;
 }
 
-/* ---------- FormataÃ§Ã£o para os grÃ¡ficos ---------- */
+/* ---------- Formatação para os gráficos ---------- */
 function formatProporcoesChartData(apiData) {
   if (!apiData || !apiData.length) return { labels: [], datasets: [] };
   const labels = [...new Set(apiData.map(item => item.dimensao))];
@@ -299,7 +299,7 @@ function aggregateFromRows2025(rows, qHeadersFull) {
     if (a.startsWith('Bom')) return 'Bom';
     if (a.startsWith('Regular')) return 'Regular';
     if (a.startsWith('Insuficiente')) return 'Insuficiente';
-    if (/^n(Ã£|a)o se aplica/i.test(a)) return null;
+    if (/^n(ã|a)o se aplica/i.test(a)) return null;
     return null;
   };
 
@@ -310,14 +310,14 @@ function aggregateFromRows2025(rows, qHeadersFull) {
     if (a.startsWith('Bom')) return 3;
     if (a.startsWith('Regular')) return 2;
     if (a.startsWith('Insuficiente')) return 1;
-    if (/^n(Ã£|a)o se aplica/i.test(a)) return null;
+    if (/^n(ã|a)o se aplica/i.test(a)) return null;
     return null;
   };
 
   const dims = {
-    'AutoavaliaÃ§Ã£o Discente': headers.slice(0, 13),
-    'AvaliaÃ§Ã£o da AÃ§Ã£o Docente': headers.slice(13, 35),
-    'InstalaÃ§Ãµes FÃ­sicas e Recursos de TI': headers.slice(35, 45)
+    'Autoavaliação Discente': headers.slice(0, 13),
+    'Avaliação da Ação Docente': headers.slice(13, 35),
+    'Instalações Físicas e Recursos de TI': headers.slice(35, 45)
   };
 
   const groupedRows = groupRowsForBoxplot(rows, '2025');
@@ -387,8 +387,8 @@ function aggregateFromRows2025(rows, qHeadersFull) {
     return { item: String(offset + idx + 1), values };
   });
 
-  const mediasItensAuto = mediasForHeaders(dims['AutoavaliaÃ§Ã£o Discente'], 0);
-  const boxplotItensAutoRaw = boxplotForHeaders(dims['AutoavaliaÃ§Ã£o Discente'], 0);
+  const mediasItensAuto = mediasForHeaders(dims['Autoavaliação Discente'], 0);
+  const boxplotItensAutoRaw = boxplotForHeaders(dims['Autoavaliação Discente'], 0);
 
   const mediasItensAtitude = mediasForHeaders(headers.slice(13, 19), 13);
   const boxplotItensAtitudeRaw = boxplotForHeaders(headers.slice(13, 19), 13);
@@ -435,7 +435,7 @@ function aggregateFromRows2025(rows, qHeadersFull) {
     boxplotDimRaw,
     boxplotDimStats,
 
-    autoavaliacaoItens: makeItens(dims['AutoavaliaÃ§Ã£o Discente'], 0),
+    autoavaliacaoItens: makeItens(dims['Autoavaliação Discente'], 0),
     mediasItensAuto,
     boxplotItensAutoRaw,
     boxplotAutoStats,
@@ -455,7 +455,7 @@ function aggregateFromRows2025(rows, qHeadersFull) {
     boxplotItensProcessoRaw,
     boxplotProcessoStats,
 
-    infraestruturaItens: makeItens(dims['InstalaÃ§Ãµes FÃ­sicas e Recursos de TI'], 35),
+    infraestruturaItens: makeItens(dims['Instalações Físicas e Recursos de TI'], 35),
     mediasItensInfra,
     boxplotItensInfraRaw,
     boxplotInfraStats,
@@ -475,9 +475,9 @@ function aggregateFromRows2023(rows, qHeaders) {
   const endInfra = Math.min(43, qHeaders.length);
 
   const dims = {
-    'AutoavaliaÃ§Ã£o Discente': qHeaders.slice(0, endAuto),
-    'AvaliaÃ§Ã£o da AÃ§Ã£o Docente': qHeaders.slice(13, endAcao),
-    'InstalaÃ§Ãµes FÃ­sicas e Recursos de TI': qHeaders.slice(35, endInfra)
+    'Autoavaliação Discente': qHeaders.slice(0, endAuto),
+    'Avaliação da Ação Docente': qHeaders.slice(13, endAcao),
+    'Instalações Físicas e Recursos de TI': qHeaders.slice(35, endInfra)
   };
 
   const groupedRows = groupRowsForBoxplot(rows, '2023');
@@ -547,8 +547,8 @@ function aggregateFromRows2023(rows, qHeaders) {
     return { item: h.replace(')', ''), values };
   });
 
-  const mediasItensAuto = mediasForHeaders(dims['AutoavaliaÃ§Ã£o Discente']);
-  const boxplotItensAutoRaw = boxplotForHeaders(dims['AutoavaliaÃ§Ã£o Discente']);
+  const mediasItensAuto = mediasForHeaders(dims['Autoavaliação Discente']);
+  const boxplotItensAutoRaw = boxplotForHeaders(dims['Autoavaliação Discente']);
 
   const mediasItensAtitude = mediasForHeaders(qHeaders.slice(13, Math.min(19, qHeaders.length)));
   const boxplotItensAtitudeRaw = boxplotForHeaders(qHeaders.slice(13, Math.min(19, qHeaders.length)));
@@ -595,7 +595,7 @@ function aggregateFromRows2023(rows, qHeaders) {
     boxplotDimRaw,
     boxplotDimStats,
 
-    autoavaliacaoItens: makeItens(dims['AutoavaliaÃ§Ã£o Discente']),
+    autoavaliacaoItens: makeItens(dims['Autoavaliação Discente']),
     mediasItensAuto,
     boxplotItensAutoRaw,
     boxplotAutoStats,
@@ -615,7 +615,7 @@ function aggregateFromRows2023(rows, qHeaders) {
     boxplotItensProcessoRaw,
     boxplotProcessoStats,
 
-    infraestruturaItens: makeItens(dims['InstalaÃ§Ãµes FÃ­sicas e Recursos de TI']),
+    infraestruturaItens: makeItens(dims['Instalações Físicas e Recursos de TI']),
     mediasItensInfra,
     boxplotItensInfraRaw,
     boxplotInfraStats,
@@ -626,12 +626,12 @@ function aggregateFromRows2023(rows, qHeaders) {
 function computeBestWorstGroup(year, yearObj) {
   const rows = yearObj?.rows || [];
   if (!rows.length) {
-    return { labelType: year === '2025' ? 'Polo' : 'Curso', best: 'â€”', worst: 'â€”', respondentsByGroup: {} };
+    return { labelType: year === '2025' ? 'Polo' : 'Curso', best: '—', worst: '—', respondentsByGroup: {} };
   }
 
   if (year === '2025') {
     const headers = yearObj.qHeadersFull || [];
-    const groupKey = 'Qual o seu Polo de VinculaÃ§Ã£o?';
+    const groupKey = 'Qual o seu Polo de Vinculação?';
     const idKey = getIdKeyForYear(year, rows[0]);
 
     const toScore = (ans) => {
@@ -664,8 +664,8 @@ function computeBestWorstGroup(year, yearObj) {
       });
     });
 
-    let best = 'â€”';
-    let worst = 'â€”';
+    let best = '—';
+    let worst = '—';
     let bestAvg = -Infinity;
     let worstAvg = Infinity;
 
@@ -689,7 +689,7 @@ function computeBestWorstGroup(year, yearObj) {
 
     return { labelType: 'Polo', best, worst, respondentsByGroup };
   } else {
-    const courseKey = rows[0]?.['Qual Ã© o seu Curso?'] !== undefined ? 'Qual Ã© o seu Curso?' : 'curso';
+    const courseKey = rows[0]?.['Qual é o seu Curso?'] !== undefined ? 'Qual é o seu Curso?' : 'curso';
     const headers = getQHeadersFromRows2023(rows);
     const usedHeaders = headers.slice(0, Math.min(43, headers.length));
     const toScore = (n) => Number.isFinite(Number(n)) && Number(n) !== 5 ? Number(n) : null;
@@ -708,8 +708,8 @@ function computeBestWorstGroup(year, yearObj) {
       });
     });
 
-    let best = 'â€”';
-    let worst = 'â€”';
+    let best = '—';
+    let worst = '—';
     let bestAvg = -Infinity;
     let worstAvg = Infinity;
 
@@ -730,7 +730,7 @@ function computeBestWorstGroup(year, yearObj) {
   }
 }
 
-/* ===== Helpers: dependÃªncia de filtros (curso -> disciplinas; polo -> disciplinas em 2025) ===== */
+/* ===== Helpers: dependência de filtros (curso -> disciplinas; polo -> disciplinas em 2025) ===== */
 function buildFilterOptionsDependent(initialDataByYear, filtersOptions, selectedFilters) {
   const year = selectedFilters.ano;
   const yearObj = initialDataByYear?.[year] || {};
@@ -738,9 +738,9 @@ function buildFilterOptionsDependent(initialDataByYear, filtersOptions, selected
 
   const anos = sanitizeList(filtersOptions.anos);
   const dimensoes = sanitizeList(filtersOptions.dimensoes);
-  const courseKey2025 = 'Qual Ã© o seu Curso?';
-  const poloKey2025 = 'Qual o seu Polo de VinculaÃ§Ã£o?';
-  const courseKey2023 = rows[0]?.['Qual Ã© o seu Curso?'] !== undefined ? 'Qual Ã© o seu Curso?' : 'curso';
+  const courseKey2025 = 'Qual é o seu Curso?';
+  const poloKey2025 = 'Qual o seu Polo de Vinculação?';
+  const courseKey2023 = rows[0]?.['Qual é o seu Curso?'] !== undefined ? 'Qual é o seu Curso?' : 'curso';
   const disciplinaKeys2023 = Object.keys(rows[0] || {}).filter(k => k.startsWith('Selecione para qual disciplina'));
 
   const allCursos =
@@ -882,8 +882,8 @@ export default function EadDashboardClient({
     let filtered = rows;
 
     if (year === '2025') {
-      if (cursoSel !== 'todos') filtered = filtered.filter(r => r['Qual Ã© o seu Curso?'] === cursoSel);
-      if (poloSel !== 'todos') filtered = filtered.filter(r => r['Qual o seu Polo de VinculaÃ§Ã£o?'] === poloSel);
+      if (cursoSel !== 'todos') filtered = filtered.filter(r => r['Qual é o seu Curso?'] === cursoSel);
+      if (poloSel !== 'todos') filtered = filtered.filter(r => r['Qual o seu Polo de Vinculação?'] === poloSel);
       if (discSel !== 'todos') {
         filtered = filtered.filter(r => {
           const keys = Object.keys(r).filter(k => k.startsWith('Selecione para qual disciplina'));
@@ -900,7 +900,7 @@ export default function EadDashboardClient({
         totalRespondentes: countUniqueRespondentsByYear(year, filtered)
       };
     } else {
-      const courseKey = rows[0]?.['Qual Ã© o seu Curso?'] !== undefined ? 'Qual Ã© o seu Curso?' : 'curso';
+      const courseKey = rows[0]?.['Qual é o seu Curso?'] !== undefined ? 'Qual é o seu Curso?' : 'curso';
       const disciplinaKeys = Object.keys(rows[0] || {}).filter(k => k.startsWith('Selecione para qual disciplina'));
 
       if (cursoSel !== 'todos') filtered = filtered.filter(r => r[courseKey] === cursoSel);
@@ -949,7 +949,7 @@ export default function EadDashboardClient({
       return {
         labels: sorted.map(i => i.item),
         datasets: [{
-          label: 'MÃ©dia',
+          label: 'Média',
           data: sorted.map(i => round2(i.media)),
           backgroundColor: 'rgba(40, 143, 180, 0.7)'
         }]
@@ -961,7 +961,7 @@ export default function EadDashboardClient({
       mediasDimensoes: {
         labels: mediasLabels.map(lbl => wrapWords(lbl)),
         datasets: [{
-          label: 'MÃ©dia',
+          label: 'Média',
           data: mediasValues,
           backgroundColor: 'rgba(40, 143, 180, 0.7)'
         }]
@@ -997,12 +997,12 @@ export default function EadDashboardClient({
   }, [initialDataByYear, selectedFilters.ano]);
 
   const tabs = [
-    { key: 'dimensoes', label: 'DimensÃµes Gerais' },
-    { key: 'autoavaliacao', label: 'AutoavaliaÃ§Ã£o Discente' },
+    { key: 'dimensoes', label: 'Dimensões Gerais' },
+    { key: 'autoavaliacao', label: 'Autoavaliação Discente' },
     { key: 'atitude', label: 'Atitude Profissional' },
-    { key: 'gestao', label: 'GestÃ£o DidÃ¡tica' },
+    { key: 'gestao', label: 'Gestão Didática' },
     { key: 'processo', label: 'Processo Avaliativo' },
-    { key: 'infraestrutura', label: 'InstalaÃ§Ãµes FÃ­sicas e Recursos de TI' }
+    { key: 'infraestrutura', label: 'Instalações Físicas e Recursos de TI' }
   ];
 
   const dimensoesOptions = {
@@ -1064,7 +1064,7 @@ export default function EadDashboardClient({
       tooltip: {
         callbacks: {
           title: (ti) => questionMapEad[ti?.[0]?.label] || `Item ${ti?.[0]?.label}`,
-          label: (c) => `MÃ©dia: ${Number(c.parsed?.y || 0).toFixed(2)}`
+          label: (c) => `Média: ${Number(c.parsed?.y || 0).toFixed(2)}`
         }
       }
     },
@@ -1154,7 +1154,7 @@ export default function EadDashboardClient({
               <tr>
                 <th style={th}>{labelHeader}</th>
                 <th style={th}>n</th>
-                <th style={th}>mÃ©dia</th>
+                <th style={th}>média</th>
                 <th style={th}>Q1</th>
                 <th style={th}>mediana</th>
                 <th style={th}>Q3</th>
@@ -1182,8 +1182,8 @@ export default function EadDashboardClient({
     <>
       <div className={styles.statsGrid}>
         <StatCard title="Total de Respondentes" value={recalculated?.totalRespondentes ?? '...'} icon={<Users />} />
-        <StatCard title={`${bestWorst.labelType} mais bem avaliado`} value={truncateText(bestWorst.best) ?? 'â€”'} icon={<TrendingUp />} />
-        <StatCard title={`${bestWorst.labelType} menos bem avaliado`} value={truncateText(bestWorst.worst) ?? 'â€”'} icon={<TrendingDown />} />
+        <StatCard title={`${bestWorst.labelType} mais bem avaliado`} value={truncateText(bestWorst.best) ?? '—'} icon={<TrendingUp />} />
+        <StatCard title={`${bestWorst.labelType} menos bem avaliado`} value={truncateText(bestWorst.worst) ?? '—'} icon={<TrendingDown />} />
       </div>
 
       <div style={{ marginTop: '1rem', marginBottom: '0.75rem' }}>
@@ -1209,7 +1209,7 @@ export default function EadDashboardClient({
               <div id="chart-dimensoes" className={styles.chartContainer} style={leftBig}>
                 <ActivityChart
                   chartData={chartData.dimensoes}
-                  title={`ProporÃ§Ãµes de Respostas por DimensÃ£o (${selectedFilters.ano})`}
+                  title={`Proporções de Respostas por Dimensão (${selectedFilters.ano})`}
                   customOptions={dimensoesOptions}
                 />
               </div>
@@ -1217,7 +1217,7 @@ export default function EadDashboardClient({
               <div id="chart-medias-dimensoes" className={styles.chartContainer} style={rightTop}>
                 <ActivityChart
                   chartData={chartData.mediasDimensoes}
-                  title={`MÃ©dias por DimensÃ£o (${selectedFilters.ano})`}
+                  title={`Médias por Dimensão (${selectedFilters.ano})`}
                   customOptions={mediasOptions}
                 />
               </div>
@@ -1230,16 +1230,16 @@ export default function EadDashboardClient({
                 <div style={{ flex: '1 1 auto', minHeight: 270 }}>
                   <BoxplotChart
                     apiData={chartData.boxplotDimApex}
-                    title={`Boxplot das MÃ©dias por DimensÃ£o (${selectedFilters.ano})`}
+                    title={`Boxplot das Médias por Dimensão (${selectedFilters.ano})`}
                     customOptions={boxplotPdfOptions}
                   />
                 </div>
 
                 <StatsTableInline
                   id="table-stats-dimensoes"
-                  title="EstatÃ­sticas â€” DimensÃµes"
+                  title="Estatísticas — Dimensões"
                   rows={recalculated.boxplotDimStats}
-                  labelHeader="DimensÃ£o"
+                  labelHeader="Dimensão"
                 />
               </div>
             </div>
@@ -1250,7 +1250,7 @@ export default function EadDashboardClient({
               <div id="chart-proporcoes-autoav" className={styles.chartContainer} style={row1}>
                 <ActivityChart
                   chartData={chartData.autoavaliacao}
-                  title={`ProporÃ§Ãµes de Respostas por Item - AutoavaliaÃ§Ã£o Discente (${selectedFilters.ano})`}
+                  title={`Proporções de Respostas por Item - Autoavaliação Discente (${selectedFilters.ano})`}
                   customOptions={proporcoesItensOptions}
                 />
               </div>
@@ -1263,14 +1263,14 @@ export default function EadDashboardClient({
                 <div style={{ flex: '1 1 auto', minHeight: 250 }}>
                   <BoxplotChart
                     apiData={chartData.boxplotAutoApex}
-                    title="Boxplot das MÃ©dias por Item (AutoavaliaÃ§Ã£o)"
+                    title="Boxplot das Médias por Item (Autoavaliação)"
                     customOptions={boxplotPdfOptions}
                   />
                 </div>
 
                 <StatsTableInline
                   id="table-stats-autoav"
-                  title="EstatÃ­sticas â€” AutoavaliaÃ§Ã£o"
+                  title="Estatísticas — Autoavaliação"
                   rows={recalculated.boxplotAutoStats}
                 />
               </div>
@@ -1278,7 +1278,7 @@ export default function EadDashboardClient({
               <div id="chart-medias-itens-autoav" className={styles.chartContainer} style={row3}>
                 <ActivityChart
                   chartData={chartData.mediasItensAuto}
-                  title={`MÃ©dias dos Itens relacionados Ã  AutoavaliaÃ§Ã£o Discente (${selectedFilters.ano})`}
+                  title={`Médias dos Itens relacionados à Autoavaliação Discente (${selectedFilters.ano})`}
                   customOptions={mediasItensOptions}
                 />
               </div>
@@ -1290,7 +1290,7 @@ export default function EadDashboardClient({
               <div id="chart-proporcoes-atitude" className={styles.chartContainer} style={row1}>
                 <ActivityChart
                   chartData={chartData.acaoDocenteAtitude}
-                  title={`ProporÃ§Ãµes de Respostas por Item - Atitude Profissional (${selectedFilters.ano})`}
+                  title={`Proporções de Respostas por Item - Atitude Profissional (${selectedFilters.ano})`}
                   customOptions={proporcoesItensOptions}
                 />
               </div>
@@ -1303,14 +1303,14 @@ export default function EadDashboardClient({
                 <div style={{ flex: '1 1 auto', minHeight: 250 }}>
                   <BoxplotChart
                     apiData={chartData.boxplotAtitudeApex}
-                    title="Boxplot das MÃ©dias por Item (Atitude Profissional)"
+                    title="Boxplot das Médias por Item (Atitude Profissional)"
                     customOptions={boxplotPdfOptions}
                   />
                 </div>
 
                 <StatsTableInline
                   id="table-stats-atitude"
-                  title="EstatÃ­sticas â€” Atitude Profissional"
+                  title="Estatísticas — Atitude Profissional"
                   rows={recalculated.boxplotAtitudeStats}
                 />
               </div>
@@ -1318,7 +1318,7 @@ export default function EadDashboardClient({
               <div id="chart-medias-atitude" className={styles.chartContainer} style={row3}>
                 <ActivityChart
                   chartData={chartData.mediasItensAtitude}
-                  title="MÃ©dias dos Itens relacionados Ã  Atitude Profissional (Discente)"
+                  title="Médias dos Itens relacionados à Atitude Profissional (Discente)"
                   customOptions={mediasItensOptions}
                 />
               </div>
@@ -1330,7 +1330,7 @@ export default function EadDashboardClient({
               <div id="chart-proporcoes-gestao" className={styles.chartContainer} style={row1}>
                 <ActivityChart
                   chartData={chartData.acaoDocenteGestao}
-                  title={`ProporÃ§Ãµes de Respostas por Item - GestÃ£o DidÃ¡tica (${selectedFilters.ano})`}
+                  title={`Proporções de Respostas por Item - Gestão Didática (${selectedFilters.ano})`}
                   customOptions={proporcoesItensOptions}
                 />
               </div>
@@ -1343,14 +1343,14 @@ export default function EadDashboardClient({
                 <div style={{ flex: '1 1 auto', minHeight: 250 }}>
                   <BoxplotChart
                     apiData={chartData.boxplotGestaoApex}
-                    title="Boxplot das MÃ©dias por Item (GestÃ£o DidÃ¡tica)"
+                    title="Boxplot das Médias por Item (Gestão Didática)"
                     customOptions={boxplotPdfOptions}
                   />
                 </div>
 
                 <StatsTableInline
                   id="table-stats-gestao"
-                  title="EstatÃ­sticas â€” GestÃ£o DidÃ¡tica"
+                  title="Estatísticas — Gestão Didática"
                   rows={recalculated.boxplotGestaoStats}
                 />
               </div>
@@ -1358,7 +1358,7 @@ export default function EadDashboardClient({
               <div id="chart-medias-gestao" className={styles.chartContainer} style={row3}>
                 <ActivityChart
                   chartData={chartData.mediasItensGestao}
-                  title="MÃ©dias dos Itens relacionados Ã  GestÃ£o DidÃ¡tica (Discente)"
+                  title="Médias dos Itens relacionados à Gestão Didática (Discente)"
                   customOptions={mediasItensOptions}
                 />
               </div>
@@ -1370,7 +1370,7 @@ export default function EadDashboardClient({
               <div id="chart-proporcoes-processo" className={styles.chartContainer} style={row1}>
                 <ActivityChart
                   chartData={chartData.acaoDocenteProcesso}
-                  title={`ProporÃ§Ãµes de Respostas por Item - Processo Avaliativo (${selectedFilters.ano})`}
+                  title={`Proporções de Respostas por Item - Processo Avaliativo (${selectedFilters.ano})`}
                   customOptions={proporcoesItensOptions}
                 />
               </div>
@@ -1383,14 +1383,14 @@ export default function EadDashboardClient({
                 <div style={{ flex: '1 1 auto', minHeight: 250 }}>
                   <BoxplotChart
                     apiData={chartData.boxplotProcessoApex}
-                    title="Boxplot das MÃ©dias por Item (Processo Avaliativo)"
+                    title="Boxplot das Médias por Item (Processo Avaliativo)"
                     customOptions={boxplotPdfOptions}
                   />
                 </div>
 
                 <StatsTableInline
                   id="table-stats-processo"
-                  title="EstatÃ­sticas â€” Processo Avaliativo"
+                  title="Estatísticas — Processo Avaliativo"
                   rows={recalculated.boxplotProcessoStats}
                 />
               </div>
@@ -1398,7 +1398,7 @@ export default function EadDashboardClient({
               <div id="chart-medias-processo" className={styles.chartContainer} style={row3}>
                 <ActivityChart
                   chartData={chartData.mediasItensProcesso}
-                  title="MÃ©dias dos Itens relacionados ao Processo Avaliativo (Discente)"
+                  title="Médias dos Itens relacionados ao Processo Avaliativo (Discente)"
                   customOptions={mediasItensOptions}
                 />
               </div>
@@ -1410,7 +1410,7 @@ export default function EadDashboardClient({
               <div id="chart-proporcoes-infra" className={styles.chartContainer} style={row1}>
                 <ActivityChart
                   chartData={chartData.infraestruturaItens}
-                  title={`ProporÃ§Ãµes de Respostas por Item - InstalaÃ§Ãµes FÃ­sicas e Recursos de TI (${selectedFilters.ano})`}
+                  title={`Proporções de Respostas por Item - Instalações Físicas e Recursos de TI (${selectedFilters.ano})`}
                   customOptions={proporcoesItensOptions}
                 />
               </div>
@@ -1423,14 +1423,14 @@ export default function EadDashboardClient({
                 <div style={{ flex: '1 1 auto', minHeight: 250 }}>
                   <BoxplotChart
                     apiData={chartData.boxplotInfraApex}
-                    title="Boxplot das MÃ©dias por Item (InstalaÃ§Ãµes e TI)"
+                    title="Boxplot das Médias por Item (Instalações e TI)"
                     customOptions={boxplotPdfOptions}
                   />
                 </div>
 
                 <StatsTableInline
                   id="table-stats-infra"
-                  title="EstatÃ­sticas â€” InstalaÃ§Ãµes e TI"
+                  title="Estatísticas — Instalações e TI"
                   rows={recalculated.boxplotInfraStats}
                 />
               </div>
@@ -1438,7 +1438,7 @@ export default function EadDashboardClient({
               <div id="chart-medias-infra" className={styles.chartContainer} style={row3}>
                 <ActivityChart
                   chartData={chartData.mediasItensInfra}
-                  title="MÃ©dias dos Itens relacionados Ã s InstalaÃ§Ãµes FÃ­sicas e Recursos de TI (Discente)"
+                  title="Médias dos Itens relacionados às Instalações Físicas e Recursos de TI (Discente)"
                   customOptions={mediasItensOptions}
                 />
               </div>
