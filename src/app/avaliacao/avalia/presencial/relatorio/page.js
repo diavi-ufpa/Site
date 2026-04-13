@@ -14,7 +14,7 @@ export const runtime = 'nodejs';
 const uniqSorted = (arr = []) => [...new Set((arr || []).filter(Boolean))].sort();
 
 async function getFiltersByYear() {
-  const baseDir = path.join(process.cwd(), 'data');
+  const baseDir = path.join(process.cwd(), 'data', 'avalia');
   const filtersByYear = {};
   const anos = new Set();
 
@@ -50,7 +50,7 @@ async function RelatorioLoader({ searchParamsResolved }) {
   const { filtersByYear, anosDisponiveis } = await getFiltersByYear();
 
   if (!anosDisponiveis.length) {
-    return <p className={styles.errorMessage}>Nenhum ano disponível — verifique os CSVs em <code>data</code>.</p>;
+    return <p className={styles.errorMessage}>Nenhum ano disponível — verifique os CSVs em <code>data/avalia</code>.</p>;
   }
 
   const initialSelected = {

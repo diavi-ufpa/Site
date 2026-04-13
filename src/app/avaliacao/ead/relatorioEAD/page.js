@@ -29,7 +29,7 @@ const isBadDisc = (s) => {
 
 // Carrega e prepara filtros por ano a partir dos CSVs
 async function getFiltersByYear() {
-  const baseDir = path.join(process.cwd(), 'data');
+  const baseDir = path.join(process.cwd(), 'data', 'avalia');
   const filtersByYear = {};
   const reportDataByYear = {};
   const anos = new Set();
@@ -159,7 +159,7 @@ async function RelatorioLoader({ searchParamsResolved }) {
     return (
       <p className={styles.errorMessage}>
         Não foi possível carregar os filtros. Verifique os arquivos CSV em{' '}
-        <code>data</code>.
+        <code>data/avalia</code>.
       </p>
     );
   }
