@@ -21,6 +21,7 @@ function sanitizeDatabaseUrl(rawUrl) {
 }
 
 const connectionString = sanitizeDatabaseUrl(process.env.DATABASE_URL);
+const CACHE_TABLE = 'public.dashboard_cache';
 
 export const pool =
   globalForDb.__dashboardPool ??
@@ -63,7 +64,7 @@ export async function ensureCacheTable() {
 
   tableEnsurePromise = (async () => {
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS dashboard_cache (
+      CREATE TABLE IF NOT EXISTS ${CACHE_TABLE} (
         endpoint TEXT NOT NULL,
         ano TEXT NULL,
         campus TEXT NOT NULL DEFAULT 'todos',
@@ -77,20 +78,20 @@ export async function ensureCacheTable() {
     // índice para registros com ano
     await pool.query(`
       CREATE UNIQUE INDEX IF NOT EXISTS dashboard_cache_unique_with_ano
-      ON dashboard_cache (endpoint, ano, campus, curso)
+      ON ${CACHE_TABLE} (endpoint, ano, campus, curso)
       WHERE ano IS NOT NULL
     `);
 
     // índice para registros sem ano
     await pool.query(`
       CREATE UNIQUE INDEX IF NOT EXISTS dashboard_cache_unique_without_ano
-      ON dashboard_cache (endpoint, campus, curso)
+      ON ${CACHE_TABLE} (endpoint, campus, curso)
       WHERE ano IS NULL
     `);
 
     await pool.query(`
       CREATE INDEX IF NOT EXISTS dashboard_cache_updated_at_idx
-      ON dashboard_cache (updated_at DESC)
+      ON ${CACHE_TABLE} (updated_at DESC)
     `);
 
     tableEnsured = true;
@@ -117,7 +118,7 @@ export async function getCachedPayload({
   const { rows } = await pool.query(
     `
       SELECT payload
-      FROM dashboard_cache
+      FROM ${CACHE_TABLE}
       WHERE endpoint = $1
         AND ano IS NOT DISTINCT FROM $2
         AND campus = $3
@@ -146,7 +147,7 @@ export async function saveCachedPayload({
   if (ano === null) {
     await pool.query(
       `
-        INSERT INTO dashboard_cache (
+        INSERT INTO ${CACHE_TABLE} (
           endpoint,
           ano,
           campus,
@@ -171,7 +172,7 @@ export async function saveCachedPayload({
 
   await pool.query(
     `
-      INSERT INTO dashboard_cache (
+      INSERT INTO ${CACHE_TABLE} (
         endpoint,
         ano,
         campus,

@@ -416,6 +416,7 @@ const emptyDetailData = () => ({
     discBox: null,
     docMed: null,
     docProp: null,
+    docBox: null,
   },
   instalacoes: {
     medItens: null,
@@ -428,10 +429,13 @@ const emptyDetailData = () => ({
   base_docente: {
     turmaMed: null,
     turmaProp: null,
+    turmaBox: null,
     subMed: null,
     subProp: null,
+    subBox: null,
     dimMed: null,
     dimProp: null,
+    dimBox: null,
   },
 });
 
@@ -1313,10 +1317,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
               make('/discente/autoavaliacao/itens/medias', selectedFilters),
               'Falha (Autoavaliação médias)'
             ),
-            pFetch(
-              make('/discente/autoavaliacao/itens/boxplot', selectedFilters),
-              'Falha (Autoavaliação boxplot)'
-            ),
+            pFetchOpt(make('/discente/autoavaliacao/itens/boxplot', selectedFilters)),
 
             pFetch(
               make('/discente/acaodocente/subdimensoes/proporcoes', selectedFilters),
@@ -1338,10 +1339,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
               make('/docente/autoavaliacao/subdimensoes/medias', selectedFilters),
               'Falha (Ação Docente docente médias)'
             ),
-            pFetch(
-              make('/docente/autoavaliacao/subdimensoes/boxplot', selectedFilters),
-              'Falha (Ação Docente docente boxplot)'
-            ),
+            pFetchOpt(make('/docente/autoavaliacao/subdimensoes/boxplot', selectedFilters)),
 
             pFetch(
               make('/discente/atitudeprofissional/itens/proporcoes', selectedFilters),
@@ -1351,10 +1349,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
               make('/discente/atitudeprofissional/itens/medias', selectedFilters),
               'Falha (Atitude médias)'
             ),
-            pFetch(
-              make('/discente/atitudeprofissional/itens/boxplot', selectedFilters),
-              'Falha (Atitude boxplot)'
-            ),
+            pFetchOpt(make('/discente/atitudeprofissional/itens/boxplot', selectedFilters)),
 
             pFetch(
               make('/discente/gestaodidatica/itens/proporcoes', selectedFilters),
@@ -1364,10 +1359,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
               make('/discente/gestaodidatica/itens/medias', selectedFilters),
               'Falha (Gestão médias)'
             ),
-            pFetch(
-              make('/discente/gestaodidatica/itens/boxplot', selectedFilters),
-              'Falha (Gestão boxplot)'
-            ),
+            pFetchOpt(make('/discente/gestaodidatica/itens/boxplot', selectedFilters)),
 
             pFetch(
               make('/discente/processoavaliativo/itens/proporcoes', selectedFilters),
@@ -1377,10 +1369,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
               make('/discente/processoavaliativo/itens/medias', selectedFilters),
               'Falha (Processo médias)'
             ),
-            pFetch(
-              make('/discente/processoavaliativo/itens/boxplot', selectedFilters),
-              'Falha (Processo boxplot)'
-            ),
+            pFetchOpt(make('/discente/processoavaliativo/itens/boxplot', selectedFilters)),
 
             pFetch(
               make('/discente/instalacoes/itens/proporcoes', selectedFilters),
@@ -1390,10 +1379,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
               make('/discente/instalacoes/itens/medias', selectedFilters),
               'Falha (Instalações médias)'
             ),
-            pFetch(
-              make('/discente/instalacoes/itens/boxplot', selectedFilters),
-              'Falha (Instalações boxplot)'
-            ),
+            pFetchOpt(make('/discente/instalacoes/itens/boxplot', selectedFilters)),
           ]);
 
           if (cancelled) return;
@@ -1436,16 +1422,22 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
           const [
             turmaMed,
             turmaProp,
+            turmaBox,
             subMed,
             subProp,
+            subBox,
             dimMed,
             dimProp,
+            dimBox,
             atiProp,
             atiMed,
+            atiBox,
             gesProp,
             gesMed,
+            gesBox,
             proProp,
             proMed,
+            proBox,
             instMedDoc,
             instPropDoc,
           ] = await Promise.all([
@@ -1457,6 +1449,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
               make('/docente/avaliacaoturma/itens/proporcoes', selectedFilters),
               'Falha (turma proporções)'
             ),
+            pFetchOpt(make('/docente/avaliacaoturma/itens/boxplot', selectedFilters)),
             pFetch(
               make('/docente_base/autoavaliacao/subdimensoes/medias', selectedFilters),
               'Falha (subdim médias)'
@@ -1465,6 +1458,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
               make('/docente_base/autoavaliacao/subdimensoes/proporcoes', selectedFilters),
               'Falha (subdim proporções)'
             ),
+            pFetchOpt(make('/docente_base/autoavaliacao/subdimensoes/boxplot', selectedFilters)),
             pFetch(
               make('/docente/dimensoes/medias', selectedFilters),
               'Falha (dim médias)'
@@ -1473,6 +1467,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
               make('/docente/dimensoes/proporcoes', selectedFilters),
               'Falha (dim proporções)'
             ),
+            pFetchOpt(make('/docente/dimensoes/boxplot', selectedFilters)),
 
             pFetch(
               make('/docente/atitudeprofissional/itens/proporcoes', selectedFilters),
@@ -1482,6 +1477,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
               make('/docente/atitudeprofissional/itens/medias', selectedFilters),
               'Falha (Atitude docente med)'
             ),
+            pFetchOpt(make('/docente/atitudeprofissional/itens/boxplot', selectedFilters)),
 
             pFetch(
               make('/docente/gestaodidatica/itens/proporcoes', selectedFilters),
@@ -1491,6 +1487,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
               make('/docente/gestaodidatica/itens/medias', selectedFilters),
               'Falha (Gestão docente med)'
             ),
+            pFetchOpt(make('/docente/gestaodidatica/itens/boxplot', selectedFilters)),
 
             pFetch(
               make('/docente/processoavaliativo/itens/proporcoes', selectedFilters),
@@ -1500,6 +1497,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
               make('/docente/processoavaliativo/itens/medias', selectedFilters),
               'Falha (Processo docente med)'
             ),
+            pFetchOpt(make('/docente/processoavaliativo/itens/boxplot', selectedFilters)),
 
             pFetch(
               make('/docente/instalacoes/itens/medias', selectedFilters),
@@ -1514,10 +1512,20 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
           if (cancelled) return;
           setDetailData((prev) => ({
             ...prev,
-            base_docente: { turmaMed, turmaProp, subMed, subProp, dimMed, dimProp },
-            atitude: { ...prev.atitude, docProp: atiProp, docMed: atiMed },
-            gestao: { ...prev.gestao, docProp: gesProp, docMed: gesMed },
-            processo: { ...prev.processo, docProp: proProp, docMed: proMed },
+            base_docente: {
+              turmaMed,
+              turmaProp,
+              turmaBox,
+              subMed,
+              subProp,
+              subBox,
+              dimMed,
+              dimProp,
+              dimBox,
+            },
+            atitude: { ...prev.atitude, docProp: atiProp, docMed: atiMed, docBox: atiBox },
+            gestao: { ...prev.gestao, docProp: gesProp, docMed: gesMed, docBox: gesBox },
+            processo: { ...prev.processo, docProp: proProp, docMed: proMed, docBox: proBox },
             instalacoes: {
               ...prev.instalacoes,
               medDoc: instMedDoc,
@@ -1534,10 +1542,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
               make('/discente/instalacoes/itens/proporcoes', selectedFilters),
               'Falha ao buscar instalações (discente proporções)'
             ),
-            pFetch(
-              make('/discente/instalacoes/itens/boxplot', selectedFilters),
-              'Falha ao buscar instalações (discente boxplot)'
-            ),
+            pFetchOpt(make('/discente/instalacoes/itens/boxplot', selectedFilters)),
             pFetch(
               make('/docente/instalacoes/itens/medias', selectedFilters),
               'Falha ao buscar instalações (docente médias)'
@@ -1774,19 +1779,25 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
 
   const docTurmaMed = dd.base_docente?.turmaMed;
   const docTurmaProp = dd.base_docente?.turmaProp;
+  const docTurmaBox = dd.base_docente?.turmaBox;
   const docSubMed = dd.base_docente?.subMed;
   const docSubProp = dd.base_docente?.subProp;
+  const docSubBox = dd.base_docente?.subBox;
   const docDimMed = dd.base_docente?.dimMed;
   const docDimProp = dd.base_docente?.dimProp;
+  const docDimBox = dd.base_docente?.dimBox;
 
   const itensAtitudePropDoc = dd.atitude?.docProp;
   const itensAtitudeMedDoc = dd.atitude?.docMed;
+  const itensAtitudeBoxDoc = dd.atitude?.docBox;
 
   const itensGestaoMedDoc = dd.gestao?.docMed;
   const itensGestaoPropDoc = dd.gestao?.docProp;
+  const itensGestaoBoxDoc = dd.gestao?.docBox;
 
   const procDocMed = dd.processo?.docMed;
   const procDocProp = dd.processo?.docProp;
+  const procDocBox = dd.processo?.docBox;
 
   const itensInstalacoesMedDoc = dd.instalacoes?.medDoc;
   const itensInstalacoesPropDoc = dd.instalacoes?.propDoc;
@@ -2194,6 +2205,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
                         twoDecTooltip={twoDecTooltip}
                         twoDecTooltipWithQuestions={twoDecTooltipWithQuestions}
                         xTicksNoRot={xTicksNoRot}
+                        renderDescritivasTable={renderDescritivasTable}
                         formatMediasSubdimChartData={formatMediasSubdimChartData}
                         formatProporcoesSubdimChartData={formatProporcoesSubdimChartData}
                         formatMediasItensChartData={formatMediasItensChartData}
@@ -2203,18 +2215,24 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
                         formatProporcoesDimDocente={formatProporcoesDimDocente}
                         docSubMed={docSubMed}
                         docSubProp={docSubProp}
+                        docSubBox={docSubBox}
                         docTurmaMed={docTurmaMed}
                         docTurmaProp={docTurmaProp}
+                        docTurmaBox={docTurmaBox}
                         itensAtitudeMedDoc={itensAtitudeMedDoc}
                         itensAtitudePropDoc={itensAtitudePropDoc}
+                        itensAtitudeBoxDoc={itensAtitudeBoxDoc}
                         itensGestaoMedDoc={itensGestaoMedDoc}
                         itensGestaoPropDoc={itensGestaoPropDoc}
+                        itensGestaoBoxDoc={itensGestaoBoxDoc}
                         procDocMed={procDocMed}
                         procDocProp={procDocProp}
+                        procDocBox={procDocBox}
                         itensInstalacoesMedDoc={itensInstalacoesMedDoc}
                         itensInstalacoesPropDoc={itensInstalacoesPropDoc}
                         docDimMed={docDimMed}
                         docDimProp={docDimProp}
+                        docDimBox={docDimBox}
                       />
                       {renderRankingContext('base_docente')}
                     </>
@@ -2282,6 +2300,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
                         twoDecTooltip={twoDecTooltip}
                         twoDecTooltipWithQuestions={twoDecTooltipWithQuestions}
                         xTicksNoRot={xTicksNoRot}
+                        renderDescritivasTable={renderDescritivasTable}
                         formatMediasSubdimChartData={formatMediasSubdimChartData}
                         formatProporcoesSubdimChartData={formatProporcoesSubdimChartData}
                         formatMediasItensChartData={formatMediasItensChartData}
@@ -2291,18 +2310,24 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
                         formatProporcoesDimDocente={formatProporcoesDimDocente}
                         docSubMed={docSubMed}
                         docSubProp={docSubProp}
+                        docSubBox={docSubBox}
                         docTurmaMed={docTurmaMed}
                         docTurmaProp={docTurmaProp}
+                        docTurmaBox={docTurmaBox}
                         itensAtitudeMedDoc={itensAtitudeMedDoc}
                         itensAtitudePropDoc={itensAtitudePropDoc}
+                        itensAtitudeBoxDoc={itensAtitudeBoxDoc}
                         itensGestaoMedDoc={itensGestaoMedDoc}
                         itensGestaoPropDoc={itensGestaoPropDoc}
+                        itensGestaoBoxDoc={itensGestaoBoxDoc}
                         procDocMed={procDocMed}
                         procDocProp={procDocProp}
+                        procDocBox={procDocBox}
                         itensInstalacoesMedDoc={itensInstalacoesMedDoc}
                         itensInstalacoesPropDoc={itensInstalacoesPropDoc}
                         docDimMed={docDimMed}
                         docDimProp={docDimProp}
+                        docDimBox={docDimBox}
                         dimensionFilter={selectedDimension}
                       />
 

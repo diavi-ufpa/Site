@@ -18,7 +18,6 @@ const nextConfig = {
   experimental: {
     workerThreads: false,
     cpus: 1,
-    serverComponentsExternalPackages: ['papaparse'],
 
     // ✅ substitui a ideia do "timeout" por controles suportados no Next 16
     // (ajuste fino se quiser)
@@ -65,7 +64,7 @@ const nextConfig = {
     ];
   },
 
-  serverExternalPackages: [],
+  serverExternalPackages: ['papaparse'],
 
   webpack: (config) => {
     config.resolve.fallback = {

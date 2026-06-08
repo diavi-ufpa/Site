@@ -460,6 +460,18 @@ async function getBoxplotPayload(filters = {}, options = {}) {
     'label'
   );
 
+  const tabela2 = mapped.map((row) => ({
+    Item: row.label,
+    item: row.label,
+    Min: Number(row.min.toFixed(2)),
+    Q1: Number(row.q1.toFixed(2)),
+    Mediana: Number(row.mediana.toFixed(2)),
+    Media: Number(row.media.toFixed(2)),
+    Q3: Number(row.q3.toFixed(2)),
+    Max: Number(row.max.toFixed(2)),
+    N: row.n,
+  }));
+
   return {
     boxplot_data: mapped.map((row) => ({
       x: row.label,
@@ -472,16 +484,9 @@ async function getBoxplotPayload(filters = {}, options = {}) {
       ],
     })),
     outliers_data: [],
-    tabela2: mapped.map((row) => ({
-      Item: row.label,
-      Min: Number(row.min.toFixed(2)),
-      Q1: Number(row.q1.toFixed(2)),
-      Mediana: Number(row.mediana.toFixed(2)),
-      Media: Number(row.media.toFixed(2)),
-      Q3: Number(row.q3.toFixed(2)),
-      Max: Number(row.max.toFixed(2)),
-      N: row.n,
-    })),
+    tabela: tabela2,
+    tabela2,
+    tabela_items: tabela2,
     rows: mapped,
   };
 }
