@@ -169,6 +169,7 @@ function json(payload, init = {}) {
   return Response.json(payload, {
     ...init,
     headers: {
+      'Cache-Control': 'no-store, max-age=0',
       'X-Data-Source': 'neon-api',
       ...(init.headers ?? {}),
     },
@@ -216,12 +217,8 @@ async function routeEndpoint(endpoint, filters) {
     return summarizeRows(rows);
   }
 
-  if (endpoint.includes('/proporcoes') || endpoint === '/likert-distribuicao') {
+  if (endpoint === '/likert-distribuicao') {
     return getLikertRows(filters);
-  }
-
-  if (endpoint.includes('/medias')) {
-    return getResumoRows(filters);
   }
 
   return [];
