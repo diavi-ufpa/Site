@@ -2,6 +2,10 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import DiscenteFilters from '@/features/avalia/components/DiscenteFilterAvalia';
+import {
+  avaliaSourceFromDatabaseFlag,
+  buildAvaliaApiUrl,
+} from '@/features/avalia/lib/avaliaDataSource';
 import StatCard from '@/components/ui/StatCard';
 import LoadingOverlay from '@/components/ui/LoadingOverlay';
 import styles from '../../../../styles/dados.module.css';
@@ -14,57 +18,22 @@ import AtividadesAcademicasTab from './atividades_academicas/AtividadesAcademica
 import BaseDocenteTab from './base_docente/BaseDocenteTab';
 import InstalacoesFisicasTab from './instalacoes_fisicas/InstalacoesFisicasTab';
 
-// ======================================================
-// HELPER DE URL PARA O CACHE LOCAL
-// ======================================================
-function normalizeFilterValue(value, fallback = 'todos') {
-  if (value === null || value === undefined) return fallback;
-  const s = String(value).trim();
-  if (!s) return fallback;
-
-  const lower = s.toLowerCase();
-  if (
-    ['all', 'todos', 'todas', 'todo', 'qualquer', 'none', 'null', 'undefined'].includes(
-      lower
-    )
-  ) {
-    return 'todos';
-  }
-
-  return s;
-}
-
 const make = (endpoint, filters = {}) => {
-  const qs = new URLSearchParams();
-  qs.set('endpoint', endpoint);
-
-  if (filters?.ano) qs.set('ano', String(filters.ano).trim());
-
-  if (endpoint !== '/filters') {
-    qs.set('campus', normalizeFilterValue(filters?.campus, 'todos'));
-    qs.set('curso', normalizeFilterValue(filters?.curso, 'todos'));
-  } else {
-    if (filters?.campus) qs.set('campus', normalizeFilterValue(filters.campus, 'todos'));
-    if (filters?.curso) qs.set('curso', normalizeFilterValue(filters.curso, 'todos'));
-  }
-
-  const route = filters?.consultarBanco ? '/api/avalia-db' : '/api/dashboard-cache';
-  return `${route}?${qs.toString()}`;
+  return buildAvaliaApiUrl(endpoint, filters, {
+    source: avaliaSourceFromDatabaseFlag(filters?.consultarBanco),
+  });
 };
 
 const makeCampusFilters = (ano, consultarBanco = false) => {
-  const qs = new URLSearchParams();
-  qs.set('endpoint', '/filters/campus');
-  qs.set('ano', String(ano).trim());
-  return `${consultarBanco ? '/api/avalia-db' : '/api/dashboard-cache'}?${qs.toString()}`;
+  return buildAvaliaApiUrl('/filters/campus', { ano }, {
+    source: avaliaSourceFromDatabaseFlag(consultarBanco),
+  });
 };
 
 const makeCourseFilters = (ano, campus, consultarBanco = false) => {
-  const qs = new URLSearchParams();
-  qs.set('endpoint', '/filters/cursos');
-  qs.set('ano', String(ano).trim());
-  qs.set('campus', normalizeFilterValue(campus, 'todos'));
-  return `${consultarBanco ? '/api/avalia-db' : '/api/dashboard-cache'}?${qs.toString()}`;
+  return buildAvaliaApiUrl('/filters/cursos', { ano, campus }, {
+    source: avaliaSourceFromDatabaseFlag(consultarBanco),
+  });
 };
 
 // ======================================================

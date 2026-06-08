@@ -5,6 +5,10 @@ import { flushSync } from 'react-dom';
 import { toPng } from 'html-to-image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DiscenteFilters from '@/features/avalia/components/DiscenteFilterAvalia';
+import {
+  AVALIA_DATA_SOURCE,
+  buildAvaliaApiUrl,
+} from '@/features/avalia/lib/avaliaDataSource';
 import BoxplotChart from '@/components/charts/BoxplotChart';
 import ReportViewer from '../../../../../components/ReportViewer';
 import { REPORT_CONTEXTS } from '../../../../../components/reportContexts';
@@ -36,21 +40,6 @@ function safeNum(val) {
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function normalizeFilterValue(value, fallback = 'todos') {
-  if (value === null || value === undefined) return fallback;
-  const s = String(value).trim();
-  if (!s) return fallback;
-  const lower = s.toLowerCase();
-  if (
-    ['all', 'todos', 'todas', 'todo', 'qualquer', 'none', 'null', 'undefined'].includes(
-      lower
-    )
-  ) {
-    return 'todos';
-  }
-  return s;
 }
 
 function normalizeCampusLabel(value) {
@@ -723,21 +712,10 @@ export default function RelatorioPresencialClient({
   const canGenerate = hasSelectedYear && hasSelectedCampus && hasSelectedCourse && summaryData !== null;
 
   const make = (endpoint, filters = {}) => {
-    const qs = new URLSearchParams();
-    qs.set('endpoint', endpoint);
-    qs.set('fresh', '1');
-
-    if (filters?.ano) qs.set('ano', String(filters.ano).trim());
-
-    if (endpoint !== '/filters') {
-      qs.set('campus', normalizeFilterValue(filters?.campus, 'todos'));
-      qs.set('curso', normalizeFilterValue(filters?.curso, 'todos'));
-    } else {
-      if (filters?.campus) qs.set('campus', normalizeFilterValue(filters.campus, 'todos'));
-      if (filters?.curso) qs.set('curso', normalizeFilterValue(filters.curso, 'todos'));
-    }
-
-    return `/api/dashboard-cache?${qs.toString()}`;
+    return buildAvaliaApiUrl(endpoint, filters, {
+      fresh: true,
+      source: AVALIA_DATA_SOURCE.LEGACY_API,
+    });
   };
 
   const syncURL = (next) => {

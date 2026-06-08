@@ -2,6 +2,15 @@ import { queryAvaliaApi } from '@/lib/neon-api';
 
 export const dynamic = 'force-dynamic';
 
+const SCHEMA = 'avalia';
+
+const CONCEITOS = {
+  4: 'Excelente',
+  3: 'Bom',
+  2: 'Regular',
+  1: 'Insuficiente',
+};
+
 function normalizeText(value) {
   return String(value ?? '')
     .trim()
@@ -22,11 +31,22 @@ function normalizeParam(value, fallback = 'todos') {
   return raw;
 }
 
-function pick(row, keys) {
-  for (const key of keys) {
-    if (row?.[key] !== undefined && row?.[key] !== null) return row[key];
-  }
-  return null;
+function toNullableParam(value) {
+  if (!value || value === 'todos') return null;
+  return value;
+}
+
+function parsePeriodoParam(value) {
+  const raw = String(value ?? '').trim();
+  if (!raw) return { ano: null, periodo: null };
+
+  const match = raw.match(/^(\d{4})(?:[-/.](\d+))?$/);
+  if (!match) return { ano: Number(raw) || null, periodo: null };
+
+  return {
+    ano: Number(match[1]) || null,
+    periodo: match[2] ? Number(match[2]) || null : null,
+  };
 }
 
 function uniqueSorted(values) {
@@ -34,135 +54,582 @@ function uniqueSorted(values) {
     .sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
 }
 
-function matchesFilter(row, keys, selected) {
-  if (!selected || selected === 'todos') return true;
-
-  const rowValue = pick(row, keys);
-  if (rowValue === null || rowValue === undefined || String(rowValue).trim() === '') {
-    return true;
+function endpointInstrumento(endpoint) {
+  if (endpoint.startsWith('/docente') || endpoint.startsWith('/docente_base')) {
+    return 'DOC';
   }
-
-  return normalizeText(rowValue) === normalizeText(selected);
+  return 'DISC';
 }
 
-function applyFilters(rows, { ano, campus, curso }) {
-  return rows.filter((row) => (
-    matchesFilter(row, ['ano', 'periodo', 'periodo_letivo', 'periodo_nome'], ano) &&
-    matchesFilter(row, ['campus', 'nome_campus', 'unidade'], campus) &&
-    matchesFilter(row, ['curso', 'nome_curso'], curso)
+function endpointLevel(endpoint) {
+  if (endpoint.includes('/dimensoes/')) {
+    return { nivel: 'eixo', outputKey: 'dimensao', labelField: 'eixo' };
+  }
+
+  if (endpoint.includes('/subdimensoes/')) {
+    return { nivel: 'subdimensao', outputKey: 'subdimensao', labelField: 'subdimensao' };
+  }
+
+  return { nivel: 'item', outputKey: 'item', labelField: 'codigo_item' };
+}
+
+function endpointLikertOptions(endpoint) {
+  const options = {
+    instrumento: endpointInstrumento(endpoint),
+    ...endpointLevel(endpoint),
+  };
+
+  if (endpoint.includes('/autoavaliacao/')) options.eixo = 'Autoavalia\u00e7\u00e3o';
+  if (endpoint.includes('/acaodocente/')) options.eixo = 'A\u00e7\u00e3o Docente';
+  if (endpoint.includes('/avaliacaoturma/')) options.eixo = 'Avalia\u00e7\u00e3o da Turma';
+  if (endpoint.includes('/atitudeprofissional/')) options.subdimensao = 'Atitude Profissional';
+  if (endpoint.includes('/gestaodidatica/')) options.subdimensao = 'Gest\u00e3o Did\u00e1tica';
+  if (endpoint.includes('/processoavaliativo/')) options.subdimensao = 'Processo Avaliativo';
+  if (endpoint.includes('/instalacoes/')) options.eixo = 'Instala\u00e7\u00f5es F\u00edsicas';
+
+  return options;
+}
+
+function normalizeQuestionCode(codeLike) {
+  const raw = String(codeLike ?? '').trim();
+  if (!raw) return '';
+  if (/^\d+\.\d+\.\d+$/.test(raw)) return raw;
+
+  const dottedTwoPart = raw.match(/^(\d+)\.(\d{2})$/);
+  if (dottedTwoPart) {
+    const [, a, bc] = dottedTwoPart;
+    return `${a}.${bc[0]}.${bc[1]}`;
+  }
+
+  const compact = raw.match(/^(\d{3,})$/);
+  if (compact) {
+    const s = compact[1];
+    return s.length === 3
+      ? `${s[0]}.${s[1]}.${s[2]}`
+      : `${s.slice(0, -2)}.${s.slice(-2, -1)}.${s.slice(-1)}`;
+  }
+
+  return raw;
+}
+
+function sortRowsByOrder(rows, key) {
+  return [...rows].sort((a, b) => (
+    Number(a.ordem_bloco ?? 999) - Number(b.ordem_bloco ?? 999) ||
+    Number(a.ordem_item ?? 999) - Number(b.ordem_item ?? 999) ||
+    String(a[key] ?? '').localeCompare(String(b[key] ?? ''), 'pt-BR')
   ));
 }
 
-function rowsFromFacet(rows, facetNames) {
-  const wanted = facetNames.map(normalizeText);
-
-  return rows
-    .filter((row) => wanted.includes(normalizeText(row?.facet)))
-    .map((row) => row?.valor)
-    .filter((value) => value !== null && value !== undefined);
+function normalizedSql(expr) {
+  const accents = 'ÁÀÃÂÄÉÈÊËÍÌÎÏÓÒÕÔÖÚÙÛÜÇáàãâäéèêëíìîïóòõôöúùûüç';
+  const plain = 'AAAAAEEEEIIIIOOOOOUUUUCaaaaaeeeeiiiiooooouuuuc';
+  return `lower(translate(${expr}, '${accents}', '${plain}'))`;
 }
 
-async function getFilterRows() {
-  const { rows } = await queryAvaliaApi('SELECT * FROM api.filtros()');
-  return rows;
-}
+function sqlFilters(filters = {}, options = {}) {
+  const { ano, periodo } = parsePeriodoParam(filters.ano);
+  const params = [];
+  const where = [];
 
-async function getPeriodRows() {
-  try {
-    const { rows } = await queryAvaliaApi('SELECT * FROM api.periodos');
-    return rows;
-  } catch (err) {
-    console.error('[avalia-db] periodos fallback error:', err);
-    return [];
+  const add = (value) => {
+    params.push(value);
+    return `$${params.length}`;
+  };
+
+  if (ano) where.push(`v.ano = ${add(ano)}::smallint`);
+  if (periodo) where.push(`v.periodo = ${add(periodo)}::smallint`);
+  if (toNullableParam(filters.campus)) {
+    where.push(`o.campus = ${add(toNullableParam(filters.campus))}::text`);
   }
+  if (!options.ignoreCurso && toNullableParam(filters.curso)) {
+    where.push(`o.curso = ${add(toNullableParam(filters.curso))}::text`);
+  }
+  if (options.tipoMedida) where.push(`v.tipo_medida = ${add(options.tipoMedida)}::${SCHEMA}.tipo_medida_t`);
+  if (options.eixo) {
+    where.push(`${normalizedSql('v.eixo')} = ${normalizedSql(`${add(options.eixo)}::text`)}`);
+  }
+  if (options.subdimensao) {
+    where.push(`${normalizedSql('v.subdimensao')} = ${normalizedSql(`${add(options.subdimensao)}::text`)}`);
+  }
+
+  return {
+    params,
+    whereSql: where.length ? `WHERE ${where.join('\n        AND ')}` : '',
+  };
 }
 
-async function getResumoRows(filters) {
-  const { rows } = await queryAvaliaApi('SELECT * FROM api.resumo()');
-  return applyFilters(rows, filters);
+function viewForInstrumento(instrumento) {
+  return instrumento === 'DOC'
+    ? `${SCHEMA}.vw_doc_resposta_long`
+    : `${SCHEMA}.vw_disc_resposta_long`;
 }
 
-async function getLikertRows(filters) {
-  const { rows } = await queryAvaliaApi('SELECT * FROM api.likert_distribuicao()');
-  return applyFilters(rows, filters);
-}
+async function getFilterPayload(filters = {}) {
+  const { ano, periodo } = parsePeriodoParam(filters.ano);
+  const params = [];
+  const where = [];
 
-function toFiltersPayload(filterRows, periodRows = []) {
-  const anosFromFacets = rowsFromFacet(filterRows, ['ano', 'periodo', 'periodos']);
-  const anosFromPeriods = periodRows.map((row) =>
-    pick(row, ['ano', 'periodo', 'periodo_letivo', 'periodo_nome', 'valor'])
+  const add = (value) => {
+    params.push(value);
+    return `$${params.length}`;
+  };
+
+  if (ano) where.push(`p.ano = ${add(ano)}::smallint`);
+  if (periodo) where.push(`p.periodo = ${add(periodo)}::smallint`);
+  if (toNullableParam(filters.campus)) {
+    where.push(`o.campus = ${add(toNullableParam(filters.campus))}::text`);
+  }
+  if (toNullableParam(filters.curso)) {
+    where.push(`o.curso = ${add(toNullableParam(filters.curso))}::text`);
+  }
+
+  const { rows: periodoRows } = await queryAvaliaApi(
+    `
+      SELECT codigo_periodo
+      FROM ${SCHEMA}.dim_periodo
+      ORDER BY ano, periodo
+    `
+  );
+
+  const { rows } = await queryAvaliaApi(
+    `
+      SELECT DISTINCT
+        o.campus,
+        o.curso
+      FROM ${SCHEMA}.dim_oferta o
+      JOIN ${SCHEMA}.dim_periodo p ON p.periodo_id = o.periodo_id
+      ${where.length ? `WHERE ${where.join('\n        AND ')}` : ''}
+      ORDER BY o.campus, o.curso
+    `,
+    params
   );
 
   return {
-    anos: uniqueSorted([...anosFromFacets, ...anosFromPeriods]),
-    campus: uniqueSorted(rowsFromFacet(filterRows, ['campus', 'campi'])),
-    cursos: uniqueSorted(rowsFromFacet(filterRows, ['curso', 'cursos'])),
-    raw: filterRows,
+    anos: uniqueSorted(periodoRows.map((row) => row.codigo_periodo)),
+    campus: uniqueSorted(rows.map((row) => row.campus)),
+    cursos: uniqueSorted(rows.map((row) => row.curso)),
+    raw: rows,
   };
 }
 
-function toCampusPayload(filterRows, periodRows) {
-  const filters = toFiltersPayload(filterRows, periodRows);
+async function getSummary(filters = {}) {
+  const responseFilters = sqlFilters(filters, { tipoMedida: 'LIKERT' });
+  const { rows: totalRows } = await queryAvaliaApi(
+    `
+      SELECT COUNT(DISTINCT v.matricula_hash)::int AS total_respondentes
+      FROM ${SCHEMA}.vw_disc_resposta_long v
+      JOIN ${SCHEMA}.dim_oferta o ON o.oferta_id = v.oferta_id
+      ${responseFilters.whereSql}
+    `,
+    responseFilters.params
+  );
+
+  const campusFilters = sqlFilters(
+    { ...filters, campus: 'todos' },
+    { tipoMedida: 'LIKERT' }
+  );
+  const { rows: campusRows } = await queryAvaliaApi(
+    `
+      SELECT
+        o.campus,
+        ROUND(AVG(v.valor)::numeric, 2)::float AS media
+      FROM ${SCHEMA}.vw_disc_resposta_long v
+      JOIN ${SCHEMA}.dim_oferta o ON o.oferta_id = v.oferta_id
+      ${campusFilters.whereSql}
+      GROUP BY o.campus
+      HAVING COUNT(*) > 0
+      ORDER BY media DESC, o.campus
+    `,
+    campusFilters.params
+  );
+
   return {
-    anos: filters.anos,
-    campus: filters.campus,
+    total_respondentes: Number(totalRows[0]?.total_respondentes ?? 0),
+    campus_melhor_avaliado: campusRows[0] ? [campusRows[0]] : [],
+    campus_pior_avaliado: campusRows.at(-1) ? [campusRows.at(-1)] : [],
   };
 }
 
-function toCoursePayload(filterRows) {
-  return {
-    cursos: uniqueSorted(rowsFromFacet(filterRows, ['curso', 'cursos'])),
-  };
+async function getMeanRows(filters = {}, options = {}) {
+  const filtersSql = sqlFilters(filters, { ...options, tipoMedida: 'LIKERT' });
+  const view = viewForInstrumento(options.instrumento);
+  const labelExpr = options.labelField === 'codigo_item'
+    ? 'v.codigo_item'
+    : `COALESCE(v.${options.labelField}, v.eixo, v.codigo_item)`;
+
+  const { rows } = await queryAvaliaApi(
+    `
+      SELECT
+        ${labelExpr} AS label,
+        MIN(v.ordem_bloco) AS ordem_bloco,
+        MIN(v.ordem_item) AS ordem_item,
+        ROUND(AVG(v.valor)::numeric, 2)::float AS media,
+        COUNT(*)::int AS respondentes
+      FROM ${view} v
+      JOIN ${SCHEMA}.dim_oferta o ON o.oferta_id = v.oferta_id
+      ${filtersSql.whereSql}
+      GROUP BY ${labelExpr}
+      ORDER BY ordem_bloco, ordem_item, label
+    `,
+    filtersSql.params
+  );
+
+  return sortRowsByOrder(
+    rows.map((row) => ({
+      [options.outputKey]: options.outputKey === 'item'
+        ? normalizeQuestionCode(row.label)
+        : row.label,
+      media: Number(row.media ?? 0),
+      respondentes: Number(row.respondentes ?? 0),
+      ordem_bloco: row.ordem_bloco,
+      ordem_item: row.ordem_item,
+    })),
+    options.outputKey
+  );
 }
 
-function getNumber(row, keys) {
-  const value = pick(row, keys);
-  const number = Number(value);
-  return Number.isFinite(number) ? number : null;
+async function getProportionRows(filters = {}, options = {}) {
+  const filtersSql = sqlFilters(filters, { ...options, tipoMedida: 'LIKERT' });
+  const view = viewForInstrumento(options.instrumento);
+  const labelExpr = options.labelField === 'codigo_item'
+    ? 'v.codigo_item'
+    : `COALESCE(v.${options.labelField}, v.eixo, v.codigo_item)`;
+
+  const { rows } = await queryAvaliaApi(
+    `
+      WITH base AS (
+        SELECT
+          ${labelExpr} AS label,
+          v.valor::int AS valor_likert,
+          MIN(v.ordem_bloco) OVER (PARTITION BY ${labelExpr}) AS ordem_bloco,
+          MIN(v.ordem_item) OVER (PARTITION BY ${labelExpr}) AS ordem_item
+        FROM ${view} v
+        JOIN ${SCHEMA}.dim_oferta o ON o.oferta_id = v.oferta_id
+        ${filtersSql.whereSql}
+      ),
+      grouped AS (
+        SELECT
+          label,
+          valor_likert,
+          MIN(ordem_bloco) AS ordem_bloco,
+          MIN(ordem_item) AS ordem_item,
+          COUNT(*)::int AS respostas,
+          SUM(COUNT(*)) OVER (PARTITION BY label)::int AS total_respostas
+        FROM base
+        GROUP BY label, valor_likert
+      )
+      SELECT
+        label,
+        valor_likert,
+        ordem_bloco,
+        ordem_item,
+        respostas,
+        total_respostas,
+        ROUND((respostas::numeric / NULLIF(total_respostas, 0)) * 100, 2)::float AS percentual
+      FROM grouped
+      ORDER BY ordem_bloco, ordem_item, label, valor_likert DESC
+    `,
+    filtersSql.params
+  );
+
+  return sortRowsByOrder(
+    rows.map((row) => ({
+      [options.outputKey]: options.outputKey === 'item'
+        ? normalizeQuestionCode(row.label)
+        : row.label,
+      conceito: CONCEITOS[Number(row.valor_likert)] ?? String(row.valor_likert ?? ''),
+      valor: Number(row.percentual ?? 0),
+      respostas: Number(row.respostas ?? 0),
+      total_respostas: Number(row.total_respostas ?? 0),
+      ordem_bloco: row.ordem_bloco,
+      ordem_item: row.ordem_item,
+    })),
+    options.outputKey
+  );
 }
 
-function summarizeRows(rows) {
-  if (rows.length === 1 && Object.prototype.hasOwnProperty.call(rows[0], 'total_respondentes')) {
-    return rows[0];
-  }
+async function getAtividadesRows(filters = {}, instrumento = 'DISC', options = {}) {
+  const filtersSql = sqlFilters(filters, { tipoMedida: 'ATIVIDADE' });
+  const view = viewForInstrumento(instrumento);
 
-  const totalFromRows = rows
-    .map((row) => getNumber(row, ['total_respondentes', 'respondentes', 'n', 'total', 'qtd']))
-    .filter((value) => value !== null);
+  const { rows } = await queryAvaliaApi(
+    `
+      SELECT
+        COALESCE(v.codigo_item, v.subdimensao, v.eixo) AS atividade,
+        MIN(v.ordem_bloco) AS ordem_bloco,
+        MIN(v.ordem_item) AS ordem_item,
+        ROUND((AVG(v.valor)::numeric * 100), 2)::float AS percentual,
+        COUNT(*)::int AS respondentes
+      FROM ${view} v
+      JOIN ${SCHEMA}.dim_oferta o ON o.oferta_id = v.oferta_id
+      ${filtersSql.whereSql}
+      GROUP BY COALESCE(v.codigo_item, v.subdimensao, v.eixo)
+      ORDER BY ordem_bloco, ordem_item, atividade
+    `,
+    filtersSql.params
+  );
 
-  const total = totalFromRows.length
-    ? totalFromRows.reduce((sum, value) => sum + value, 0)
-    : rows.length;
-
-  const rowsWithCampusMedia = rows
-    .map((row) => ({
-      campus: pick(row, ['campus', 'nome_campus', 'unidade']),
-      media: getNumber(row, ['media_geral', 'media', 'mean', 'valor']),
-    }))
-    .filter((row) => row.campus && row.media !== null);
-
-  const byCampus = new Map();
-  for (const row of rowsWithCampusMedia) {
-    const key = normalizeText(row.campus);
-    const current = byCampus.get(key) ?? { campus: row.campus, soma: 0, n: 0 };
-    current.soma += row.media;
-    current.n += 1;
-    byCampus.set(key, current);
-  }
-
-  const campusStats = [...byCampus.values()].map((row) => ({
-    campus: row.campus,
-    media: row.n ? row.soma / row.n : null,
+  const data = rows.map((row) => ({
+    atividade: row.atividade,
+    percentual: Number(row.percentual ?? 0),
+    respondentes: Number(row.respondentes ?? 0),
+    ordem_bloco: row.ordem_bloco,
+    ordem_item: row.ordem_item,
   }));
 
-  campusStats.sort((a, b) => Number(b.media ?? -Infinity) - Number(a.media ?? -Infinity));
+  if (options.ranking) return data;
+  return sortRowsByOrder(data, 'atividade');
+}
+
+async function getBoxplotPayload(filters = {}, options = {}) {
+  const sourceSql = options.instrumento === 'DOC'
+    ? `
+      SELECT
+        v.oferta_id,
+        ${options.labelField === 'codigo_item' ? 'v.codigo_item' : `COALESCE(v.${options.labelField}, v.eixo, v.codigo_item)`} AS label,
+        MIN(v.ordem_bloco) AS ordem_bloco,
+        MIN(v.ordem_item) AS ordem_item,
+        AVG(v.valor)::numeric AS value
+      FROM ${SCHEMA}.vw_doc_resposta_long v
+      JOIN ${SCHEMA}.dim_oferta o ON o.oferta_id = v.oferta_id
+      __WHERE__
+      GROUP BY v.oferta_id, label
+    `
+    : `
+      SELECT
+        v.oferta_id,
+        ${options.labelField === 'codigo_item' ? 'v.codigo_item' : `COALESCE(v.${options.labelField}, v.eixo, v.codigo_item)`} AS label,
+        MIN(v.ordem_bloco) AS ordem_bloco,
+        MIN(v.ordem_item) AS ordem_item,
+        AVG(v.media)::numeric AS value
+      FROM ${SCHEMA}.vw_disc_media_long v
+      JOIN ${SCHEMA}.dim_oferta o ON o.oferta_id = v.oferta_id
+      __WHERE__
+      GROUP BY v.oferta_id, label
+    `;
+
+  const filtersSql = sqlFilters(filters, options.instrumento === 'DOC'
+    ? { ...options, tipoMedida: 'LIKERT' }
+    : options);
+
+  const baseSql = sourceSql.replace('__WHERE__', filtersSql.whereSql);
+  const { rows } = await queryAvaliaApi(
+    `
+      WITH base AS (
+        ${baseSql}
+      ),
+      stats AS (
+        SELECT
+          label,
+          MIN(ordem_bloco) AS ordem_bloco,
+          MIN(ordem_item) AS ordem_item,
+          MIN(value)::float AS min,
+          percentile_cont(0.25) WITHIN GROUP (ORDER BY value)::float AS q1,
+          percentile_cont(0.50) WITHIN GROUP (ORDER BY value)::float AS mediana,
+          AVG(value)::float AS media,
+          percentile_cont(0.75) WITHIN GROUP (ORDER BY value)::float AS q3,
+          MAX(value)::float AS max,
+          COUNT(*)::int AS n
+        FROM base
+        WHERE value IS NOT NULL
+        GROUP BY label
+      )
+      SELECT *
+      FROM stats
+      ORDER BY ordem_bloco, ordem_item, label
+    `,
+    filtersSql.params
+  );
+
+  const mapped = sortRowsByOrder(
+    rows.map((row) => {
+      const label = options.outputKey === 'item' ? normalizeQuestionCode(row.label) : row.label;
+      return {
+        label,
+        ordem_bloco: row.ordem_bloco,
+        ordem_item: row.ordem_item,
+        min: Number(row.min ?? 0),
+        q1: Number(row.q1 ?? 0),
+        mediana: Number(row.mediana ?? 0),
+        media: Number(row.media ?? 0),
+        q3: Number(row.q3 ?? 0),
+        max: Number(row.max ?? 0),
+        n: Number(row.n ?? 0),
+      };
+    }),
+    'label'
+  );
 
   return {
-    total_respondentes: total,
-    campus_melhor_avaliado: campusStats[0] ? [campusStats[0]] : [],
-    campus_pior_avaliado: campusStats.at(-1) ? [campusStats.at(-1)] : [],
-    rows,
+    boxplot_data: mapped.map((row) => ({
+      x: row.label,
+      y: [
+        Number(row.min.toFixed(2)),
+        Number(row.q1.toFixed(2)),
+        Number(row.mediana.toFixed(2)),
+        Number(row.q3.toFixed(2)),
+        Number(row.max.toFixed(2)),
+      ],
+    })),
+    outliers_data: [],
+    tabela2: mapped.map((row) => ({
+      Item: row.label,
+      Min: Number(row.min.toFixed(2)),
+      Q1: Number(row.q1.toFixed(2)),
+      Mediana: Number(row.mediana.toFixed(2)),
+      Media: Number(row.media.toFixed(2)),
+      Q3: Number(row.q3.toFixed(2)),
+      Max: Number(row.max.toFixed(2)),
+      N: row.n,
+    })),
+    rows: mapped,
   };
+}
+
+async function getRankingMean(filters = {}, options = {}) {
+  const filtersSql = sqlFilters(filters, {
+    ...options,
+    tipoMedida: 'LIKERT',
+    ignoreCurso: true,
+  });
+  const view = viewForInstrumento(options.instrumento);
+
+  const { rows } = await queryAvaliaApi(
+    `
+      SELECT
+        o.curso,
+        ROUND(AVG(v.valor)::numeric, 2)::float AS media,
+        COUNT(*)::int AS respondentes
+      FROM ${view} v
+      JOIN ${SCHEMA}.dim_oferta o ON o.oferta_id = v.oferta_id
+      ${filtersSql.whereSql}
+      GROUP BY o.curso
+      ORDER BY media DESC, respondentes DESC, o.curso
+      LIMIT 20
+    `,
+    filtersSql.params
+  );
+
+  return rows.map((row, index) => ({
+    ranking: index + 1,
+    curso: row.curso,
+    media: Number(row.media ?? 0),
+    respondentes: Number(row.respondentes ?? 0),
+  }));
+}
+
+async function getRankingAtividades(filters = {}, instrumento = 'DISC') {
+  const filtersSql = sqlFilters(filters, {
+    tipoMedida: 'ATIVIDADE',
+    ignoreCurso: true,
+  });
+  const view = viewForInstrumento(instrumento);
+
+  const { rows } = await queryAvaliaApi(
+    `
+      SELECT
+        o.curso,
+        ROUND((AVG(v.valor)::numeric * 100), 2)::float AS percentual,
+        COUNT(*)::int AS respondentes
+      FROM ${view} v
+      JOIN ${SCHEMA}.dim_oferta o ON o.oferta_id = v.oferta_id
+      ${filtersSql.whereSql}
+      GROUP BY o.curso
+      ORDER BY percentual DESC, respondentes DESC, o.curso
+      LIMIT 20
+    `,
+    filtersSql.params
+  );
+
+  return rows.map((row, index) => ({
+    ranking: index + 1,
+    curso: row.curso,
+    percentual: Number(row.percentual ?? 0),
+    respondentes: Number(row.respondentes ?? 0),
+  }));
+}
+
+async function getRankingPayload(endpoint, filters = {}) {
+  if (endpoint === '/ranking/cursos/dimensoes-gerais') {
+    return {
+      dimensoes_discente: await getRankingMean(filters, {
+        instrumento: 'DISC',
+        labelField: 'eixo',
+      }),
+      dimensoes_docente: await getRankingMean(filters, {
+        instrumento: 'DOC',
+        labelField: 'eixo',
+      }),
+    };
+  }
+
+  if (endpoint === '/ranking/cursos/autoavaliacao-discente') {
+    return {
+      autoavaliacao_discente: await getRankingMean(filters, {
+        instrumento: 'DISC',
+        eixo: 'Autoavalia\u00e7\u00e3o',
+      }),
+      atitude_profissional: await getRankingMean(filters, {
+        instrumento: 'DISC',
+        subdimensao: 'Atitude Profissional',
+      }),
+      gestao_didatica: await getRankingMean(filters, {
+        instrumento: 'DISC',
+        subdimensao: 'Gest\u00e3o Did\u00e1tica',
+      }),
+      processo_avaliativo: await getRankingMean(filters, {
+        instrumento: 'DISC',
+        subdimensao: 'Processo Avaliativo',
+      }),
+    };
+  }
+
+  if (endpoint === '/ranking/cursos/acao-docente') {
+    return {
+      avaliacao_turma_docente: await getRankingMean(filters, {
+        instrumento: 'DOC',
+        eixo: 'Avalia\u00e7\u00e3o da Turma',
+      }),
+      autoavaliacao_acao_docente: await getRankingMean(filters, {
+        instrumento: 'DOC',
+        eixo: 'Autoavalia\u00e7\u00e3o',
+      }),
+      atitude_profissional_docente: await getRankingMean(filters, {
+        instrumento: 'DOC',
+        subdimensao: 'Atitude Profissional',
+      }),
+      gestao_didatica_docente: await getRankingMean(filters, {
+        instrumento: 'DOC',
+        subdimensao: 'Gest\u00e3o Did\u00e1tica',
+      }),
+      processo_avaliativo_docente: await getRankingMean(filters, {
+        instrumento: 'DOC',
+        subdimensao: 'Processo Avaliativo',
+      }),
+    };
+  }
+
+  if (endpoint === '/ranking/cursos/instalacoes') {
+    return {
+      instalacoes_discente: await getRankingMean(filters, {
+        instrumento: 'DISC',
+        eixo: 'Instala\u00e7\u00f5es F\u00edsicas',
+      }),
+      instalacoes_docente: await getRankingMean(filters, {
+        instrumento: 'DOC',
+        eixo: 'Instala\u00e7\u00f5es F\u00edsicas',
+      }),
+    };
+  }
+
+  if (endpoint === '/ranking/cursos/atividades') {
+    return {
+      atividades_discente: await getRankingAtividades(filters, 'DISC'),
+      atividades_docente: await getRankingAtividades(filters, 'DOC'),
+    };
+  }
+
+  return null;
 }
 
 function json(payload, init = {}) {
@@ -170,7 +637,7 @@ function json(payload, init = {}) {
     ...init,
     headers: {
       'Cache-Control': 'no-store, max-age=0',
-      'X-Data-Source': 'neon-api',
+      'X-Data-Source': 'neon-avalia-views',
       ...(init.headers ?? {}),
     },
   });
@@ -178,50 +645,86 @@ function json(payload, init = {}) {
 
 async function routeEndpoint(endpoint, filters) {
   if (endpoint === '/ping') {
-    const { rows } = await queryAvaliaApi('SELECT * FROM api.ping LIMIT 1');
+    const { rows } = await queryAvaliaApi(`SELECT 1 AS ok`);
     return rows[0] ?? { ok: true };
   }
 
   if (endpoint === '/periodos') {
-    const { rows } = await queryAvaliaApi('SELECT * FROM api.periodos');
+    const { rows } = await queryAvaliaApi(
+      `SELECT * FROM ${SCHEMA}.dim_periodo ORDER BY ano, periodo`
+    );
     return rows;
   }
 
   if (endpoint === '/itens') {
-    const { rows } = await queryAvaliaApi('SELECT * FROM api.itens');
+    const { rows } = await queryAvaliaApi(
+      `SELECT * FROM ${SCHEMA}.dim_item_posicao ORDER BY instrumento, ano, periodo, tipo_medida, posicao`
+    );
     return rows;
   }
 
   if (endpoint === '/ofertas') {
-    const { rows } = await queryAvaliaApi('SELECT * FROM api.ofertas');
+    const { rows } = await queryAvaliaApi(
+      `SELECT * FROM ${SCHEMA}.dim_oferta ORDER BY periodo_id, campus, curso, disciplina`
+    );
     return rows;
   }
 
   if (endpoint === '/filters') {
-    const [filterRows, periodRows] = await Promise.all([getFilterRows(), getPeriodRows()]);
-    return toFiltersPayload(filterRows, periodRows);
+    return getFilterPayload(filters);
   }
 
   if (endpoint === '/filters/campus') {
-    const [filterRows, periodRows] = await Promise.all([getFilterRows(), getPeriodRows()]);
-    return toCampusPayload(filterRows, periodRows);
+    const payload = await getFilterPayload({ ano: filters.ano });
+    return { anos: payload.anos, campus: payload.campus };
   }
 
   if (endpoint === '/filters/cursos') {
-    const filterRows = await getFilterRows();
-    return toCoursePayload(filterRows);
+    const payload = await getFilterPayload({
+      ano: filters.ano,
+      campus: filters.campus,
+    });
+    return { cursos: payload.cursos };
   }
 
   if (endpoint === '/resumo' || endpoint === '/discente/geral/summary') {
-    const rows = await getResumoRows(filters);
-    return summarizeRows(rows);
+    return getSummary(filters);
   }
 
   if (endpoint === '/likert-distribuicao') {
-    return getLikertRows(filters);
+    return getProportionRows(filters, {
+      instrumento: endpointInstrumento(endpoint),
+      ...endpointLevel(endpoint),
+    });
   }
 
-  return [];
+  if (endpoint.includes('/atividades/percentual')) {
+    return getAtividadesRows(filters, endpointInstrumento(endpoint));
+  }
+
+  if (endpoint.startsWith('/ranking/')) {
+    return getRankingPayload(endpoint, filters);
+  }
+
+  if (
+    endpoint.includes('/boxplot') ||
+    endpoint.includes('/descritivas') ||
+    endpoint.includes('/estatisticas')
+  ) {
+    return getBoxplotPayload(filters, endpointLikertOptions(endpoint));
+  }
+
+  if (endpoint.includes('/medias')) {
+    const options = endpointLikertOptions(endpoint);
+    return getMeanRows(filters, options);
+  }
+
+  if (endpoint.includes('/proporcoes')) {
+    const options = endpointLikertOptions(endpoint);
+    return getProportionRows(filters, options);
+  }
+
+  return null;
 }
 
 export async function GET(req) {
