@@ -733,15 +733,18 @@ async function routeEndpoint(endpoint, filters) {
 }
 
 export async function GET(req) {
+  let endpoint = null;
+  let filters = null;
+
   try {
     const { searchParams } = new URL(req.url);
-    const endpoint = searchParams.get('endpoint');
+    endpoint = searchParams.get('endpoint');
 
     if (!endpoint) {
       return json({ error: 'Parametro "endpoint" e obrigatorio.' }, { status: 400 });
     }
 
-    const filters = {
+    filters = {
       ano: normalizeParam(searchParams.get('ano'), null),
       campus: normalizeParam(searchParams.get('campus'), 'todos'),
       curso: normalizeParam(searchParams.get('curso'), 'todos'),
@@ -750,7 +753,12 @@ export async function GET(req) {
     const payload = await routeEndpoint(endpoint, filters);
     return json(payload);
   } catch (err) {
-    console.error('[avalia-db] fatal:', err);
+    console.error('[avalia-db] fatal:', {
+      endpoint,
+      filters,
+      message: err?.message,
+      stack: err?.stack,
+    });
 
     return json(
       {

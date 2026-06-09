@@ -21,7 +21,20 @@ function sanitizeDatabaseUrl(rawUrl) {
 }
 
 const connectionString = sanitizeDatabaseUrl(process.env.DATABASE_URL);
-const CACHE_TABLE = 'public.dashboard_cache';
+
+function quoteIdentifier(value, fallback) {
+  const ident = String(value || fallback || '').trim();
+
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(ident)) {
+    throw new Error(`Identificador de cache invalido: ${ident}`);
+  }
+
+  return `"${ident.replaceAll('"', '""')}"`;
+}
+
+const CACHE_SCHEMA = quoteIdentifier(process.env.DASHBOARD_CACHE_SCHEMA, 'avalia');
+const CACHE_TABLE_NAME = quoteIdentifier(process.env.DASHBOARD_CACHE_TABLE, 'dashboard_cache');
+const CACHE_TABLE = `${CACHE_SCHEMA}.${CACHE_TABLE_NAME}`;
 
 export const pool =
   globalForDb.__dashboardPool ??
