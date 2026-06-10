@@ -224,10 +224,7 @@ async function getSummary(filters = {}) {
     responseFilters.params
   );
 
-  const campusFilters = sqlFilters(
-    { ...filters, campus: 'todos' },
-    { tipoMedida: 'LIKERT' }
-  );
+  const campusFilters = sqlFilters(filters, { tipoMedida: 'LIKERT' });
   const { rows: campusRows } = await queryAvaliaApi(
     `
       SELECT
