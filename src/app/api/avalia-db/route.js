@@ -81,6 +81,10 @@ function endpointLevel(endpoint) {
   return { nivel: 'item', outputKey: 'item', labelField: 'codigo_item' };
 }
 
+function isDocenteDimensoesCompatEndpoint(endpoint) {
+  return endpoint.startsWith('/docente/avaliacaoturma/dimensoes/');
+}
+
 function endpointLikertOptions(endpoint) {
   const options = {
     instrumento: endpointInstrumento(endpoint),
@@ -93,7 +97,9 @@ function endpointLikertOptions(endpoint) {
       : EIXOS.AUTOAVALIACAO_DISCENTE;
   }
   if (endpoint.includes('/acaodocente/')) options.eixo = EIXOS.ACAO_DOCENTE;
-  if (endpoint.includes('/avaliacaoturma/')) options.eixo = EIXOS.AVALIACAO_TURMA;
+  if (endpoint.includes('/avaliacaoturma/') && !isDocenteDimensoesCompatEndpoint(endpoint)) {
+    options.eixo = EIXOS.AVALIACAO_TURMA;
+  }
   if (endpoint.includes('/atitudeprofissional/')) options.subdimensao = 'Atitude Profissional';
   if (endpoint.includes('/gestaodidatica/')) options.subdimensao = 'Gest\u00e3o Did\u00e1tica';
   if (endpoint.includes('/processoavaliativo/')) options.subdimensao = 'Processo Avaliativo';
