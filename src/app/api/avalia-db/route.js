@@ -11,6 +11,14 @@ const CONCEITOS = {
   1: 'Insuficiente',
 };
 
+const EIXOS = {
+  AUTOAVALIACAO_DISCENTE: 'AUTOAVALIACAO DISCENTE',
+  ACAO_DOCENTE: 'ACAO DOCENTE',
+  AVALIACAO_TURMA: 'AVALIACAO DA TURMA',
+  AUTOAVALIACAO_ACAO_DOCENTE: 'AUTOAVALIACAO DA ACAO DOCENTE',
+  INSTALACOES: 'INSTALACOES FISICAS',
+};
+
 function normalizeText(value) {
   return String(value ?? '')
     .trim()
@@ -79,13 +87,17 @@ function endpointLikertOptions(endpoint) {
     ...endpointLevel(endpoint),
   };
 
-  if (endpoint.includes('/autoavaliacao/')) options.eixo = 'Autoavalia\u00e7\u00e3o';
-  if (endpoint.includes('/acaodocente/')) options.eixo = 'A\u00e7\u00e3o Docente';
-  if (endpoint.includes('/avaliacaoturma/')) options.eixo = 'Avalia\u00e7\u00e3o da Turma';
+  if (endpoint.includes('/autoavaliacao/')) {
+    options.eixo = options.instrumento === 'DOC'
+      ? EIXOS.AUTOAVALIACAO_ACAO_DOCENTE
+      : EIXOS.AUTOAVALIACAO_DISCENTE;
+  }
+  if (endpoint.includes('/acaodocente/')) options.eixo = EIXOS.ACAO_DOCENTE;
+  if (endpoint.includes('/avaliacaoturma/')) options.eixo = EIXOS.AVALIACAO_TURMA;
   if (endpoint.includes('/atitudeprofissional/')) options.subdimensao = 'Atitude Profissional';
   if (endpoint.includes('/gestaodidatica/')) options.subdimensao = 'Gest\u00e3o Did\u00e1tica';
   if (endpoint.includes('/processoavaliativo/')) options.subdimensao = 'Processo Avaliativo';
-  if (endpoint.includes('/instalacoes/')) options.eixo = 'Instala\u00e7\u00f5es F\u00edsicas';
+  if (endpoint.includes('/instalacoes/')) options.eixo = EIXOS.INSTALACOES;
 
   return options;
 }
@@ -556,27 +568,27 @@ async function getRankingPayload(endpoint, filters = {}) {
     return {
       autoavaliacao_discente: await getRankingMean(filters, {
         instrumento: 'DISC',
-        eixo: 'Autoavalia\u00e7\u00e3o',
+        eixo: EIXOS.AUTOAVALIACAO_DISCENTE,
       }),
       acao_docente_discente: await getRankingMean(filters, {
         instrumento: 'DISC',
-        eixo: 'A\u00e7\u00e3o Docente',
+        eixo: EIXOS.ACAO_DOCENTE,
       }),
       instalacoes_discente: await getRankingMean(filters, {
         instrumento: 'DISC',
-        eixo: 'Instala\u00e7\u00f5es F\u00edsicas',
+        eixo: EIXOS.INSTALACOES,
       }),
       avaliacao_turma_docente: await getRankingMean(filters, {
         instrumento: 'DOC',
-        eixo: 'Avalia\u00e7\u00e3o da Turma',
+        eixo: EIXOS.AVALIACAO_TURMA,
       }),
       autoavaliacao_acao_docente: await getRankingMean(filters, {
         instrumento: 'DOC',
-        eixo: 'Autoavalia\u00e7\u00e3o',
+        eixo: EIXOS.AUTOAVALIACAO_ACAO_DOCENTE,
       }),
       instalacoes_docente: await getRankingMean(filters, {
         instrumento: 'DOC',
-        eixo: 'Instala\u00e7\u00f5es F\u00edsicas',
+        eixo: EIXOS.INSTALACOES,
       }),
     };
   }
@@ -585,7 +597,7 @@ async function getRankingPayload(endpoint, filters = {}) {
     return {
       autoavaliacao_discente: await getRankingMean(filters, {
         instrumento: 'DISC',
-        eixo: 'Autoavalia\u00e7\u00e3o',
+        eixo: EIXOS.AUTOAVALIACAO_DISCENTE,
       }),
       atitude_profissional: await getRankingMean(filters, {
         instrumento: 'DISC',
@@ -606,11 +618,11 @@ async function getRankingPayload(endpoint, filters = {}) {
     return {
       avaliacao_turma_docente: await getRankingMean(filters, {
         instrumento: 'DOC',
-        eixo: 'Avalia\u00e7\u00e3o da Turma',
+        eixo: EIXOS.AVALIACAO_TURMA,
       }),
       autoavaliacao_acao_docente: await getRankingMean(filters, {
         instrumento: 'DOC',
-        eixo: 'Autoavalia\u00e7\u00e3o',
+        eixo: EIXOS.AUTOAVALIACAO_ACAO_DOCENTE,
       }),
       atitude_profissional_docente: await getRankingMean(filters, {
         instrumento: 'DOC',
@@ -631,11 +643,11 @@ async function getRankingPayload(endpoint, filters = {}) {
     return {
       instalacoes_discente: await getRankingMean(filters, {
         instrumento: 'DISC',
-        eixo: 'Instala\u00e7\u00f5es F\u00edsicas',
+        eixo: EIXOS.INSTALACOES,
       }),
       instalacoes_docente: await getRankingMean(filters, {
         instrumento: 'DOC',
-        eixo: 'Instala\u00e7\u00f5es F\u00edsicas',
+        eixo: EIXOS.INSTALACOES,
       }),
     };
   }
