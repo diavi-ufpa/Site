@@ -554,13 +554,29 @@ async function getRankingAtividades(filters = {}, instrumento = 'DISC') {
 async function getRankingPayload(endpoint, filters = {}) {
   if (endpoint === '/ranking/cursos/dimensoes-gerais') {
     return {
-      dimensoes_discente: await getRankingMean(filters, {
+      autoavaliacao_discente: await getRankingMean(filters, {
         instrumento: 'DISC',
-        labelField: 'eixo',
+        eixo: 'Autoavalia\u00e7\u00e3o',
       }),
-      dimensoes_docente: await getRankingMean(filters, {
+      acao_docente_discente: await getRankingMean(filters, {
+        instrumento: 'DISC',
+        eixo: 'A\u00e7\u00e3o Docente',
+      }),
+      instalacoes_discente: await getRankingMean(filters, {
+        instrumento: 'DISC',
+        eixo: 'Instala\u00e7\u00f5es F\u00edsicas',
+      }),
+      avaliacao_turma_docente: await getRankingMean(filters, {
         instrumento: 'DOC',
-        labelField: 'eixo',
+        eixo: 'Avalia\u00e7\u00e3o da Turma',
+      }),
+      autoavaliacao_acao_docente: await getRankingMean(filters, {
+        instrumento: 'DOC',
+        eixo: 'Autoavalia\u00e7\u00e3o',
+      }),
+      instalacoes_docente: await getRankingMean(filters, {
+        instrumento: 'DOC',
+        eixo: 'Instala\u00e7\u00f5es F\u00edsicas',
       }),
     };
   }
