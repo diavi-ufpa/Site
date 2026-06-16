@@ -474,6 +474,40 @@ async function getBoxplotPayload(filters = {}, options = {}) {
     'label'
   );
 
+  const { rows: outlierRows } = await queryAvaliaApi(
+    `
+      WITH base AS (
+        ${baseSql}
+      ),
+      stats AS (
+        SELECT
+          label,
+          percentile_cont(0.25) WITHIN GROUP (ORDER BY value)::float AS q1,
+          percentile_cont(0.75) WITHIN GROUP (ORDER BY value)::float AS q3
+        FROM base
+        WHERE value IS NOT NULL
+        GROUP BY label
+      )
+      SELECT
+        b.label,
+        b.value::float AS value
+      FROM base b
+      JOIN stats s ON s.label = b.label
+      WHERE b.value IS NOT NULL
+        AND (
+          b.value < (s.q1 - 1.5 * (s.q3 - s.q1))
+          OR b.value > (s.q3 + 1.5 * (s.q3 - s.q1))
+        )
+      ORDER BY b.label, b.value
+    `,
+    filtersSql.params
+  );
+
+  const outliersData = outlierRows.map((row) => ({
+    x: options.outputKey === 'item' ? normalizeQuestionCode(row.label) : row.label,
+    y: Number(Number(row.value ?? 0).toFixed(2)),
+  }));
+
   const tabela2 = mapped.map((row) => ({
     Item: row.label,
     item: row.label,
@@ -497,7 +531,7 @@ async function getBoxplotPayload(filters = {}, options = {}) {
         Number(row.max.toFixed(2)),
       ],
     })),
-    outliers_data: [],
+    outliers_data: outliersData,
     tabela: tabela2,
     tabela2,
     tabela_items: tabela2,
