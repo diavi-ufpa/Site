@@ -90,9 +90,9 @@ export default function DimensoesGeraisTab({
         className={styles.chartContainer}
         style={{ gridColumn: '1 / -1', minHeight: '400px' }}
       >
-        {dashboardData.turmaDimBoxplot ? (
+        {dashboardData.boxplot ? (
           <BoxplotChart
-            apiData={dashboardData.turmaDimBoxplot}
+            apiData={dashboardData.boxplot}
             title="Distribuição das Médias das Avaliações das Turmas/Docente por Dimensão"
             customOptions={disableZoomOptions}
           />
@@ -119,7 +119,7 @@ export default function DimensoesGeraisTab({
 
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <div style={{ width: '100%' }}>
-            {renderDescritivasTable(dashboardData.turmaDimDescritivas)}
+            {renderDescritivasTable(dashboardData.boxplot)}
           </div>
         </div>
       </div>
