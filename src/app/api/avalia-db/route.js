@@ -414,13 +414,12 @@ async function getBoxplotPayload(filters = {}, options = {}) {
       SELECT
         v.oferta_id,
         ${options.labelField === 'codigo_item' ? 'v.codigo_item' : `COALESCE(v.${options.labelField}, v.eixo, v.codigo_item)`} AS label,
-        MIN(v.ordem_bloco) AS ordem_bloco,
-        MIN(v.ordem_item) AS ordem_item,
-        AVG(v.media)::numeric AS value
+        v.ordem_bloco,
+        v.ordem_item,
+        v.media::numeric AS value
       FROM ${SCHEMA}.vw_disc_media_long v
       JOIN ${SCHEMA}.dim_oferta o ON o.oferta_id = v.oferta_id
       __WHERE__
-      GROUP BY v.oferta_id, label
     `;
 
   const filtersSql = sqlFilters(filters, options.instrumento === 'DOC'
