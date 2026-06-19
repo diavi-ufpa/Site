@@ -4,18 +4,18 @@ import { useState, useEffect, useMemo } from 'react';
 import { Users, Building2, Loader2 } from 'lucide-react';
 
 // Contexto Global
-import { useGlobalData } from '../context/DataContext'; 
+import { useGlobalData } from '@/contexts/DataContext';
 
 // Componentes
-import Header from '../components/Header';
-import StatCard from '../components/StatCard';
-import DiscenteFilters from '../components/DiscenteFilters';
-import QuestionChart from '../components/QuestionChart';
+import Header from '@/components/ui/Header';
+import StatCard from '@/components/ui/StatCard';
+import DiscenteFilters from '@/features/minhaopiniao/components/DiscenteFilters';
+import QuestionChart from '@/components/charts/QuestionChart';
 
 // Utils e Estilos
 import styles from '../../../../styles/dados.module.css';
-import { questionMapping, ratingToScore } from '../lib/questionMapping';
-import { dimensionMapping } from '../lib/DimensionMappingDiscente';
+import { questionMapping, ratingToScore } from '@/lib/questionMapping';
+import { dimensionMapping } from '@/lib/DimensionMappingDiscente';
 
 const DEFAULT_FILTERS = {
   campus: 'todos',

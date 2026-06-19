@@ -31,6 +31,12 @@ const nextConfig = {
 
   compress: true,
 
+  outputFileTracingIncludes: {
+    // Force Vercel to package data folder for API routes and pages that read it
+    '/api/**/*': ['./data/**/*'],
+    '/avaliacao/**/*': ['./data/**/*'],
+  },
+
   async rewrites() {
     return [
       {
@@ -58,7 +64,7 @@ const nextConfig = {
     ];
   },
 
-  serverExternalPackages: [],
+  serverExternalPackages: ['papaparse'],
 
   webpack: (config) => {
     config.resolve.fallback = {

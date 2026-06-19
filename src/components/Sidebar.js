@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import styles from '../styles/Sidebar.module.css';
 
-import LoadingOverlay from '../app/avaliacao/avalia/components/LoadingOverlay';
+import LoadingOverlay from '@/components/ui/LoadingOverlay';
 
 const Sidebar = () => {
   const pathname = usePathname();

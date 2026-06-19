@@ -6,7 +6,7 @@ import { promises as fs } from 'fs';
 export async function GET() {
   try {
     // 1. Ajuste do caminho para o novo arquivo CSV dos TÉCNICOS
-    const filePath = path.join(process.cwd(), 'src', 'app', 'banco', 'TECNICO.csv');
+    const filePath = path.join(process.cwd(), 'data', 'minha-opiniao', 'TECNICO.csv');
 
     // 2. Lê o arquivo como BUFFER
     // Mantemos a performance máxima: bytes direto do disco para a rede

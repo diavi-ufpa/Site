@@ -1,6 +1,6 @@
 'use client';
 
-import ActivityChart from '../../components/ActivityChart';
+import ActivityChart from '@/components/charts/ActivityChart';
 
 // ======================================================
 // Helpers: escala Y dinâmica (pra não ficar "grandão" com valores pequenos)

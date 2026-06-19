@@ -227,6 +227,10 @@
 
 .filterSelectWide { grid-column: 1 / -1; }
 
+.filterModeToggle {
+  grid-column: 1 / -1;
+}
+
 /* =========================
    COMPARAÇÃO (dentro do card de filtros)
 ========================= */

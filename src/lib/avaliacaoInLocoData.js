@@ -132,12 +132,12 @@ function toSortedArray(values, sortAsNumber = false) {
 }
 
 function loadAvaliacaoInLocoWorkbook() {
-  const dataDir = join(process.cwd(), 'public/data');
+  const dataDir = join(process.cwd(), 'data', 'in-loco');
   const files = readdirSync(dataDir);
   const xlsxFile = files.find((file) => file.endsWith('.xlsx'));
 
   if (!xlsxFile) {
-    throw new Error('Nenhum arquivo .xlsx encontrado no diretório de dados');
+    throw new Error('Nenhum arquivo .xlsx encontrado no diretório data/in-loco');
   }
 
   const filePath = join(dataDir, xlsxFile);

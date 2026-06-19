@@ -4,7 +4,7 @@
 import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { toPng } from 'html-to-image';
 import { useRouter, useSearchParams } from 'next/navigation';
-import EadFilters from '../../avalia/components/EadFilters';
+import EadFilters from '@/features/avalia/components/EadFilters';
 import ReportViewer from '../../../../components/ReportViewer';
 import { REPORT_CONTEXTS } from '../../../../components/reportContexts';
 import styles from '../../../../styles/dados.module.css';
@@ -1907,3 +1907,4 @@ export default function RelatorioEadClient({
     </div>
   );
 }
+

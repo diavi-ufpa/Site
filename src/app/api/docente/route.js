@@ -6,7 +6,7 @@ import { promises as fs } from 'fs';
 export async function GET() {
   try {
     // 1. Caminho para o novo arquivo CSV dos DOCENTES
-    const filePath = path.join(process.cwd(), 'src', 'app', 'banco', 'DOCENTE.csv');
+    const filePath = path.join(process.cwd(), 'data', 'minha-opiniao', 'DOCENTE.csv');
 
     // 2. Lê o arquivo como BUFFER
     // Mais rápido, pois não decodifica o texto no servidor, apenas transmite os bytes

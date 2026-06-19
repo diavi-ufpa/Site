@@ -1,8 +1,8 @@
 'use client';
 
-import ActivityChart from '../../components/ActivityChart';
-import BoxplotChart from '../../components/BoxplotChart';
-import { QUESTION_MAPPING_AVALIA } from '../../lib/questionMappingAvalia';
+import ActivityChart from '@/components/charts/ActivityChart';
+import BoxplotChart from '@/components/charts/BoxplotChart';
+import { QUESTION_MAPPING_AVALIA } from '@/lib/questionMappingAvalia';
 
 export default function AutoavaliacaoTab({
   // estilos / helpers

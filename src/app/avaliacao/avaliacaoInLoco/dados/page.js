@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import AvaliacaoInLocoFilters from '../components/AvaliacaoInLocoFilters';
-import LoadingOverlay from '../../avalia/components/LoadingOverlay';
-import MediaDimensoesChart from '../components/MediaDimensoesChart';
-import GraficoEvolucaoLineChart from '../components/GraficoEvolucaoLineChart';
-import GraficoEvolucaoD123LineChart from '../components/GraficoEvolucaoD123LineChart';
-import QuantidadeCursosAvaliadosChart from '../components/QuantidadeCursosAvaliadosChart';
-import MediaDimensaoAnualChart from '../components/MediaDimensaoAnualChart';
+import AvaliacaoInLocoFilters from '@/features/avaliacaoInLoco/components/AvaliacaoInLocoFilters';
+import LoadingOverlay from '@/components/ui/LoadingOverlay';
+import MediaDimensoesChart from '@/components/charts/MediaDimensoesChart';
+import GraficoEvolucaoLineChart from '@/components/charts/GraficoEvolucaoLineChart';
+import GraficoEvolucaoD123LineChart from '@/components/charts/GraficoEvolucaoD123LineChart';
+import QuantidadeCursosAvaliadosChart from '@/components/charts/QuantidadeCursosAvaliadosChart';
+import MediaDimensaoAnualChart from '@/components/charts/MediaDimensaoAnualChart';
 import { Filter, ChevronDown, ChevronUp } from 'lucide-react';
 import styles from '../../../../styles/dados.module.css';
 
@@ -592,3 +592,4 @@ export default function AvaliacaoInLocoDadosPage() {
     </>
   );
 }
+

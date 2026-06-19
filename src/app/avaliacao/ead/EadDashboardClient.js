@@ -3,13 +3,13 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 
-import EadFilters from '../avalia/components/EadFilters';
-import ActivityChart from '../avalia/components/ActivityChart';
+import EadFilters from '@/features/avalia/components/EadFilters';
+import ActivityChart from '@/components/charts/ActivityChart';
 import styles from '../../../styles/dados.module.css';
-import { questionMapEad } from '../../avaliacao/lib/questionMappingEad';
-import StatCard from '../avalia/components/StatCard';
+import { questionMapEad } from '@/lib/questionMappingEad';
+import StatCard from '@/components/ui/StatCard';
 import { Users, TrendingUp, TrendingDown } from 'lucide-react';
-import BoxplotChart from '../avalia/components/BoxplotChart';
+import BoxplotChart from '@/components/charts/BoxplotChart';
 
 // ---------------- Utils ----------------
 function truncateText(text, maxLength = 20) {
@@ -21,7 +21,7 @@ const CONCEITOS = ['Excelente', 'Bom', 'Regular', 'Insuficiente'];
 const NUM_TO_CONCEITO_2023 = { 1: 'Insuficiente', 2: 'Regular', 3: 'Bom', 4: 'Excelente' };
 
 function sanitizeList(list = []) {
-  const hasLetters = (s) => /[A-Za-zÀ-ÿ]/.test(String(s || ''));
+  const hasLetters = (s) => /[A-Za-z\u00C0-\u00FF]/.test(String(s || ''));
 
   const isBad = (s) => {
     const v = String(s || '').trim();

@@ -2,7 +2,7 @@ import {
   ensureCacheTable,
   getCachedPayload,
   saveCachedPayload,
-} from '../../avaliacao/avalia/lib/neon-cache';
+} from '@/lib/neon-cache';
 
 const HF_BASE = 'https://sayydaviid-avalia-backend.hf.space';
 

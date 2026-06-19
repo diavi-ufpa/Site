@@ -4,18 +4,18 @@ import { useState, useEffect, useMemo } from 'react';
 import { Users, Building, Loader2 } from 'lucide-react';
 
 // Contexto Global
-import { useGlobalData } from '../context/DataContext'; 
+import { useGlobalData } from '@/contexts/DataContext';
 
 // Componentes
-import Header from '../components/Header';
-import StatCard from '../components/StatCard';
-import DocenteFilters from '../components/DocenteFilters';
-import QuestionChart from '../components/QuestionChart';
+import Header from '@/components/ui/Header';
+import StatCard from '@/components/ui/StatCard';
+import DocenteFilters from '@/features/minhaopiniao/components/DocenteFilters';
+import QuestionChart from '@/components/charts/QuestionChart';
 
 // Utils e Estilos
 import styles from '../../../../styles/dados.module.css';
-import { questionMappingDocente, ratingToScore } from '../lib/questionMappingDocente';
-import { dimensionMapping as dimensionMappingDocente } from '../lib/DimensionMappingDocente';
+import { questionMappingDocente, ratingToScore } from '@/lib/questionMappingDocente';
+import { dimensionMapping as dimensionMappingDocente } from '@/lib/DimensionMappingDocente';
 
 const DEFAULT_FILTERS = {
   lotacao: 'todos',

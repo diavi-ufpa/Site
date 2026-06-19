@@ -1,8 +1,8 @@
 'use client';
 
-import ActivityChart from '../../components/ActivityChart';
-import BoxplotChart from '../../components/BoxplotChart';
-import { QUESTION_MAPPING_AVALIA } from '../../lib/questionMappingAvalia';
+import ActivityChart from '@/components/charts/ActivityChart';
+import BoxplotChart from '@/components/charts/BoxplotChart';
+import { QUESTION_MAPPING_AVALIA } from '@/lib/questionMappingAvalia';
 
 export default function InstalacoesFisicasTab({
   styles,
@@ -20,7 +20,11 @@ export default function InstalacoesFisicasTab({
   // payload completo
   itensInstalacoesBoxDisc,
 }) {
-  const tabela = itensInstalacoesBoxDisc?.tabela_items;
+  const tabela =
+    itensInstalacoesBoxDisc?.tabela_items ??
+    itensInstalacoesBoxDisc?.tabela2 ??
+    itensInstalacoesBoxDisc?.tabela ??
+    [];
 
   const STAT_COLS = ['Min', 'Q1', 'Mediana', 'Media', 'Q3', 'Max'];
   const STAT_LABEL = {
@@ -34,7 +38,7 @@ export default function InstalacoesFisicasTab({
 
   const itens = Array.isArray(tabela)
     ? tabela
-        .map((r) => String(r?.item ?? '').trim())
+        .map((r) => String(r?.item ?? r?.Item ?? '').trim())
         .filter((x) => x)
     : [];
 

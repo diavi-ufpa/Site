@@ -16,7 +16,7 @@ export const runtime = 'nodejs';
 const uniqSorted = (arr = []) =>
   [...new Set((arr || []).filter(Boolean))].sort();
 
-const hasLetters = (s) => /[A-Za-zÀ-ÿ]/.test(String(s || ''));
+const hasLetters = (s) => /[A-Za-z\u00C0-\u00FF]/.test(String(s || ''));
 const isBadDisc = (s) => {
   const v = String(s || '').trim();
   if (!v) return true;
@@ -29,7 +29,7 @@ const isBadDisc = (s) => {
 
 // Carrega e prepara filtros por ano a partir dos CSVs
 async function getFiltersByYear() {
-  const baseDir = path.join(process.cwd(), 'src', 'app', 'banco');
+  const baseDir = path.join(process.cwd(), 'data', 'avalia');
   const filtersByYear = {};
   const reportDataByYear = {};
   const anos = new Set();
@@ -159,7 +159,7 @@ async function RelatorioLoader({ searchParamsResolved }) {
     return (
       <p className={styles.errorMessage}>
         Não foi possível carregar os filtros. Verifique os arquivos CSV em{' '}
-        <code>src/app/banco</code>.
+        <code>data/avalia</code>.
       </p>
     );
   }

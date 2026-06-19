@@ -6,8 +6,8 @@ import { promises as fs } from 'fs';
 export async function GET() {
   try {
     // 1. Ajuste do caminho para o arquivo .csv
-    // Certifique-se que o arquivo DISCENTE.csv está na pasta src/app/banco/
-    const filePath = path.join(process.cwd(), 'src', 'app', 'banco', 'DISCENTE.csv');
+    // Certifique-se que o arquivo DISCENTE.csv está em data/minha-opiniao/
+    const filePath = path.join(process.cwd(), 'data', 'minha-opiniao', 'DISCENTE.csv');
 
     // 2. Lê o arquivo como BUFFER (binário)
     // Mantemos essa estratégia pois é muito performática para arquivos grandes
