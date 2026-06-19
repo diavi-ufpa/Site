@@ -5,6 +5,7 @@ import '../styles/avaliacaoinloco.css';
 import Sidebar from '../components/Sidebar';
 import Footer from '../components/Footer';
 import { DataProvider } from '@/contexts/DataContext';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -19,15 +20,17 @@ export const metadata = { title: 'DIAVI - Site Oficial', description: 'Site Ofic
 export default function RootLayout({ children }) {
   return (
     <html lang="pt-BR"><body className={`${poppins.variable} ${ibmPlexSans.variable}`}>
-        <DataProvider>
-          <div className="appShell">
-            <Sidebar />
-            <main className="appMain appMainWithFixedSidebar">
-              <div className="appMainContent">{children}</div>
-              <Footer />
-            </main>
-          </div>
-        </DataProvider>
+        <AuthProvider>
+          <DataProvider>
+            <div className="appShell">
+              <Sidebar />
+              <main className="appMain appMainWithFixedSidebar">
+                <div className="appMainContent">{children}</div>
+                <Footer />
+              </main>
+            </div>
+          </DataProvider>
+        </AuthProvider>
     </body></html>
   );
 }
