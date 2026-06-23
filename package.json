@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
     "@sgratzl/chartjs-chart-boxplot": "^4.4.4",
     "@vercel/blob": "^2.0.0",
     "@vercel/edge-config": "^1.4.3",
@@ -17,6 +18,7 @@
     "chart.js": "^4.5.0",
     "chartjs-plugin-datalabels": "^2.2.0",
     "firebase": "^12.15.0",
+    "firebase-admin": "^14.0.0",
     "html-to-image": "^1.11.13",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.7",
