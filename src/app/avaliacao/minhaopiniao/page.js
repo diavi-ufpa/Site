@@ -7,6 +7,7 @@ import styles from '../../../styles/page.module.css';
 
 // 1. Importe o seu Contexto Global
 import { useGlobalData } from '@/contexts/DataContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 /* ==========================================================================
    Função Auxiliar: Parse de CSV
@@ -57,6 +58,7 @@ function parseCSV(csvText) {
    ========================================================================== */
 export default function MinhaOpiniaoPage() {
   const router = useRouter();
+  const { authorizedFetch } = useAuth();
   
   // 2. Acesse o cache e a função de salvar
   const { cache, saveToCache } = useGlobalData();
@@ -85,7 +87,7 @@ export default function MinhaOpiniaoPage() {
       // Se não está no cache, baixamos em background
       try {
         console.log(`Iniciando prefetch de dados para: ${config.key}`);
-        const res = await fetch(config.url);
+        const res = await authorizedFetch(config.url);
 
         let finalData = [];
 

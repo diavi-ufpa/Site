@@ -3,6 +3,7 @@ import {
   getCachedPayload,
   saveCachedPayload,
 } from '@/lib/neon-cache';
+import { requireIdentityUser } from '@/lib/require-identity-user';
 
 const HF_BASE = 'https://sayydaviid-avalia-backend.hf.space';
 
@@ -412,6 +413,11 @@ export async function GET(req) {
   const requestId = Math.random().toString(36).slice(2, 10);
 
   try {
+    const auth = await requireIdentityUser(req);
+    if (!auth.ok) {
+      return Response.json({ error: auth.error }, { status: auth.status });
+    }
+
     const { searchParams } = new URL(req.url);
 
     const endpoint = searchParams.get('endpoint');

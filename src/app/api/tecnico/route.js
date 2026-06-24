@@ -2,9 +2,15 @@
 import { NextResponse } from 'next/server';
 import path from 'path';
 import { promises as fs } from 'fs';
+import { requireIdentityUser } from '@/lib/require-identity-user';
 
-export async function GET() {
+export async function GET(request) {
   try {
+    const auth = await requireIdentityUser(request);
+    if (!auth.ok) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     // 1. Ajuste do caminho para o novo arquivo CSV dos TÉCNICOS
     const filePath = path.join(process.cwd(), 'data', 'minha-opiniao', 'TECNICO.csv');
 

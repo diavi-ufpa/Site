@@ -154,6 +154,7 @@ const Sidebar = () => {
             width={150}
             height={45}
             priority
+            style={{ height: 'auto' }}
           />
           <Image
             src="/CPA%20logo.jpg"
@@ -161,7 +162,7 @@ const Sidebar = () => {
             width={120}
             height={45}
             priority
-            style={{ objectFit: 'contain' }}
+            style={{ height: 'auto', objectFit: 'contain' }}
           />
         </div>
 

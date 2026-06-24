@@ -5,6 +5,7 @@ import { Users, Building2, Loader2 } from 'lucide-react';
 
 // Contexto Global
 import { useGlobalData } from '@/contexts/DataContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Componentes
 import Header from '@/components/ui/Header';
@@ -119,6 +120,7 @@ function LoadingOverlay({ progress }) {
 
 export default function DiscentePage() {
   const { cache, saveToCache } = useGlobalData();
+  const { authorizedFetch } = useAuth();
 
   const [allData, setAllData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -138,7 +140,7 @@ export default function DiscentePage() {
 
     async function loadData() {
       try {
-        const response = await fetch('/api/discente');
+        const response = await authorizedFetch('/api/discente');
         if (!response.ok) throw new Error('Falha ao buscar dados');
 
         const contentLength = response.headers.get('Content-Length');
@@ -171,7 +173,7 @@ export default function DiscentePage() {
       }
     }
     loadData();
-  }, [cache.discente, saveToCache]);
+  }, [cache.discente, saveToCache, authorizedFetch]);
 
   const filteredDataA = useMemo(() => loading ? [] : applyFilters(allData, selectedFiltersA), [allData, selectedFiltersA, loading]);
   const filteredDataB = useMemo(() => loading ? [] : applyFilters(allData, selectedFiltersB), [allData, selectedFiltersB, loading]);
