@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, refreshIdentity } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -19,8 +19,15 @@ export default function LoginPage() {
     setSubmitting(true);
 
     try {
-      await login(email, password);
-      router.push("/");
+      const credential = await login(email, password);
+      const identity = await refreshIdentity(credential.user);
+
+      if (!identity) {
+        setError("Login confirmado, mas a autorizacao interna falhou.");
+        return;
+      }
+
+      router.push("/avaliacao/avalia");
     } catch {
       setError("Email ou senha invalidos.");
     } finally {

@@ -20,13 +20,17 @@ export async function GET(request) {
 
     const identityUser = auth.user;
 
-    await identitySql`
-      UPDATE identity_users
-      SET
-        last_login_at = NOW(),
-        updated_at = NOW()
-      WHERE id = ${identityUser.id}
-    `;
+    try {
+      await identitySql`
+        UPDATE identity_users
+        SET
+          last_login_at = NOW(),
+          updated_at = NOW()
+        WHERE id = ${identityUser.id}
+      `;
+    } catch (error) {
+      console.warn('Nao foi possivel atualizar last_login_at:', error);
+    }
 
     return Response.json({
       ok: true,

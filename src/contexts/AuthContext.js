@@ -18,6 +18,7 @@ import {
 import { auth } from "@/lib/firebase";
 
 const AuthContext = createContext(null);
+const IDENTITY_REQUEST_TIMEOUT_MS = 20000;
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -44,6 +45,11 @@ export function AuthProvider({ children }) {
       setIdentityLoading(true);
       setIdentityError(null);
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+      }, IDENTITY_REQUEST_TIMEOUT_MS);
+
       try {
         const token = await firebaseUser.getIdToken();
 
@@ -53,6 +59,7 @@ export function AuthProvider({ children }) {
             Authorization: `Bearer ${token}`,
           },
           cache: "no-store",
+          signal: controller.signal,
         });
 
         const data = await response.json().catch(() => null);
@@ -63,7 +70,8 @@ export function AuthProvider({ children }) {
 
         if (!response.ok) {
           const message =
-            data?.error || "Usuário autenticado, mas não autorizado internamente.";
+            data?.error ||
+            "Usuario autenticado, mas nao autorizado internamente.";
 
           setIdentityUser(null);
           setIdentityError(message);
@@ -79,7 +87,7 @@ export function AuthProvider({ children }) {
           null;
 
         if (!internalUser) {
-          throw new Error("Resposta inválida da rota /api/me");
+          throw new Error("Resposta invalida da rota /api/me");
         }
 
         setIdentityUser(internalUser);
@@ -93,11 +101,15 @@ export function AuthProvider({ children }) {
 
         setIdentityUser(null);
         setIdentityError(
-          error?.message || "Erro ao validar autorização interna."
+          error?.name === "AbortError"
+            ? "Tempo esgotado ao validar autorizacao interna."
+            : error?.message || "Erro ao validar autorizacao interna."
         );
 
         return null;
       } finally {
+        clearTimeout(timeoutId);
+
         if (identityRequestId.current === requestId) {
           setIdentityLoading(false);
         }
@@ -138,7 +150,7 @@ export function AuthProvider({ children }) {
   const authorizedFetch = useCallback(
     async (input, init = {}) => {
       if (!user) {
-        throw new Error("Usuário não autenticado.");
+        throw new Error("Usuario nao autenticado.");
       }
 
       const token = await user.getIdToken();

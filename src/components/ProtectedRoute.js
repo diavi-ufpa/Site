@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 
-const publicRoutes = ["/login"];
+const publicRoutes = ["/", "/login"];
 
 export default function ProtectedRoute({ children }) {
   const router = useRouter();
@@ -25,15 +25,19 @@ export default function ProtectedRoute({ children }) {
     }
   }, [appLoading, isFirebaseAuthenticated, isPublicRoute, router]);
 
+  if (isPublicRoute) {
+    return children;
+  }
+
   if (appLoading) {
     return <p>Carregando autenticacao...</p>;
   }
 
-  if (!isFirebaseAuthenticated && !isPublicRoute) {
+  if (!isFirebaseAuthenticated) {
     return null;
   }
 
-  if (isFirebaseAuthenticated && !identityUser && !isPublicRoute) {
+  if (isFirebaseAuthenticated && !identityUser) {
     return (
       <main
         style={{
