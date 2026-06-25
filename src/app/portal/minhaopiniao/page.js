@@ -64,9 +64,9 @@ export default function MinhaOpiniaoPage() {
   const { cache, saveToCache } = useGlobalData();
 
   const routeConfigs = {
-    '/avaliacao/minhaopiniao/discente': { key: 'discente', url: '/api/discente', type: 'csv' }, // Marquei como CSV
-    '/avaliacao/minhaopiniao/docente': { key: 'docente', url: '/api/docente', type: 'json' }, // Mantive JSON por enquanto (se mudou, altere aqui)
-    '/avaliacao/minhaopiniao/tecnico': { key: 'tecnico', url: '/api/tecnico', type: 'json' },
+    '/portal/minhaopiniao/discente': { key: 'discente', url: '/api/discente', type: 'csv' }, // Marquei como CSV
+    '/portal/minhaopiniao/docente': { key: 'docente', url: '/api/docente', type: 'json' }, // Mantive JSON por enquanto (se mudou, altere aqui)
+    '/portal/minhaopiniao/tecnico': { key: 'tecnico', url: '/api/tecnico', type: 'json' },
   };
 
   const prefetchFor = useCallback(
@@ -149,15 +149,15 @@ export default function MinhaOpiniaoPage() {
           </p>
 
           <div className={styles.ctaGroup}>
-            <Link {...makeLinkProps('/avaliacao/minhaopiniao/discente')}>
+            <Link {...makeLinkProps('/portal/minhaopiniao/discente')}>
               Discente
             </Link>
 
-            <Link {...makeLinkProps('/avaliacao/minhaopiniao/docente')}>
+            <Link {...makeLinkProps('/portal/minhaopiniao/docente')}>
               Docente
             </Link>
 
-            <Link {...makeLinkProps('/avaliacao/minhaopiniao/tecnico')}>
+            <Link {...makeLinkProps('/portal/minhaopiniao/tecnico')}>
               Técnico
             </Link>
           </div>

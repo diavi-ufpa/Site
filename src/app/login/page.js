@@ -1,17 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import styles from "@/styles/public.module.css";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, refreshIdentity } = useAuth();
+  const { appLoading, identityUser, isFirebaseAuthenticated, login, refreshIdentity } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!appLoading && isFirebaseAuthenticated && identityUser) {
+      router.replace("/portal");
+    }
+  }, [appLoading, identityUser, isFirebaseAuthenticated, router]);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -27,7 +35,7 @@ export default function LoginPage() {
         return;
       }
 
-      router.push("/avaliacao/avalia");
+      router.push("/portal");
     } catch {
       setError("Email ou senha invalidos.");
     } finally {
@@ -35,11 +43,28 @@ export default function LoginPage() {
     }
   }
 
-  return (
-    <main>
-      <h1>Entrar na DIAVI</h1>
+  if (isFirebaseAuthenticated && (appLoading || identityUser)) {
+    return (
+      <main className={styles.authPage}>
+        <section className={styles.authCard}>
+          <p className={styles.loadingText}>Verificando acesso...</p>
+        </section>
+      </main>
+    );
+  }
 
-      <form onSubmit={handleSubmit}>
+  return (
+    <main className={styles.authPage}>
+      <section className={styles.authCard}>
+        <Link className={styles.backLink} href="/">
+          Voltar para a home
+        </Link>
+        <h1>Entrar na DIAVI</h1>
+        <p>
+          Informe suas credenciais para acessar a área restrita do sistema.
+        </p>
+
+      <form className={styles.loginForm} onSubmit={handleSubmit}>
         <div>
           <label htmlFor="email">E-mail</label>
           <input
@@ -62,12 +87,13 @@ export default function LoginPage() {
           />
         </div>
 
-        {error && <p>{error}</p>}
+        {error && <p className={styles.formError}>{error}</p>}
 
-        <button type="submit" disabled={submitting}>
+        <button className={styles.submitButton} type="submit" disabled={submitting}>
           {submitting ? "Entrando..." : "Entrar"}
         </button>
       </form>
+      </section>
     </main>
   );
 }

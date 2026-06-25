@@ -2,11 +2,7 @@
 import { Poppins, IBM_Plex_Sans } from 'next/font/google';
 import '../styles/globals.css';
 import '../styles/avaliacaoinloco.css';
-import Sidebar from '../components/Sidebar';
-import Footer from '../components/Footer';
-import { DataProvider } from '@/contexts/DataContext';
 import { AuthProvider } from '@/contexts/AuthContext';
-import ProtectedRoute from '@/components/ProtectedRoute';
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -22,17 +18,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="pt-BR"><body className={`${poppins.variable} ${ibmPlexSans.variable}`}>
         <AuthProvider>
-          <DataProvider>
-            <ProtectedRoute>
-              <div className="appShell">
-                <Sidebar />
-                <main className="appMain appMainWithFixedSidebar">
-                  <div className="appMainContent">{children}</div>
-                  <Footer />
-                </main>
-              </div>
-            </ProtectedRoute>
-          </DataProvider>
+          {children}
         </AuthProvider>
     </body></html>
   );
