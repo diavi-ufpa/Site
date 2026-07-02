@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import AvaliacaoInLocoFilters from '@/features/avaliacaoInLoco/components/AvaliacaoInLocoFilters';
+import { useAuth } from '@/contexts/AuthContext';
 import LoadingOverlay from '@/components/ui/LoadingOverlay';
 import MediaDimensoesChart from '@/components/charts/MediaDimensoesChart';
 import GraficoEvolucaoLineChart from '@/components/charts/GraficoEvolucaoLineChart';
@@ -53,6 +54,7 @@ function buildGraficoEvolucaoUrl(filters = {}) {
 }
 
 export default function AvaliacaoInLocoDadosPage() {
+  const { authorizedFetch } = useAuth();
   const [activeSubmenu, setActiveSubmenu] = useState('media');
   const tabs = [
     { key: 'media', label: 'Média' },
@@ -115,7 +117,7 @@ export default function AvaliacaoInLocoDadosPage() {
     const loadInitialFilters = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/avaliacao-in-loco/filters');
+        const response = await authorizedFetch('/api/avaliacao-in-loco/filters');
         const data = await response.json();
         setFiltersOptions({
           anos: data?.anos ?? [],
@@ -132,7 +134,7 @@ export default function AvaliacaoInLocoDadosPage() {
     };
 
     loadInitialFilters();
-  }, []);
+  }, [authorizedFetch]);
 
   // Carregar UND-ACAD e Modalidade conforme ano/unidade
   useEffect(() => {
@@ -142,7 +144,7 @@ export default function AvaliacaoInLocoDadosPage() {
 
     const loadUndAcadAndModalidades = async () => {
       try {
-        const response = await fetch(
+        const response = await authorizedFetch(
           buildFiltersUrl({
             ano: selectedFilters.ano,
             undAcad: selectedFilters.undAcad,
@@ -161,7 +163,7 @@ export default function AvaliacaoInLocoDadosPage() {
     };
 
     loadUndAcadAndModalidades();
-  }, [selectedFilters.ano, selectedFilters.undAcad]);
+  }, [selectedFilters.ano, selectedFilters.undAcad, authorizedFetch]);
 
   // Carregar campi ao selecionar ano, unidade acadêmica e modalidade
   useEffect(() => {
@@ -177,7 +179,7 @@ export default function AvaliacaoInLocoDadosPage() {
     const loadCampus = async () => {
       try {
         setLoadingCampus(true);
-        const response = await fetch(
+        const response = await authorizedFetch(
           buildFiltersUrl({
             ano: selectedFilters.ano,
             undAcad: selectedFilters.undAcad,
@@ -199,7 +201,7 @@ export default function AvaliacaoInLocoDadosPage() {
     };
 
     loadCampus();
-  }, [selectedFilters.ano, selectedFilters.undAcad, selectedFilters.modalidade]);
+  }, [selectedFilters.ano, selectedFilters.undAcad, selectedFilters.modalidade, authorizedFetch]);
 
   // Carregar cursos ao selecionar campus
   useEffect(() => {
@@ -214,7 +216,7 @@ export default function AvaliacaoInLocoDadosPage() {
     const loadCursos = async () => {
       try {
         setLoadingCurso(true);
-        const response = await fetch(
+        const response = await authorizedFetch(
           buildFiltersUrl({
             ano: selectedFilters.ano,
             undAcad: selectedFilters.undAcad,
@@ -236,7 +238,7 @@ export default function AvaliacaoInLocoDadosPage() {
     };
 
     loadCursos();
-  }, [selectedFilters.ano, selectedFilters.undAcad, selectedFilters.modalidade, selectedFilters.campus]);
+  }, [selectedFilters.ano, selectedFilters.undAcad, selectedFilters.modalidade, selectedFilters.campus, authorizedFetch]);
 
   useEffect(() => {
     if (!allFiltersSelected) {
@@ -247,7 +249,7 @@ export default function AvaliacaoInLocoDadosPage() {
     const loadMediaDimensoes = async () => {
       try {
         setLoadingMedia(true);
-        const response = await fetch(buildMediaDimensoesUrl(selectedFilters));
+        const response = await authorizedFetch(buildMediaDimensoesUrl(selectedFilters));
         const data = await response.json();
         setMediaDimensoes({
           labels: data?.unidades ?? [],
@@ -264,13 +266,13 @@ export default function AvaliacaoInLocoDadosPage() {
     };
 
     loadMediaDimensoes();
-  }, [selectedFilters, allFiltersSelected]);
+  }, [selectedFilters, allFiltersSelected, authorizedFetch]);
 
   useEffect(() => {
     const loadGraficoEvolucao = async () => {
       try {
         setLoadingEvolucao(true);
-        const response = await fetch(buildGraficoEvolucaoUrl(selectedEvolucaoFilters));
+        const response = await authorizedFetch(buildGraficoEvolucaoUrl(selectedEvolucaoFilters));
         const data = await response.json();
         setGraficoEvolucaoData({
           anos: data?.anos ?? [],
@@ -300,12 +302,12 @@ export default function AvaliacaoInLocoDadosPage() {
     };
 
     loadGraficoEvolucao();
-  }, [selectedEvolucaoFilters]);
+  }, [selectedEvolucaoFilters, authorizedFetch]);
 
   useEffect(() => {
     const loadEvolucaoUndAcad = async () => {
       try {
-        const response = await fetch('/api/avaliacao-in-loco/filters');
+        const response = await authorizedFetch('/api/avaliacao-in-loco/filters');
         const data = await response.json();
         setEvolucaoFilterOptions((prev) => ({
           ...prev,
@@ -317,7 +319,7 @@ export default function AvaliacaoInLocoDadosPage() {
     };
 
     loadEvolucaoUndAcad();
-  }, []);
+  }, [authorizedFetch]);
 
   useEffect(() => {
     if (!selectedEvolucaoFilters.undAcad) {
@@ -331,7 +333,7 @@ export default function AvaliacaoInLocoDadosPage() {
     const loadEvolucaoCursos = async () => {
       try {
         setLoadingEvolucaoCursos(true);
-        const response = await fetch(
+        const response = await authorizedFetch(
           buildFiltersUrl({ undAcad: selectedEvolucaoFilters.undAcad })
         );
         const data = await response.json();
@@ -347,7 +349,7 @@ export default function AvaliacaoInLocoDadosPage() {
     };
 
     loadEvolucaoCursos();
-  }, [selectedEvolucaoFilters.undAcad]);
+  }, [selectedEvolucaoFilters.undAcad, authorizedFetch]);
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;

@@ -1,4 +1,4 @@
-// src/app/avaliacao/ead/relatorioEAD/relatorio-eadead-client.js
+// src/app/portal/ead/relatorioEAD/relatorio-eadead-client.js
 'use client';
 
 import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
@@ -1114,7 +1114,7 @@ export default function RelatorioEadClient({
     if (selected.curso) sp.set('curso', selected.curso);
     if (yearDef.hasPolos && selected.polo && !isAllPolos) sp.set('polo', selected.polo);
     sp.set('embedForPdf', '1');
-    return `/avaliacao/ead?${sp.toString()}`;
+    return `/portal/ead?${sp.toString()}`;
   }, [selected.ano, selected.curso, selected.polo, yearDef.hasPolos, isAllPolos]);
 
   useEffect(() => {
@@ -1425,7 +1425,7 @@ export default function RelatorioEadClient({
     if (curso) sp.set('curso', curso);
     if (yearDef.hasPolos && poloName) sp.set('polo', String(poloName));
     sp.set('embedForPdf', '1');
-    const target = `/avaliacao/ead?${sp.toString()}`;
+    const target = `/portal/ead?${sp.toString()}`;
 
     try {
       const current = ifr.getAttribute('src') || '';

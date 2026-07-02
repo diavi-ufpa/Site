@@ -5,6 +5,7 @@ import { Users, Building, Loader2 } from 'lucide-react';
 
 // Contexto Global
 import { useGlobalData } from '@/contexts/DataContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Componentes
 import Header from '@/components/ui/Header';
@@ -132,6 +133,7 @@ function LoadingOverlay({ progress }) {
 
 export default function DocentePage() {
   const { cache, saveToCache } = useGlobalData();
+  const { authorizedFetch } = useAuth();
 
   const [allData, setAllData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -151,7 +153,7 @@ export default function DocentePage() {
 
     async function loadTeacherData() {
       try {
-        const response = await fetch('/api/docente');
+        const response = await authorizedFetch('/api/docente');
         if (!response.ok) throw new Error('Falha ao buscar dados');
 
         const contentLength = response.headers.get('Content-Length');
@@ -184,7 +186,7 @@ export default function DocentePage() {
       }
     }
     loadTeacherData();
-  }, [cache.docente, saveToCache]);
+  }, [cache.docente, saveToCache, authorizedFetch]);
 
   const filteredDataA = useMemo(() => loading ? [] : applyFiltersDocente(allData, selectedFiltersA), [allData, selectedFiltersA, loading]);
   const filteredDataB = useMemo(() => loading ? [] : applyFiltersDocente(allData, selectedFiltersB), [allData, selectedFiltersB, loading]);

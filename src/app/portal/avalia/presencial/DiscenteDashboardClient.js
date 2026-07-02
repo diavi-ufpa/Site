@@ -6,6 +6,7 @@ import {
   avaliaSourceFromDatabaseFlag,
   buildAvaliaApiUrl,
 } from '@/features/avalia/lib/avaliaDataSource';
+import { useAuth } from '@/contexts/AuthContext';
 import StatCard from '@/components/ui/StatCard';
 import LoadingOverlay from '@/components/ui/LoadingOverlay';
 import styles from '../../../../styles/dados.module.css';
@@ -457,15 +458,15 @@ const rankingEndpointByContext = {
   atividades: '/ranking/cursos/atividades',
 };
 
-async function fetchJson(url, signal, errMsg) {
-  const r = await fetch(url, { signal });
+async function fetchJson(url, signal, errMsg, fetcher = fetch) {
+  const r = await fetcher(url, { signal });
   if (!r.ok) throw new Error(errMsg || 'Falha ao buscar dados da API R');
   return r.json();
 }
 
-async function fetchJsonOptional(url, signal) {
+async function fetchJsonOptional(url, signal, fetcher = fetch) {
   try {
-    return await fetchJson(url, signal);
+    return await fetchJson(url, signal, undefined, fetcher);
   } catch (err) {
     if (err?.name === 'AbortError') throw err;
     return null;
@@ -888,6 +889,7 @@ function RankingDimensaoSection({ title, description, groups = [] }) {
 }
 
 export default function DiscenteDashboardClient({ initialData, filtersOptions }) {
+  const { authorizedFetch } = useAuth();
   const [activeTab, setActiveTab] = useState('dimensoes');
   const [selectedFilters, setSelectedFilters] = useState({
     dimensao: '',
@@ -972,7 +974,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
 
     const loadInitialFilters = async () => {
       try {
-        const res = await fetch(make('/filters', { consultarBanco }), {
+        const res = await authorizedFetch(make('/filters', { consultarBanco }), {
           signal: controller.signal,
         });
 
@@ -1002,7 +1004,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
     loadInitialFilters();
 
     return () => controller.abort();
-  }, [filtersOptions?.anos, consultarBanco]);
+  }, [filtersOptions?.anos, consultarBanco, authorizedFetch]);
 
   useEffect(() => {
     if (!selectedFilters.ano) {
@@ -1021,7 +1023,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
       try {
         setFiltersLoading((prev) => ({ ...prev, campus: true }));
 
-        const res = await fetch(makeCampusFilters(selectedFilters.ano, consultarBanco), {
+        const res = await authorizedFetch(makeCampusFilters(selectedFilters.ano, consultarBanco), {
           signal: controller.signal,
         });
 
@@ -1061,7 +1063,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
     loadCampus();
 
     return () => controller.abort();
-  }, [selectedFilters.ano, filtersOptions?.anos, consultarBanco]);
+  }, [selectedFilters.ano, filtersOptions?.anos, consultarBanco, authorizedFetch]);
 
   useEffect(() => {
     if (!selectedFilters.ano || !selectedFilters.campus) {
@@ -1079,7 +1081,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
       try {
         setFiltersLoading((prev) => ({ ...prev, curso: true }));
 
-        const res = await fetch(
+        const res = await authorizedFetch(
           makeCourseFilters(
             selectedFilters.ano,
             selectedFilters.campus,
@@ -1111,7 +1113,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
     loadCourses();
 
     return () => controller.abort();
-  }, [selectedFilters.ano, selectedFilters.campus, consultarBanco]);
+  }, [selectedFilters.ano, selectedFilters.campus, consultarBanco, authorizedFetch]);
 
   useEffect(() => {
     if (!hasRequiredFilters) {
@@ -1143,12 +1145,12 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
 
     const pFetch = (url, errMsg) =>
       pooled(
-        () => fetchJson(url, controller.signal, errMsg),
+        () => fetchJson(url, controller.signal, errMsg, authorizedFetch),
         controller.signal
       );
     const pFetchOpt = (url) =>
       pooled(
-        () => fetchJsonOptional(url, controller.signal),
+        () => fetchJsonOptional(url, controller.signal, authorizedFetch),
         controller.signal
       );
 
@@ -1258,7 +1260,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
       cancelled = true;
       controller.abort();
     };
-  }, [hasRequiredFilters, selectedFilters]);
+  }, [hasRequiredFilters, selectedFilters, authorizedFetch]);
 
   useEffect(() => {
     if (!hasRequiredFilters) return;
@@ -1268,12 +1270,12 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
 
     const pFetch = (url, errMsg) =>
       pooled(
-        () => fetchJson(url, controller.signal, errMsg),
+        () => fetchJson(url, controller.signal, errMsg, authorizedFetch),
         controller.signal
       );
     const pFetchOpt = (url) =>
       pooled(
-        () => fetchJsonOptional(url, controller.signal),
+        () => fetchJsonOptional(url, controller.signal, authorizedFetch),
         controller.signal
       );
 
@@ -1591,7 +1593,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
       cancelled = true;
       controller.abort();
     };
-  }, [activeTab, hasRequiredFilters, loadedTabs, selectedFilters, selectedDimension]);
+  }, [activeTab, hasRequiredFilters, loadedTabs, selectedFilters, selectedDimension, authorizedFetch]);
 
   useEffect(() => {
     if (!hasRequiredFilters || !showRanking || !visibleRankingContexts.length) return;
@@ -1613,7 +1615,8 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
             fetchJson(
               make(endpoint, selectedFilters),
               controller.signal,
-              'Falha ao buscar ranking'
+              'Falha ao buscar ranking',
+              authorizedFetch
             ),
           controller.signal
         );
@@ -1656,6 +1659,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
     visibleRankingContexts,
     loadedRankings,
     selectedFilters,
+    authorizedFetch,
   ]);
 
   const datasets = useMemo(

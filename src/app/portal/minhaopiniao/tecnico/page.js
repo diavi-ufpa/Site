@@ -5,6 +5,7 @@ import { Users, Building, Loader2 } from 'lucide-react';
 
 // Contexto Global
 import { useGlobalData } from '@/contexts/DataContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Componentes
 import Header from '@/components/ui/Header';
@@ -130,6 +131,7 @@ function LoadingOverlay({ progress }) {
 
 export default function TecnicoPage() {
   const { cache, saveToCache } = useGlobalData();
+  const { authorizedFetch } = useAuth();
   const [allData, setAllData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
@@ -147,7 +149,7 @@ export default function TecnicoPage() {
     }
     async function loadData() {
       try {
-        const res = await fetch('/api/tecnico');
+        const res = await authorizedFetch('/api/tecnico');
         const total = parseInt(res.headers.get('Content-Length') || '0', 10);
         const reader = res.body.getReader();
         let loaded = 0, chunks = [];
@@ -168,7 +170,7 @@ export default function TecnicoPage() {
       } catch (e) { console.error(e); setLoading(false); }
     }
     loadData();
-  }, [cache.tecnico, saveToCache]);
+  }, [cache.tecnico, saveToCache, authorizedFetch]);
 
   const filteredDataA = useMemo(() => loading ? [] : applyFiltersTecnico(allData, selectedFiltersA), [allData, selectedFiltersA, loading]);
   const filteredDataB = useMemo(() => loading ? [] : applyFiltersTecnico(allData, selectedFiltersB), [allData, selectedFiltersB, loading]);

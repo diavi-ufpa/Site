@@ -1,4 +1,5 @@
-import { queryAvaliaApi } from '@/lib/neon-api';
+import { isAvaliaApiDatabaseConfigured, queryAvaliaApi } from '@/lib/neon-api';
+import { requireIdentityUser } from '@/lib/require-identity-user';
 
 export const dynamic = 'force-dynamic';
 
@@ -801,6 +802,22 @@ export async function GET(req) {
   let filters = null;
 
   try {
+    const auth = await requireIdentityUser(req);
+    if (!auth.ok) {
+      return json({ error: auth.error }, { status: auth.status });
+    }
+
+    if (!isAvaliaApiDatabaseConfigured()) {
+      return json(
+        {
+          error: 'Banco Avalia presencial indisponivel.',
+          details:
+            'AVALIAPRESENCIAL_DATABASE_URL nao esta carregada no ambiente server-side. Reinicie o servidor Next.js apos configurar a variavel.',
+        },
+        { status: 503 }
+      );
+    }
+
     const { searchParams } = new URL(req.url);
     endpoint = searchParams.get('endpoint');
 

@@ -1,30 +1,55 @@
 "use client";
 
 import { useEffect } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-
-const publicRoutes = ["/login"];
+import styles from "@/styles/public.module.css";
 
 export default function ProtectedRoute({ children }) {
   const router = useRouter();
-  const pathname = usePathname();
-  const { authLoading, isAuthenticated } = useAuth();
-
-  const isPublicRoute = publicRoutes.includes(pathname);
+  const {
+    appLoading,
+    identityError,
+    identityUser,
+    isFirebaseAuthenticated,
+    logout,
+  } = useAuth();
 
   useEffect(() => {
-    if (!authLoading && !isAuthenticated && !isPublicRoute) {
-      router.push("/login");
+    if (!appLoading && !isFirebaseAuthenticated) {
+      router.replace("/login");
     }
-  }, [authLoading, isAuthenticated, isPublicRoute, router]);
+  }, [appLoading, isFirebaseAuthenticated, router]);
 
-  if (authLoading) {
-    return <p>Carregando autenticação...</p>;
+  if (appLoading) {
+    return (
+      <main className={styles.authPage}>
+        <section className={styles.authCard}>
+          <p className={styles.loadingText}>Verificando acesso...</p>
+        </section>
+      </main>
+    );
   }
 
-  if (!isAuthenticated && !isPublicRoute) {
+  if (!isFirebaseAuthenticated) {
     return null;
+  }
+
+  if (isFirebaseAuthenticated && !identityUser) {
+    return (
+      <main className={styles.authPage}>
+        <section className={styles.authCard}>
+          <h1>Usuário não autorizado</h1>
+          <p>
+            {identityError ||
+              "Seu login Firebase foi confirmado, mas seu usuário ainda não está ativo na base interna da DIAVI."}
+          </p>
+          <button className={styles.submitButton} type="button" onClick={logout}>
+            Sair
+          </button>
+        </section>
+      </main>
+    );
   }
 
   return children;

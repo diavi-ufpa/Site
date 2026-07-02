@@ -7,6 +7,7 @@ import styles from '../../../styles/page.module.css';
 
 // 1. Importe o seu Contexto Global
 import { useGlobalData } from '@/contexts/DataContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 /* ==========================================================================
    Função Auxiliar: Parse de CSV
@@ -57,14 +58,15 @@ function parseCSV(csvText) {
    ========================================================================== */
 export default function MinhaOpiniaoPage() {
   const router = useRouter();
+  const { authorizedFetch } = useAuth();
   
   // 2. Acesse o cache e a função de salvar
   const { cache, saveToCache } = useGlobalData();
 
   const routeConfigs = {
-    '/avaliacao/minhaopiniao/discente': { key: 'discente', url: '/api/discente', type: 'csv' }, // Marquei como CSV
-    '/avaliacao/minhaopiniao/docente': { key: 'docente', url: '/api/docente', type: 'json' }, // Mantive JSON por enquanto (se mudou, altere aqui)
-    '/avaliacao/minhaopiniao/tecnico': { key: 'tecnico', url: '/api/tecnico', type: 'json' },
+    '/portal/minhaopiniao/discente': { key: 'discente', url: '/api/discente', type: 'csv' }, // Marquei como CSV
+    '/portal/minhaopiniao/docente': { key: 'docente', url: '/api/docente', type: 'json' }, // Mantive JSON por enquanto (se mudou, altere aqui)
+    '/portal/minhaopiniao/tecnico': { key: 'tecnico', url: '/api/tecnico', type: 'json' },
   };
 
   const prefetchFor = useCallback(
@@ -85,7 +87,7 @@ export default function MinhaOpiniaoPage() {
       // Se não está no cache, baixamos em background
       try {
         console.log(`Iniciando prefetch de dados para: ${config.key}`);
-        const res = await fetch(config.url);
+        const res = await authorizedFetch(config.url);
 
         let finalData = [];
 
@@ -147,15 +149,15 @@ export default function MinhaOpiniaoPage() {
           </p>
 
           <div className={styles.ctaGroup}>
-            <Link {...makeLinkProps('/avaliacao/minhaopiniao/discente')}>
+            <Link {...makeLinkProps('/portal/minhaopiniao/discente')}>
               Discente
             </Link>
 
-            <Link {...makeLinkProps('/avaliacao/minhaopiniao/docente')}>
+            <Link {...makeLinkProps('/portal/minhaopiniao/docente')}>
               Docente
             </Link>
 
-            <Link {...makeLinkProps('/avaliacao/minhaopiniao/tecnico')}>
+            <Link {...makeLinkProps('/portal/minhaopiniao/tecnico')}>
               Técnico
             </Link>
           </div>

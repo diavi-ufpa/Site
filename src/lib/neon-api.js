@@ -20,6 +20,10 @@ function sanitizeDatabaseUrl(rawUrl) {
 
 const connectionString = sanitizeDatabaseUrl(process.env[AVALIA_PRESENCIAL_DATABASE_URL_ENV]);
 
+export function isAvaliaApiDatabaseConfigured() {
+  return Boolean(connectionString);
+}
+
 export function assertDatabaseConfigured() {
   if (!connectionString) {
     const error = new Error(`${AVALIA_PRESENCIAL_DATABASE_URL_ENV} nao configurada no ambiente server-side.`);

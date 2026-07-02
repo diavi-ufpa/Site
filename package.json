@@ -4,11 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "concurrently -n \"NEXTJS,BROWSER\" -c \"blue,cyan\" \"next dev --webpack\" \"wait-on -v http-get://127.0.0.1:3000 && open-cli http://localhost:3000/avaliacao/avalia\"",
-    "build": "node --max-old-space-size=4096 ./node_modules/next/dist/bin/next build",
+    "build": "node --max-old-space-size=4096 ./node_modules/next/dist/bin/next build --webpack",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
     "@sgratzl/chartjs-chart-boxplot": "^4.4.4",
     "@vercel/blob": "^2.0.0",
     "@vercel/edge-config": "^1.4.3",
@@ -17,6 +18,7 @@
     "chart.js": "^4.5.0",
     "chartjs-plugin-datalabels": "^2.2.0",
     "firebase": "^12.15.0",
+    "firebase-admin": "^14.0.0",
     "html-to-image": "^1.11.13",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.7",
@@ -39,5 +41,8 @@
     "eslint-config-next": "^0.2.4",
     "open-cli": "^9.0.0",
     "wait-on": "^8.0.5"
+  },
+  "overrides": {
+  "jose": "4.15.9"
   }
 }

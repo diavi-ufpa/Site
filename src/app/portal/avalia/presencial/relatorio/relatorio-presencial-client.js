@@ -5,6 +5,7 @@ import { flushSync } from 'react-dom';
 import { toPng } from 'html-to-image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DiscenteFilters from '@/features/avalia/components/DiscenteFilterAvalia';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   AVALIA_DATA_SOURCE,
   buildAvaliaApiUrl,
@@ -668,6 +669,7 @@ export default function RelatorioPresencialClient({
   filtersOptions,
   initialSelected,
 }) {
+  const { authorizedFetch } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -733,7 +735,7 @@ export default function RelatorioPresencialClient({
 
   async function fetchJsonOptional(endpoint, filters = selectedRef.current) {
     try {
-      const res = await fetch(make(endpoint, filters), { cache: 'no-store' });
+      const res = await authorizedFetch(make(endpoint, filters), { cache: 'no-store' });
       if (!res.ok) return null;
       return await res.json();
     } catch {
@@ -1039,7 +1041,7 @@ export default function RelatorioPresencialClient({
 
     const loadInitialFilters = async () => {
       try {
-        const res = await fetch(make('/filters'), { signal: controller.signal, cache: 'no-store' });
+        const res = await authorizedFetch(make('/filters'), { signal: controller.signal, cache: 'no-store' });
         if (!res.ok) throw new Error('Falha ao carregar filtros iniciais');
         const data = await res.json();
 
@@ -1052,7 +1054,7 @@ export default function RelatorioPresencialClient({
 
     loadInitialFilters();
     return () => controller.abort();
-  }, []);
+  }, [authorizedFetch]);
 
   useEffect(() => {
     if (!selected.ano) {
@@ -1068,7 +1070,7 @@ export default function RelatorioPresencialClient({
 
     const loadCampus = async () => {
       try {
-        const res = await fetch(
+        const res = await authorizedFetch(
           make('/filters/campus', { ano: selected.ano }),
           { signal: controller.signal, cache: 'no-store' }
         );
@@ -1086,7 +1088,7 @@ export default function RelatorioPresencialClient({
 
     loadCampus();
     return () => controller.abort();
-  }, [selected.ano]);
+  }, [selected.ano, authorizedFetch]);
 
   useEffect(() => {
     if (!selected.ano || !selected.campus) {
@@ -1101,7 +1103,7 @@ export default function RelatorioPresencialClient({
 
     const loadCursos = async () => {
       try {
-        const res = await fetch(
+        const res = await authorizedFetch(
           make('/filters', {
             ano: selected.ano,
             campus: selected.campus,
@@ -1123,7 +1125,7 @@ export default function RelatorioPresencialClient({
     loadCursos();
 
     return () => controller.abort();
-  }, [selected.ano, selected.campus]);
+  }, [selected.ano, selected.campus, authorizedFetch]);
 
   useEffect(() => {
     selectedRef.current = selected;
@@ -1145,7 +1147,7 @@ export default function RelatorioPresencialClient({
 
     const loadSummary = async () => {
       try {
-        const res = await fetch(make('/discente/geral/summary', selected), {
+        const res = await authorizedFetch(make('/discente/geral/summary', selected), {
           signal: controller.signal,
           cache: 'no-store',
         });
@@ -1159,7 +1161,7 @@ export default function RelatorioPresencialClient({
 
     loadSummary();
     return () => controller.abort();
-  }, [selected.ano, selected.campus, selected.curso]);
+  }, [selected.ano, selected.campus, selected.curso, authorizedFetch]);
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
@@ -2107,7 +2109,7 @@ export default function RelatorioPresencialClient({
 
     const t = setTimeout(buildPdf, 400);
     return () => clearTimeout(t);
-  }, [canGenerate, selected.ano, selected.campus, selected.curso, summaryData]);
+  }, [canGenerate, selected.ano, selected.campus, selected.curso, summaryData, authorizedFetch]);
 
   useEffect(() => {
     return () => {

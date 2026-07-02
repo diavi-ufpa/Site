@@ -36,29 +36,29 @@ const Sidebar = () => {
   };
 
   const inAvalRoutes =
-    pathname === '/avaliacao' || pathname.startsWith('/avaliacao/');
+    pathname === '/portal' || pathname.startsWith('/portal/');
 
-  const selectedEvaluation = pathname.startsWith('/avaliacao/minhaopiniao')
+  const selectedEvaluation = pathname.startsWith('/portal/minhaopiniao')
     ? 'minhaopiniao'
-    : pathname.startsWith('/avaliacao/avaliacaoInLoco')
+    : pathname.startsWith('/portal/avaliacaoInLoco')
     ? 'avaliacaoInLoco'
-    : pathname.startsWith('/avaliacao/avalia') ||
-      pathname.startsWith('/avaliacao/ead')
+    : pathname.startsWith('/portal/avalia') ||
+      pathname.startsWith('/portal/ead')
     ? 'avalia'
     : null;
 
   const inModalidade =
     (featureFlags.presencialEnabled &&
-      pathname.startsWith('/avaliacao/avalia/presencial')) ||
-    pathname.startsWith('/avaliacao/ead') ||
-    pathname.startsWith('/avaliacao/avaliacaoInLoco') ||
-    (pathname.startsWith('/avaliacao/minhaopiniao/') &&
-      !pathname.startsWith('/avaliacao/minhaopiniao/relatorio'));
+      pathname.startsWith('/portal/avalia/presencial')) ||
+    pathname.startsWith('/portal/ead') ||
+    pathname.startsWith('/portal/avaliacaoInLoco') ||
+    (pathname.startsWith('/portal/minhaopiniao/') &&
+      !pathname.startsWith('/portal/minhaopiniao/relatorio'));
 
   const isReportPage =
-    pathname.startsWith('/avaliacao/ead/relatorioEAD') ||
-    pathname.startsWith('/avaliacao/minhaopiniao/relatorio') ||
-    pathname.startsWith('/avaliacao/avalia/presencial/relatorio');
+    pathname.startsWith('/portal/ead/relatorioEAD') ||
+    pathname.startsWith('/portal/minhaopiniao/relatorio') ||
+    pathname.startsWith('/portal/avalia/presencial/relatorio');
 
   const getInitialOpenMenus = useCallback(() => {
     const initial = { avaliacao: false, modalidade: false };
@@ -96,11 +96,11 @@ const Sidebar = () => {
     inModalidade && !isReportPage ? styles.activeParent : '';
 
   const showGenerateButton =
-    pathname === '/avaliacao' ||
-    (pathname.startsWith('/avaliacao/ead') && reportEnabled.ead) ||
-    (pathname.startsWith('/avaliacao/avalia/presencial') &&
+    pathname === '/portal' ||
+    (pathname.startsWith('/portal/ead') && reportEnabled.ead) ||
+    (pathname.startsWith('/portal/avalia/presencial') &&
       reportEnabled.presencial) ||
-    (pathname.startsWith('/avaliacao/minhaopiniao') &&
+    (pathname.startsWith('/portal/minhaopiniao') &&
       reportEnabled.minhaOpiniao);
 
   const isReportActive = isReportPage;
@@ -113,26 +113,26 @@ const Sidebar = () => {
       }
     : undefined;
 
-  let reportHref = '/avaliacao/ead/relatorioEAD';
-  if (pathname.startsWith('/avaliacao/minhaopiniao')) {
-    reportHref = '/avaliacao/minhaopiniao/relatorio';
-  } else if (pathname.startsWith('/avaliacao/avalia/presencial')) {
-    reportHref = '/avaliacao/avalia/presencial/relatorio';
-  } else if (pathname.startsWith('/avaliacao/ead')) {
-    reportHref = '/avaliacao/ead/relatorioEAD';
+  let reportHref = '/portal/ead/relatorioEAD';
+  if (pathname.startsWith('/portal/minhaopiniao')) {
+    reportHref = '/portal/minhaopiniao/relatorio';
+  } else if (pathname.startsWith('/portal/avalia/presencial')) {
+    reportHref = '/portal/avalia/presencial/relatorio';
+  } else if (pathname.startsWith('/portal/ead')) {
+    reportHref = '/portal/ead/relatorioEAD';
   }
 
   const minhaOpiniaoDiscenteActive =
-    pathname === '/avaliacao/minhaopiniao/discente' ||
-    pathname.startsWith('/avaliacao/minhaopiniao/discente/');
+    pathname === '/portal/minhaopiniao/discente' ||
+    pathname.startsWith('/portal/minhaopiniao/discente/');
 
   const minhaOpiniaoDocenteActive =
-    pathname === '/avaliacao/minhaopiniao/docente' ||
-    pathname.startsWith('/avaliacao/minhaopiniao/docente/');
+    pathname === '/portal/minhaopiniao/docente' ||
+    pathname.startsWith('/portal/minhaopiniao/docente/');
 
   const minhaOpiniaoTecnicoActive =
-    pathname === '/avaliacao/minhaopiniao/tecnico' ||
-    pathname.startsWith('/avaliacao/minhaopiniao/tecnico/');
+    pathname === '/portal/minhaopiniao/tecnico' ||
+    pathname.startsWith('/portal/minhaopiniao/tecnico/');
 
   return (
     <>
@@ -154,6 +154,7 @@ const Sidebar = () => {
             width={150}
             height={45}
             priority
+            style={{ height: 'auto' }}
           />
           <Image
             src="/CPA%20logo.jpg"
@@ -161,14 +162,14 @@ const Sidebar = () => {
             width={120}
             height={45}
             priority
-            style={{ objectFit: 'contain' }}
+            style={{ height: 'auto', objectFit: 'contain' }}
           />
         </div>
 
         <nav className={styles.nav}>
           <ul>
-            <li className={pathname === '/' ? styles.activeParent : ''}>
-              <Link href="/" className={styles.menuHeader}>
+            <li className={pathname === '/portal' ? styles.activeParent : ''}>
+              <Link href="/portal" className={styles.menuHeader}>
                 <Home size={18} />
                 <span>Página Inicial</span>
               </Link>
@@ -192,34 +193,34 @@ const Sidebar = () => {
                 <ul className={styles.subMenu}>
                   <li
                     className={
-                      (pathname.startsWith('/avaliacao/avalia/') || pathname === '/avaliacao/avalia')
+                      (pathname.startsWith('/portal/avalia/') || pathname === '/portal/avalia')
                         ? styles.subMenuItemActive
                         : styles.subMenuItem
                     }
                   >
-                    <Link href="/avaliacao/avalia">Avalia</Link>
+                    <Link href="/portal/avalia">Avalia</Link>
                   </li>
 
                   {featureFlags.minhaOpiniaoEnabled && (
                     <li
                       className={
-                        pathname.startsWith('/avaliacao/minhaopiniao')
+                        pathname.startsWith('/portal/minhaopiniao')
                           ? styles.subMenuItemActive
                           : styles.subMenuItem
                       }
                     >
-                      <Link href="/avaliacao/minhaopiniao">Minha Opinião</Link>
+                      <Link href="/portal/minhaopiniao">Minha Opinião</Link>
                     </li>
                   )}
 
                   <li
                     className={
-                      pathname.startsWith('/avaliacao/avaliacaoInLoco')
+                      pathname.startsWith('/portal/avaliacaoInLoco')
                         ? styles.subMenuItemActive
                         : styles.subMenuItem
                     }
                   >
-                    <Link href="/avaliacao/avaliacaoInLoco">Avaliação In Loco</Link>
+                    <Link href="/portal/avaliacaoInLoco">Avaliação In Loco</Link>
                   </li>
                 </ul>
               )}
@@ -251,7 +252,7 @@ const Sidebar = () => {
                               : styles.subMenuItem
                           }
                         >
-                          <Link href="/avaliacao/minhaopiniao/discente">
+                          <Link href="/portal/minhaopiniao/discente">
                             Discente
                           </Link>
                         </li>
@@ -262,7 +263,7 @@ const Sidebar = () => {
                               : styles.subMenuItem
                           }
                         >
-                          <Link href="/avaliacao/minhaopiniao/docente">
+                          <Link href="/portal/minhaopiniao/docente">
                             Docente
                           </Link>
                         </li>
@@ -273,7 +274,7 @@ const Sidebar = () => {
                               : styles.subMenuItem
                           }
                         >
-                          <Link href="/avaliacao/minhaopiniao/tecnico">
+                          <Link href="/portal/minhaopiniao/tecnico">
                             Técnico
                           </Link>
                         </li>
@@ -281,12 +282,12 @@ const Sidebar = () => {
                     ) : selectedEvaluation === 'avaliacaoInLoco' ? (
                       <li
                         className={
-                          pathname.startsWith('/avaliacao/avaliacaoInLoco/dados')
+                          pathname.startsWith('/portal/avaliacaoInLoco/dados')
                             ? styles.subMenuItemActive
                             : styles.subMenuItem
                         }
                       >
-                        <Link href="/avaliacao/avaliacaoInLoco/dados">
+                        <Link href="/portal/avaliacaoInLoco/dados">
                           Dados
                         </Link>
                       </li>
@@ -295,13 +296,13 @@ const Sidebar = () => {
                         {featureFlags.presencialEnabled && (
                           <li
                             className={
-                              pathname.startsWith('/avaliacao/avalia/presencial')
+                              pathname.startsWith('/portal/avalia/presencial')
                                 ? styles.subMenuItemActive
                                 : styles.subMenuItem
                             }
                           >
                             <Link
-                              href="/avaliacao/avalia/presencial"
+                              href="/portal/avalia/presencial"
                               onClick={() => setIsLoading(true)}
                             >
                               Presencial
@@ -311,13 +312,13 @@ const Sidebar = () => {
 
                         <li
                           className={
-                            pathname.startsWith('/avaliacao/ead')
+                            pathname.startsWith('/portal/ead')
                               ? styles.subMenuItemActive
                               : styles.subMenuItem
                           }
                         >
                           <Link
-                            href="/avaliacao/ead"
+                            href="/portal/ead"
                             onClick={() => setIsLoading(true)}
                           >
                             EAD
