@@ -303,3 +303,84 @@ export async function POST(request) {
     );
   }
 }
+
+export async function DELETE(request) {
+  try {
+    const auth = await requireAdminUser(request);
+
+    if (!auth.ok) {
+      return Response.json(
+        { ok: false, error: auth.error },
+        { status: auth.status, headers: { 'Cache-Control': 'no-store' } }
+      );
+    }
+
+    const body = await request.json().catch(() => null);
+    const id = body?.id;
+
+    if (!id) {
+      return Response.json(
+        { ok: false, error: 'Identificador do usuário inválido' },
+        { status: 400, headers: { 'Cache-Control': 'no-store' } }
+      );
+    }
+
+    const targetRows = await identitySql`
+      SELECT id, role, status
+      FROM identity_users
+      WHERE id = ${id}
+      LIMIT 1
+    `;
+    const target = targetRows[0];
+
+    if (!target) {
+      return Response.json(
+        { ok: false, error: 'Usuário não encontrado no Neon' },
+        { status: 404, headers: { 'Cache-Control': 'no-store' } }
+      );
+    }
+
+    if (String(target.id) === String(auth.user.id)) {
+      return Response.json(
+        { ok: false, error: 'Você não pode excluir o próprio acesso administrativo' },
+        { status: 409, headers: { 'Cache-Control': 'no-store' } }
+      );
+    }
+
+    const removesActiveAdmin = target.role === 'admin' && target.status === 'active';
+    const deletedRows = await identitySql`
+      DELETE FROM identity_users
+      WHERE id = ${id}
+        AND (
+          ${removesActiveAdmin}::boolean = FALSE
+          OR EXISTS (
+            SELECT 1
+            FROM identity_users AS other_admin
+            WHERE other_admin.id <> ${id}
+              AND other_admin.role = 'admin'
+              AND other_admin.status = 'active'
+          )
+        )
+      RETURNING id
+    `;
+
+    if (!deletedRows[0]) {
+      return Response.json(
+        { ok: false, error: 'O sistema precisa manter ao menos um administrador ativo' },
+        { status: 409, headers: { 'Cache-Control': 'no-store' } }
+      );
+    }
+
+    return Response.json(
+      { ok: true, id: deletedRows[0].id },
+      { headers: { 'Cache-Control': 'no-store' } }
+    );
+  } catch (error) {
+    console.error('Erro ao excluir usuário em /api/admin/users:', error);
+
+    return Response.json(
+      { ok: false, error: 'Erro ao excluir usuário do Neon' },
+      { status: 500, headers: { 'Cache-Control': 'no-store' } }
+    );
+  }
+}
