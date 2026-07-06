@@ -14,12 +14,80 @@ function formatDate(value) {
   }).format(new Date(value));
 }
 
+function AccessEditor({ user, authorizedFetch, onUpdated }) {
+  const [role, setRole] = useState(user.role);
+  const [status, setStatus] = useState(user.status);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const changed = role !== user.role || status !== user.status;
+
+  async function save() {
+    setSaving(true);
+    setSaveError('');
+
+    try {
+      const response = await authorizedFetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: user.id, role, status }),
+      });
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(data?.error || 'Não foi possível atualizar o acesso.');
+      }
+
+      onUpdated(data.user);
+    } catch (requestError) {
+      setSaveError(requestError.message || 'Não foi possível atualizar o acesso.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className={styles.accessEditor}>
+      <select
+        aria-label={`Perfil de ${user.email}`}
+        value={role}
+        onChange={(event) => setRole(event.target.value)}
+        disabled={saving}
+      >
+        <option value="user">Usuário</option>
+        <option value="admin">Administrador</option>
+      </select>
+      <select
+        aria-label={`Status de ${user.email}`}
+        value={status}
+        onChange={(event) => setStatus(event.target.value)}
+        disabled={saving}
+      >
+        <option value="active">Ativo</option>
+        <option value="inactive">Inativo</option>
+        <option value="pending">Pendente</option>
+      </select>
+      <button type="button" onClick={save} disabled={!changed || saving}>
+        {saving ? 'Salvando...' : 'Salvar'}
+      </button>
+      {saveError && <span className={styles.rowError}>{saveError}</span>}
+    </div>
+  );
+}
+
 export default function AdminUsersPage() {
   const router = useRouter();
   const { appLoading, authorizedFetch, isAdmin } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  function updateUser(updatedUser) {
+    setUsers((currentUsers) =>
+      currentUsers.map((user) =>
+        user.id === updatedUser.id ? { ...user, ...updatedUser } : user
+      )
+    );
+  }
 
   useEffect(() => {
     if (appLoading) return;
@@ -82,6 +150,7 @@ export default function AdminUsersPage() {
                 <th>Onde está</th>
                 <th>Perfil</th>
                 <th>Status</th>
+                <th>Gerenciar acesso</th>
                 <th>Cadastro</th>
                 <th>Último acesso</th>
               </tr>
@@ -106,6 +175,17 @@ export default function AdminUsersPage() {
                     <span className={`${styles.status} ${user.status ? styles[user.status] : styles.unlisted}`}>
                       {user.status || (user.firebase_disabled ? 'desativado' : 'só no Firebase')}
                     </span>
+                  </td>
+                  <td>
+                    {user.sources.neon ? (
+                      <AccessEditor
+                        user={user}
+                        authorizedFetch={authorizedFetch}
+                        onUpdated={updateUser}
+                      />
+                    ) : (
+                      <span className={styles.noAccess}>Cadastre no Neon para liberar acesso</span>
+                    )}
                   </td>
                   <td>{formatDate(user.created_at || user.firebase_created_at)}</td>
                   <td>{formatDate(user.firebase_last_login_at || user.last_login_at)}</td>
