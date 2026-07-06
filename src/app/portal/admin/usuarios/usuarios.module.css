@@ -1,0 +1,20 @@
+.page { padding: 28px; }
+.heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+.heading h1 { margin: 0 0 4px; font-size: 28px; }
+.heading p { margin: 0; color: #667085; }
+.count { min-width: 42px; padding: 8px 12px; border-radius: 999px; background: #fff0e3; color: #c55b00; text-align: center; font-weight: 700; }
+.message { color: #667085; }
+.error { padding: 14px 16px; border-radius: 8px; background: #fef3f2; color: #b42318; }
+.tableWrapper { overflow-x: auto; border: 1px solid #e4e7ec; border-radius: 12px; background: #fff; }
+.table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.table th, .table td { padding: 14px 16px; border-bottom: 1px solid #e4e7ec; text-align: left; white-space: nowrap; }
+.table th { background: #f9fafb; color: #475467; font-weight: 600; }
+.table tbody tr:last-child td { border-bottom: 0; }
+.status { display: inline-block; padding: 4px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; text-transform: capitalize; }
+.active { background: #ecfdf3; color: #027a48; }
+.inactive { background: #fef3f2; color: #b42318; }
+.pending { background: #fffaeb; color: #b54708; }
+
+@media (max-width: 700px) {
+  .page { padding: 18px 12px; }
+}

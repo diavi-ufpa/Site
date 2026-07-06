@@ -10,13 +10,16 @@ import {
   ChevronUp,
   BookCopy,
   Download,
+  Users,
 } from 'lucide-react';
 import styles from '../styles/Sidebar.module.css';
+import { useAuth } from '@/contexts/AuthContext';
 
 import LoadingOverlay from '@/components/ui/LoadingOverlay';
 
 const Sidebar = () => {
   const pathname = usePathname();
+  const { isAdmin } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -331,6 +334,17 @@ const Sidebar = () => {
               </li>
             )}
           </ul>
+
+          {isAdmin && (
+            <ul>
+              <li className={pathname.startsWith('/portal/admin') ? styles.activeParent : ''}>
+                <Link href="/portal/admin/usuarios" className={styles.menuHeader}>
+                  <Users size={18} />
+                  <span>Usuários</span>
+                </Link>
+              </li>
+            </ul>
+          )}
 
           {showGenerateButton && (
             <div className={styles.generateReportContainer}>
