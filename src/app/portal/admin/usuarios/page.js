@@ -14,10 +14,11 @@ function formatDate(value) {
   }).format(new Date(value));
 }
 
-function AccessEditor({ user, authorizedFetch, onUpdated }) {
+function AccessEditor({ user, authorizedFetch, onUpdated, onDeleted }) {
   const [role, setRole] = useState(user.role);
   const [status, setStatus] = useState(user.status);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [saveError, setSaveError] = useState('');
   const changed = role !== user.role || status !== user.status;
 
@@ -45,13 +46,43 @@ function AccessEditor({ user, authorizedFetch, onUpdated }) {
     }
   }
 
+  async function removeFromNeon() {
+    const confirmed = window.confirm(
+      `Tem certeza que deseja excluir ${user.email} do Neon? A conta no Firebase será mantida.`
+    );
+
+    if (!confirmed) return;
+
+    setDeleting(true);
+    setSaveError('');
+
+    try {
+      const response = await authorizedFetch('/api/admin/users', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: user.id }),
+      });
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(data?.error || 'Não foi possível excluir do Neon.');
+      }
+
+      onDeleted(user);
+    } catch (requestError) {
+      setSaveError(requestError.message || 'Não foi possível excluir do Neon.');
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return (
     <div className={styles.accessEditor}>
       <select
         aria-label={`Perfil de ${user.email}`}
         value={role}
         onChange={(event) => setRole(event.target.value)}
-        disabled={saving}
+        disabled={saving || deleting}
       >
         <option value="user">Usuário</option>
         <option value="admin">Administrador</option>
@@ -60,14 +91,22 @@ function AccessEditor({ user, authorizedFetch, onUpdated }) {
         aria-label={`Status de ${user.email}`}
         value={status}
         onChange={(event) => setStatus(event.target.value)}
-        disabled={saving}
+        disabled={saving || deleting}
       >
         <option value="active">Ativo</option>
         <option value="inactive">Inativo</option>
         <option value="pending">Pendente</option>
       </select>
-      <button type="button" onClick={save} disabled={!changed || saving}>
+      <button type="button" onClick={save} disabled={!changed || saving || deleting}>
         {saving ? 'Salvando...' : 'Salvar'}
+      </button>
+      <button
+        type="button"
+        className={styles.deleteButton}
+        onClick={removeFromNeon}
+        disabled={saving || deleting}
+      >
+        {deleting ? 'Excluindo...' : 'Excluir do Neon'}
       </button>
       {saveError && <span className={styles.rowError}>{saveError}</span>}
     </div>
@@ -138,6 +177,26 @@ export default function AdminUsersPage() {
             }
           : user
       )
+    );
+  }
+
+  function removeNeonUser(removedUser) {
+    setUsers((currentUsers) =>
+      removedUser.sources.firebase
+        ? currentUsers.map((user) =>
+            user.id === removedUser.id
+              ? {
+                  ...user,
+                  id: `firebase:${user.firebase_uid}`,
+                  role: null,
+                  status: null,
+                  created_at: null,
+                  last_login_at: null,
+                  sources: { firebase: true, neon: false },
+                }
+              : user
+          )
+        : currentUsers.filter((user) => user.id !== removedUser.id)
     );
   }
 
@@ -234,6 +293,7 @@ export default function AdminUsersPage() {
                         user={user}
                         authorizedFetch={authorizedFetch}
                         onUpdated={updateUser}
+                        onDeleted={removeNeonUser}
                       />
                     ) : (
                       <AddToNeonButton

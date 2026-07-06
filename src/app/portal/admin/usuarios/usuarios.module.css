@@ -22,6 +22,7 @@
 .accessEditor { display: flex; align-items: center; gap: 8px; }
 .accessEditor select, .accessEditor button { min-height: 34px; border: 1px solid #d0d5dd; border-radius: 7px; background: #fff; padding: 6px 9px; color: #344054; }
 .accessEditor button { background: #c55b00; border-color: #c55b00; color: #fff; font-weight: 600; cursor: pointer; }
+.accessEditor .deleteButton { background: #fff; border-color: #d92d20; color: #b42318; }
 .accessEditor button:disabled { opacity: .5; cursor: not-allowed; }
 .rowError { max-width: 220px; color: #b42318; white-space: normal; }
 .addToNeon { display: flex; align-items: center; gap: 8px; }
