@@ -5,6 +5,9 @@ import { adminAuth } from '@/lib/firebase-admin';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+const ALLOWED_ROLES = new Set(['admin', 'user']);
+const ALLOWED_STATUSES = new Set(['active', 'inactive', 'pending']);
+
 async function listAllFirebaseUsers() {
   const users = [];
   let pageToken;
@@ -119,6 +122,94 @@ export async function GET(request) {
         status: 500,
         headers: { 'Cache-Control': 'no-store' },
       }
+    );
+  }
+}
+
+export async function PATCH(request) {
+  try {
+    const auth = await requireAdminUser(request);
+
+    if (!auth.ok) {
+      return Response.json(
+        { ok: false, error: auth.error },
+        { status: auth.status, headers: { 'Cache-Control': 'no-store' } }
+      );
+    }
+
+    const body = await request.json().catch(() => null);
+    const id = body?.id;
+    const role = body?.role;
+    const status = body?.status;
+
+    if (!id || !ALLOWED_ROLES.has(role) || !ALLOWED_STATUSES.has(status)) {
+      return Response.json(
+        { ok: false, error: 'Dados de acesso inválidos' },
+        { status: 400, headers: { 'Cache-Control': 'no-store' } }
+      );
+    }
+
+    const targetRows = await identitySql`
+      SELECT id, role, status
+      FROM identity_users
+      WHERE id = ${id}
+      LIMIT 1
+    `;
+    const target = targetRows[0];
+
+    if (!target) {
+      return Response.json(
+        { ok: false, error: 'Usuário não encontrado no Neon' },
+        { status: 404, headers: { 'Cache-Control': 'no-store' } }
+      );
+    }
+
+    const removesActiveAdmin =
+      target.role === 'admin' &&
+      target.status === 'active' &&
+      (role !== 'admin' || status !== 'active');
+
+    if (String(target.id) === String(auth.user.id) && removesActiveAdmin) {
+      return Response.json(
+        { ok: false, error: 'Você não pode remover o próprio acesso administrativo' },
+        { status: 409, headers: { 'Cache-Control': 'no-store' } }
+      );
+    }
+
+    const updatedRows = await identitySql`
+      UPDATE identity_users
+      SET role = ${role}, status = ${status}, updated_at = NOW()
+      WHERE id = ${id}
+        AND (
+          ${removesActiveAdmin}::boolean = FALSE
+          OR EXISTS (
+            SELECT 1
+            FROM identity_users AS other_admin
+            WHERE other_admin.id <> ${id}
+              AND other_admin.role = 'admin'
+              AND other_admin.status = 'active'
+          )
+        )
+      RETURNING id, email, name, role, status, created_at, last_login_at
+    `;
+
+    if (!updatedRows[0]) {
+      return Response.json(
+        { ok: false, error: 'O sistema precisa manter ao menos um administrador ativo' },
+        { status: 409, headers: { 'Cache-Control': 'no-store' } }
+      );
+    }
+
+    return Response.json(
+      { ok: true, user: updatedRows[0] },
+      { headers: { 'Cache-Control': 'no-store' } }
+    );
+  } catch (error) {
+    console.error('Erro ao atualizar usuário em /api/admin/users:', error);
+
+    return Response.json(
+      { ok: false, error: 'Erro ao atualizar acesso do usuário' },
+      { status: 500, headers: { 'Cache-Control': 'no-store' } }
     );
   }
 }

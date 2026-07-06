@@ -19,6 +19,12 @@
 .firebase, .neon { display: inline-block; padding: 4px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; }
 .firebase { background: #fff4e5; color: #b54708; }
 .neon { background: #ecfdf3; color: #027a48; }
+.accessEditor { display: flex; align-items: center; gap: 8px; }
+.accessEditor select, .accessEditor button { min-height: 34px; border: 1px solid #d0d5dd; border-radius: 7px; background: #fff; padding: 6px 9px; color: #344054; }
+.accessEditor button { background: #c55b00; border-color: #c55b00; color: #fff; font-weight: 600; cursor: pointer; }
+.accessEditor button:disabled { opacity: .5; cursor: not-allowed; }
+.rowError { max-width: 220px; color: #b42318; white-space: normal; }
+.noAccess { color: #667085; font-size: 12px; }
 
 @media (max-width: 700px) {
   .page { padding: 18px 12px; }
