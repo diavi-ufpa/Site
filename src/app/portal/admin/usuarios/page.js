@@ -74,6 +74,44 @@ function AccessEditor({ user, authorizedFetch, onUpdated }) {
   );
 }
 
+function AddToNeonButton({ user, authorizedFetch, onAdded }) {
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+
+  async function addToNeon() {
+    setSaving(true);
+    setSaveError('');
+
+    try {
+      const response = await authorizedFetch('/api/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ firebase_uid: user.firebase_uid }),
+      });
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(data?.error || 'Não foi possível cadastrar no Neon.');
+      }
+
+      onAdded(user.id, data.user);
+    } catch (requestError) {
+      setSaveError(requestError.message || 'Não foi possível cadastrar no Neon.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className={styles.addToNeon}>
+      <button type="button" onClick={addToNeon} disabled={saving}>
+        {saving ? 'Adicionando...' : 'Adicionar ao Neon'}
+      </button>
+      {saveError && <span className={styles.rowError}>{saveError}</span>}
+    </div>
+  );
+}
+
 export default function AdminUsersPage() {
   const router = useRouter();
   const { appLoading, authorizedFetch, isAdmin } = useAuth();
@@ -85,6 +123,20 @@ export default function AdminUsersPage() {
     setUsers((currentUsers) =>
       currentUsers.map((user) =>
         user.id === updatedUser.id ? { ...user, ...updatedUser } : user
+      )
+    );
+  }
+
+  function addNeonUser(previousId, neonUser) {
+    setUsers((currentUsers) =>
+      currentUsers.map((user) =>
+        user.id === previousId
+          ? {
+              ...user,
+              ...neonUser,
+              sources: { firebase: true, neon: true },
+            }
+          : user
       )
     );
   }
@@ -184,7 +236,11 @@ export default function AdminUsersPage() {
                         onUpdated={updateUser}
                       />
                     ) : (
-                      <span className={styles.noAccess}>Cadastre no Neon para liberar acesso</span>
+                      <AddToNeonButton
+                        user={user}
+                        authorizedFetch={authorizedFetch}
+                        onAdded={addNeonUser}
+                      />
                     )}
                   </td>
                   <td>{formatDate(user.created_at || user.firebase_created_at)}</td>

@@ -24,7 +24,9 @@
 .accessEditor button { background: #c55b00; border-color: #c55b00; color: #fff; font-weight: 600; cursor: pointer; }
 .accessEditor button:disabled { opacity: .5; cursor: not-allowed; }
 .rowError { max-width: 220px; color: #b42318; white-space: normal; }
-.noAccess { color: #667085; font-size: 12px; }
+.addToNeon { display: flex; align-items: center; gap: 8px; }
+.addToNeon button { min-height: 34px; border: 1px solid #027a48; border-radius: 7px; background: #027a48; padding: 6px 10px; color: #fff; font-weight: 600; cursor: pointer; }
+.addToNeon button:disabled { opacity: .5; cursor: not-allowed; }
 
 @media (max-width: 700px) {
   .page { padding: 18px 12px; }
