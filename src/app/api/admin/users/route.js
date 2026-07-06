@@ -213,3 +213,93 @@ export async function PATCH(request) {
     );
   }
 }
+
+export async function POST(request) {
+  try {
+    const auth = await requireAdminUser(request);
+
+    if (!auth.ok) {
+      return Response.json(
+        { ok: false, error: auth.error },
+        { status: auth.status, headers: { 'Cache-Control': 'no-store' } }
+      );
+    }
+
+    const body = await request.json().catch(() => null);
+    const firebaseUid = body?.firebase_uid;
+
+    if (typeof firebaseUid !== 'string' || !firebaseUid.trim() || firebaseUid.length > 128) {
+      return Response.json(
+        { ok: false, error: 'Identificador do Firebase inválido' },
+        { status: 400, headers: { 'Cache-Control': 'no-store' } }
+      );
+    }
+
+    let firebaseUser;
+
+    try {
+      firebaseUser = await adminAuth.getUser(firebaseUid);
+    } catch (error) {
+      if (error?.code === 'auth/user-not-found') {
+        return Response.json(
+          { ok: false, error: 'Usuário não encontrado no Firebase' },
+          { status: 404, headers: { 'Cache-Control': 'no-store' } }
+        );
+      }
+      throw error;
+    }
+
+    if (!firebaseUser.email) {
+      return Response.json(
+        { ok: false, error: 'A conta Firebase precisa ter um e-mail' },
+        { status: 409, headers: { 'Cache-Control': 'no-store' } }
+      );
+    }
+
+    const existingUsers = await identitySql`
+      SELECT id
+      FROM identity_users
+      WHERE firebase_uid = ${firebaseUser.uid}
+         OR LOWER(email) = LOWER(${firebaseUser.email})
+      LIMIT 1
+    `;
+
+    if (existingUsers[0]) {
+      return Response.json(
+        { ok: false, error: 'Usuário já cadastrado no Neon' },
+        { status: 409, headers: { 'Cache-Control': 'no-store' } }
+      );
+    }
+
+    const insertedUsers = await identitySql`
+      INSERT INTO identity_users (firebase_uid, email, name, role, status)
+      VALUES (
+        ${firebaseUser.uid},
+        ${firebaseUser.email},
+        ${firebaseUser.displayName || null},
+        'user',
+        'pending'
+      )
+      RETURNING id, firebase_uid, email, name, role, status, created_at, last_login_at
+    `;
+
+    return Response.json(
+      { ok: true, user: insertedUsers[0] },
+      { status: 201, headers: { 'Cache-Control': 'no-store' } }
+    );
+  } catch (error) {
+    if (error?.code === '23505') {
+      return Response.json(
+        { ok: false, error: 'Usuário já cadastrado no Neon' },
+        { status: 409, headers: { 'Cache-Control': 'no-store' } }
+      );
+    }
+
+    console.error('Erro ao cadastrar usuário em /api/admin/users:', error);
+
+    return Response.json(
+      { ok: false, error: 'Erro ao cadastrar usuário no Neon' },
+      { status: 500, headers: { 'Cache-Control': 'no-store' } }
+    );
+  }
+}
