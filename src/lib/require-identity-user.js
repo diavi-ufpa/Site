@@ -74,7 +74,7 @@ export async function requireIdentityUser(request) {
   let decodedToken;
 
   try {
-    decodedToken = await adminAuth.verifyIdToken(token);
+    decodedToken = await adminAuth.verifyIdToken(token, true);
   } catch {
     return {
       ok: false,
