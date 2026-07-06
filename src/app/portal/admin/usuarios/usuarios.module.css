@@ -14,6 +14,11 @@
 .active { background: #ecfdf3; color: #027a48; }
 .inactive { background: #fef3f2; color: #b42318; }
 .pending { background: #fffaeb; color: #b54708; }
+.unlisted { background: #f2f4f7; color: #475467; }
+.sources { display: flex; gap: 6px; }
+.firebase, .neon { display: inline-block; padding: 4px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+.firebase { background: #fff4e5; color: #b54708; }
+.neon { background: #ecfdf3; color: #027a48; }
 
 @media (max-width: 700px) {
   .page { padding: 18px 12px; }

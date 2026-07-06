@@ -64,7 +64,7 @@ export default function AdminUsersPage() {
       <div className={styles.heading}>
         <div>
           <h1>Usuários</h1>
-          <p>Usuários cadastrados no sistema.</p>
+          <p>Contas no Firebase e autorizações de acesso no Neon.</p>
         </div>
         {!loading && !error && <span className={styles.count}>{users.length}</span>}
       </div>
@@ -79,6 +79,7 @@ export default function AdminUsersPage() {
               <tr>
                 <th>Nome</th>
                 <th>E-mail</th>
+                <th>Onde está</th>
                 <th>Perfil</th>
                 <th>Status</th>
                 <th>Cadastro</th>
@@ -89,15 +90,25 @@ export default function AdminUsersPage() {
               {users.map((user) => (
                 <tr key={user.id}>
                   <td>{user.name || '—'}</td>
-                  <td>{user.email}</td>
-                  <td>{user.role === 'admin' ? 'Administrador' : 'Usuário'}</td>
+                  <td>{user.email || '—'}</td>
                   <td>
-                    <span className={`${styles.status} ${styles[user.status]}`}>
-                      {user.status}
+                    <div className={styles.sources}>
+                      {user.sources.firebase && <span className={styles.firebase}>Firebase</span>}
+                      {user.sources.neon && <span className={styles.neon}>Neon</span>}
+                    </div>
+                  </td>
+                  <td>
+                    {user.sources.neon
+                      ? user.role === 'admin' ? 'Administrador' : 'Usuário'
+                      : 'Sem acesso ao portal'}
+                  </td>
+                  <td>
+                    <span className={`${styles.status} ${user.status ? styles[user.status] : styles.unlisted}`}>
+                      {user.status || (user.firebase_disabled ? 'desativado' : 'só no Firebase')}
                     </span>
                   </td>
-                  <td>{formatDate(user.created_at)}</td>
-                  <td>{formatDate(user.last_login_at)}</td>
+                  <td>{formatDate(user.created_at || user.firebase_created_at)}</td>
+                  <td>{formatDate(user.firebase_last_login_at || user.last_login_at)}</td>
                 </tr>
               ))}
             </tbody>
