@@ -1,82 +1,61 @@
-// src/app/avaliacao/avalia/presencial/relatorio/page.js
+'use client';
 
-import { Suspense } from 'react';
-import path from 'path';
-import fs from 'fs';
-import Papa from 'papaparse';
+import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import styles from '../../../../../styles/dados.module.css';
 import RelatorioPresencialClient from './relatorio-presencial-client';
+import { useAuth } from '@/contexts/AuthContext';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-export const runtime = 'nodejs';
+function ReportPageContent() {
+  const searchParams = useSearchParams();
+  const { authorizedFetch } = useAuth();
+  const [data, setData] = useState(null);
+  const [error, setError] = useState('');
 
-const uniqSorted = (arr = []) => [...new Set((arr || []).filter(Boolean))].sort();
+  useEffect(() => {
+    const controller = new AbortController();
 
-async function getFiltersByYear() {
-  const baseDir = path.join(process.cwd(), 'data', 'avalia');
-  const filtersByYear = {};
-  const anos = new Set();
-
-  // Tenta carregar CSVs conhecidos
-  const candidates = [
-    'AUTOAVALIAÇÃO DOS CURSOS DE GRADUAÇÃO A DISTÂNCIA - 2025-2.csv',
-    'AUTOAVALIAÇÃO DOS CURSOS DE GRADUAÇÃO A DISTÂNCIA - 2023-4 .csv'
-  ];
-
-  for (const file of candidates) {
-    try {
-      const p = path.join(baseDir, file);
-      if (!fs.existsSync(p)) continue;
-      const csv = fs.readFileSync(p, 'utf8');
-      const parsed = Papa.parse(csv, { header: true, skipEmptyLines: true });
-      const data = parsed.data || [];
-      if (!data.length) continue;
-      const anoMatch = (file.match(/(\d{4})/) || [])[0] || file;
-      const cursos = uniqSorted(data.map(r => r['Qual é o seu Curso?'] || r['Curso'] || r['curso']));
-      const polos = uniqSorted(data.map(r => r['Qual o seu Polo de Vinculação?'] || r['Polo'] || r['polo']));
-      filtersByYear[anoMatch] = { hasPolos: polos.length > 0, polos, cursos };
-      anos.add(anoMatch);
-    } catch (e) {
-      console.warn('Falha ao ler', file, e?.message);
+    async function loadData() {
+      try {
+        const response = await authorizedFetch('/api/avalia/report', {
+          cache: 'no-store',
+          signal: controller.signal,
+        });
+        const payload = await response.json().catch(() => null);
+        if (!response.ok) throw new Error(payload?.error || 'Erro ao carregar relatório presencial.');
+        setData(payload);
+      } catch (requestError) {
+        if (requestError.name !== 'AbortError') setError(requestError.message);
+      }
     }
-  }
 
-  const anosDisponiveis = [...anos].sort((a, b) => Number(b) - Number(a));
-  return { filtersByYear, anosDisponiveis };
-}
+    loadData();
+    return () => controller.abort();
+  }, [authorizedFetch]);
 
-async function RelatorioLoader({ searchParamsResolved }) {
-  const { filtersByYear, anosDisponiveis } = await getFiltersByYear();
-
-  if (!anosDisponiveis.length) {
-    return <p className={styles.errorMessage}>Nenhum ano disponível — verifique os CSVs em <code>data/avalia</code>.</p>;
-  }
-
-  const initialSelected = {
-    ano: searchParamsResolved?.ano || '',
-    curso: searchParamsResolved?.curso || '',
-    polo: searchParamsResolved?.polo || '',
-  };
-
-  return (
-    <RelatorioPresencialClient
-      filtersByYear={filtersByYear}
-      anosDisponiveis={anosDisponiveis}
-      initialSelected={initialSelected}
-    />
-  );
-}
-
-export default async function Page({ searchParams }) {
-  const sp = typeof searchParams?.then === 'function' ? await searchParams : searchParams || {};
+  if (error) return <div className={styles.mainContent}><p className={styles.errorMessage}>{error}</p></div>;
+  if (!data) return <div className={styles.mainContent}><p className={styles.loadingMessage}>Carregando interface do relatório...</p></div>;
 
   return (
     <div className={styles.mainContent}>
       <h1 className={styles.title}>Gerar Relatório — AVALIA Presencial</h1>
-      <Suspense fallback={<p className={styles.loadingMessage}>Carregando interface do relatório...</p>}>
-        <RelatorioLoader searchParamsResolved={sp} />
-      </Suspense>
+      <RelatorioPresencialClient
+        filtersByYear={data.filtersByYear}
+        anosDisponiveis={data.anosDisponiveis}
+        initialSelected={{
+          ano: searchParams.get('ano') || '',
+          curso: searchParams.get('curso') || '',
+          polo: searchParams.get('polo') || '',
+        }}
+      />
     </div>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={<div className={styles.mainContent}><p className={styles.loadingMessage}>Carregando interface do relatório...</p></div>}>
+      <ReportPageContent />
+    </Suspense>
   );
 }
