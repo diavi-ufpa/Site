@@ -225,6 +225,16 @@ const Sidebar = () => {
                   >
                     <Link href="/portal/avaliacaoInLoco">Avaliação In Loco</Link>
                   </li>
+
+                  <li
+                    className={
+                      pathname.startsWith('/portal/microdados')
+                        ? styles.subMenuItemActive
+                        : styles.subMenuItem
+                    }
+                  >
+                    <Link href="/portal/microdados">Microdados Enade</Link>
+                  </li>
                 </ul>
               )}
             </li>
