@@ -1,0 +1,110 @@
+.page {
+  max-width: 1040px;
+  margin: 0 auto;
+  color: var(--text-dark);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 28px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--surface-color);
+  box-shadow: 0 10px 28px rgba(5, 15, 36, 0.05);
+}
+
+.headerIcon {
+  display: flex;
+  width: 56px;
+  height: 56px;
+  flex: 0 0 56px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: rgba(255, 142, 41, 0.12);
+  color: var(--primary-color);
+}
+
+.kicker {
+  margin-bottom: 6px;
+  color: var(--primary-color);
+  font-family: var(--font-heading);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.header h1 {
+  margin-bottom: 8px;
+  font-family: var(--font-heading);
+  font-size: clamp(2rem, 3vw, 2.8rem);
+  line-height: 1.1;
+}
+
+.header p:last-child {
+  max-width: 680px;
+  color: var(--text-light);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.shortcut {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  min-height: 112px;
+  padding: 20px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--surface-color);
+  color: var(--text-dark);
+  box-shadow: 0 8px 22px rgba(5, 15, 36, 0.04);
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+
+.shortcut:hover {
+  border-color: rgba(255, 142, 41, 0.42);
+  box-shadow: 0 12px 26px rgba(5, 15, 36, 0.08);
+  transform: translateY(-1px);
+}
+
+.shortcut svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--primary-color);
+}
+
+.shortcut span {
+  display: grid;
+  gap: 6px;
+}
+
+.shortcut strong {
+  font-family: var(--font-heading);
+  font-size: 18px;
+}
+
+.shortcut small {
+  color: var(--text-light);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+@media (max-width: 720px) {
+  .header {
+    flex-direction: column;
+    padding: 22px;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
