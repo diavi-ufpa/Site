@@ -1,20 +1,23 @@
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
+
+import React, { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  Home,
-  ClipboardCheck,
+  BookCopy,
   ChevronDown,
   ChevronUp,
-  BookCopy,
+  ClipboardCheck,
+  Database,
   Download,
+  GraduationCap,
+  Home,
+  MapPinned,
   Users,
 } from 'lucide-react';
 import styles from '../styles/Sidebar.module.css';
 import { useAuth } from '@/contexts/AuthContext';
-
 import LoadingOverlay from '@/components/ui/LoadingOverlay';
 
 const Sidebar = () => {
@@ -31,32 +34,11 @@ const Sidebar = () => {
     presencialEnabled: true,
   };
 
-  // CORREÇÃO AQUI: presencial precisa estar true
   const reportEnabled = {
     ead: true,
     presencial: true,
     minhaOpiniao: false,
   };
-
-  const inAvalRoutes =
-    pathname === '/portal' || pathname.startsWith('/portal/');
-
-  const selectedEvaluation = pathname.startsWith('/portal/minhaopiniao')
-    ? 'minhaopiniao'
-    : pathname.startsWith('/portal/avaliacaoInLoco')
-    ? 'avaliacaoInLoco'
-    : pathname.startsWith('/portal/avalia') ||
-      pathname.startsWith('/portal/ead')
-    ? 'avalia'
-    : null;
-
-  const inModalidade =
-    (featureFlags.presencialEnabled &&
-      pathname.startsWith('/portal/avalia/presencial')) ||
-    pathname.startsWith('/portal/ead') ||
-    pathname.startsWith('/portal/avaliacaoInLoco') ||
-    (pathname.startsWith('/portal/minhaopiniao/') &&
-      !pathname.startsWith('/portal/minhaopiniao/relatorio'));
 
   const isReportPage =
     pathname.startsWith('/portal/ead/relatorioEAD') ||
@@ -64,11 +46,30 @@ const Sidebar = () => {
     pathname.startsWith('/portal/avalia/presencial/relatorio');
 
   const getInitialOpenMenus = useCallback(() => {
-    const initial = { avaliacao: false, modalidade: false };
-    if (inAvalRoutes) initial.avaliacao = true;
-    if (selectedEvaluation) initial.modalidade = true;
+    const initial = {
+      avaliacao: true,
+      avalia: false,
+      minhaOpiniao: false,
+      avaliacaoInLoco: false,
+    };
+
+    if (
+      pathname.startsWith('/portal/avalia') ||
+      pathname.startsWith('/portal/ead')
+    ) {
+      initial.avalia = true;
+    }
+
+    if (pathname.startsWith('/portal/minhaopiniao')) {
+      initial.minhaOpiniao = true;
+    }
+
+    if (pathname.startsWith('/portal/avaliacaoInLoco')) {
+      initial.avaliacaoInLoco = true;
+    }
+
     return initial;
-  }, [inAvalRoutes, selectedEvaluation]);
+  }, [pathname]);
 
   const [openMenus, setOpenMenus] = useState(getInitialOpenMenus);
 
@@ -76,27 +77,9 @@ const Sidebar = () => {
     setOpenMenus(getInitialOpenMenus());
   }, [getInitialOpenMenus]);
 
-  useEffect(() => {
-    if (selectedEvaluation) {
-      setOpenMenus((prev) => ({
-        ...prev,
-        avaliacao: true,
-        modalidade: true,
-      }));
-    }
-  }, [selectedEvaluation]);
-
   const handleMenuClick = (menuName) => {
     setOpenMenus((prev) => ({ ...prev, [menuName]: !prev[menuName] }));
   };
-
-  const showModalidade = !!selectedEvaluation;
-
-  const avaliacaoHeaderClass =
-    inAvalRoutes && !inModalidade ? styles.activeParent : '';
-
-  const modalidadeHeaderClass =
-    inModalidade && !isReportPage ? styles.activeParent : '';
 
   const showGenerateButton =
     pathname === '/portal' ||
@@ -106,9 +89,7 @@ const Sidebar = () => {
     (pathname.startsWith('/portal/minhaopiniao') &&
       reportEnabled.minhaOpiniao);
 
-  const isReportActive = isReportPage;
-
-  const activeReportBtnStyle = isReportActive
+  const activeReportBtnStyle = isReportPage
     ? {
         backgroundColor: '#ff8a1e',
         color: '#fff',
@@ -125,14 +106,26 @@ const Sidebar = () => {
     reportHref = '/portal/ead/relatorioEAD';
   }
 
+  const avaliaActive =
+    pathname === '/portal/avalia' ||
+    pathname.startsWith('/portal/avalia/') ||
+    pathname.startsWith('/portal/ead');
+
+  const minhaOpiniaoActive = pathname.startsWith('/portal/minhaopiniao');
+  const avaliacaoInLocoActive = pathname.startsWith('/portal/avaliacaoInLoco');
+  const microdadosActive = pathname.startsWith('/portal/microdados');
+  const avaliacaoActive =
+    avaliaActive ||
+    minhaOpiniaoActive ||
+    avaliacaoInLocoActive ||
+    microdadosActive;
+
   const minhaOpiniaoDiscenteActive =
     pathname === '/portal/minhaopiniao/discente' ||
     pathname.startsWith('/portal/minhaopiniao/discente/');
-
   const minhaOpiniaoDocenteActive =
     pathname === '/portal/minhaopiniao/docente' ||
     pathname.startsWith('/portal/minhaopiniao/docente/');
-
   const minhaOpiniaoTecnicoActive =
     pathname === '/portal/minhaopiniao/tecnico' ||
     pathname.startsWith('/portal/minhaopiniao/tecnico/');
@@ -140,10 +133,7 @@ const Sidebar = () => {
   return (
     <>
       {isLoading && (
-        <LoadingOverlay
-          isFullScreen={true}
-          message="Carregando dados..."
-        />
+        <LoadingOverlay isFullScreen={true} message="Carregando dados..." />
       )}
 
       <aside className={styles.sidebar}>
@@ -170,6 +160,7 @@ const Sidebar = () => {
         </div>
 
         <nav className={styles.nav}>
+          <p className={styles.sectionLabel}>Principal</p>
           <ul>
             <li className={pathname === '/portal' ? styles.activeParent : ''}>
               <Link href="/portal" className={styles.menuHeader}>
@@ -177,9 +168,13 @@ const Sidebar = () => {
                 <span>Página Inicial</span>
               </Link>
             </li>
+          </ul>
 
-            <li className={avaliacaoHeaderClass}>
-              <div
+          <p className={styles.sectionLabel}>Avaliação</p>
+          <ul>
+            <li className={avaliacaoActive ? styles.activeGroup : ''}>
+              <button
+                type="button"
                 className={styles.menuHeader}
                 onClick={() => handleMenuClick('avaliacao')}
               >
@@ -190,122 +185,36 @@ const Sidebar = () => {
                 ) : (
                   <ChevronDown size={16} className={styles.chevron} />
                 )}
-              </div>
+              </button>
 
               {openMenus.avaliacao && (
                 <ul className={styles.subMenu}>
-                  <li
-                    className={
-                      (pathname.startsWith('/portal/avalia/') || pathname === '/portal/avalia')
-                        ? styles.subMenuItemActive
-                        : styles.subMenuItem
-                    }
-                  >
-                    <Link href="/portal/avalia">Avalia</Link>
-                  </li>
-
-                  {featureFlags.minhaOpiniaoEnabled && (
-                    <li
-                      className={
-                        pathname.startsWith('/portal/minhaopiniao')
-                          ? styles.subMenuItemActive
-                          : styles.subMenuItem
-                      }
+                  <li className={styles.menuGroup}>
+                    <div
+                      className={`${styles.subMenuToggle} ${
+                        avaliaActive ? styles.subMenuToggleActive : ''
+                      }`}
                     >
-                      <Link href="/portal/minhaopiniao">Minha Opinião</Link>
-                    </li>
-                  )}
-
-                  <li
-                    className={
-                      pathname.startsWith('/portal/avaliacaoInLoco')
-                        ? styles.subMenuItemActive
-                        : styles.subMenuItem
-                    }
-                  >
-                    <Link href="/portal/avaliacaoInLoco">Avaliação In Loco</Link>
-                  </li>
-
-                  <li
-                    className={
-                      pathname.startsWith('/portal/microdados')
-                        ? styles.subMenuItemActive
-                        : styles.subMenuItem
-                    }
-                  >
-                    <Link href="/portal/microdados">Microdados Enade</Link>
-                  </li>
-                </ul>
-              )}
-            </li>
-
-            {showModalidade && (
-              <li className={modalidadeHeaderClass}>
-                <div
-                  className={styles.menuHeader}
-                  onClick={() => handleMenuClick('modalidade')}
-                >
-                  <BookCopy size={18} />
-                  <span>Modalidade</span>
-                  {openMenus.modalidade ? (
-                    <ChevronUp size={16} className={styles.chevron} />
-                  ) : (
-                    <ChevronDown size={16} className={styles.chevron} />
-                  )}
-                </div>
-
-                {openMenus.modalidade && (
-                  <ul className={styles.subMenu}>
-                    {selectedEvaluation === 'minhaopiniao' ? (
-                      <>
-                        <li
-                          className={
-                            minhaOpiniaoDiscenteActive
-                              ? styles.subMenuItemActive
-                              : styles.subMenuItem
-                          }
-                        >
-                          <Link href="/portal/minhaopiniao/discente">
-                            Discente
-                          </Link>
-                        </li>
-                        <li
-                          className={
-                            minhaOpiniaoDocenteActive
-                              ? styles.subMenuItemActive
-                              : styles.subMenuItem
-                          }
-                        >
-                          <Link href="/portal/minhaopiniao/docente">
-                            Docente
-                          </Link>
-                        </li>
-                        <li
-                          className={
-                            minhaOpiniaoTecnicoActive
-                              ? styles.subMenuItemActive
-                              : styles.subMenuItem
-                          }
-                        >
-                          <Link href="/portal/minhaopiniao/tecnico">
-                            Técnico
-                          </Link>
-                        </li>
-                      </>
-                    ) : selectedEvaluation === 'avaliacaoInLoco' ? (
-                      <li
-                        className={
-                          pathname.startsWith('/portal/avaliacaoInLoco/dados')
-                            ? styles.subMenuItemActive
-                            : styles.subMenuItem
-                        }
+                      <Link href="/portal/avalia" className={styles.groupLink}>
+                        <BookCopy size={16} />
+                        <span>Avalia</span>
+                      </Link>
+                      <button
+                        type="button"
+                        className={styles.groupChevron}
+                        aria-label="Alternar menu Avalia"
+                        onClick={() => handleMenuClick('avalia')}
                       >
-                        <Link href="/portal/avaliacaoInLoco/dados">
-                          Dados
-                        </Link>
-                      </li>
-                    ) : (
-                      <>
+                        {openMenus.avalia ? (
+                          <ChevronUp size={15} />
+                        ) : (
+                          <ChevronDown size={15} />
+                        )}
+                      </button>
+                    </div>
+
+                    {openMenus.avalia && (
+                      <ul className={styles.nestedSubMenu}>
                         {featureFlags.presencialEnabled && (
                           <li
                             className={
@@ -337,38 +246,178 @@ const Sidebar = () => {
                             EAD
                           </Link>
                         </li>
-                      </>
+                      </ul>
                     )}
-                  </ul>
-                )}
-              </li>
-            )}
+                  </li>
+
+                  {featureFlags.minhaOpiniaoEnabled && (
+                    <li className={styles.menuGroup}>
+                      <div
+                        className={`${styles.subMenuToggle} ${
+                          minhaOpiniaoActive ? styles.subMenuToggleActive : ''
+                        }`}
+                      >
+                        <Link
+                          href="/portal/minhaopiniao"
+                          className={styles.groupLink}
+                        >
+                          <GraduationCap size={16} />
+                          <span>Minha Opinião</span>
+                        </Link>
+                        <button
+                          type="button"
+                          className={styles.groupChevron}
+                          aria-label="Alternar menu Minha Opinião"
+                          onClick={() => handleMenuClick('minhaOpiniao')}
+                        >
+                          {openMenus.minhaOpiniao ? (
+                            <ChevronUp size={15} />
+                          ) : (
+                            <ChevronDown size={15} />
+                          )}
+                        </button>
+                      </div>
+
+                      {openMenus.minhaOpiniao && (
+                        <ul className={styles.nestedSubMenu}>
+                          <li
+                            className={
+                              minhaOpiniaoDiscenteActive
+                                ? styles.subMenuItemActive
+                                : styles.subMenuItem
+                            }
+                          >
+                            <Link href="/portal/minhaopiniao/discente">
+                              Discente
+                            </Link>
+                          </li>
+                          <li
+                            className={
+                              minhaOpiniaoDocenteActive
+                                ? styles.subMenuItemActive
+                                : styles.subMenuItem
+                            }
+                          >
+                            <Link href="/portal/minhaopiniao/docente">
+                              Docente
+                            </Link>
+                          </li>
+                          <li
+                            className={
+                              minhaOpiniaoTecnicoActive
+                                ? styles.subMenuItemActive
+                                : styles.subMenuItem
+                            }
+                          >
+                            <Link href="/portal/minhaopiniao/tecnico">
+                              Técnico
+                            </Link>
+                          </li>
+                        </ul>
+                      )}
+                    </li>
+                  )}
+
+                  <li className={styles.menuGroup}>
+                    <div
+                      className={`${styles.subMenuToggle} ${
+                        avaliacaoInLocoActive ? styles.subMenuToggleActive : ''
+                      }`}
+                    >
+                      <Link
+                        href="/portal/avaliacaoInLoco"
+                        className={styles.groupLink}
+                      >
+                        <MapPinned size={16} />
+                        <span>Avaliação In Loco</span>
+                      </Link>
+                      <button
+                        type="button"
+                        className={styles.groupChevron}
+                        aria-label="Alternar menu Avaliação In Loco"
+                        onClick={() => handleMenuClick('avaliacaoInLoco')}
+                      >
+                        {openMenus.avaliacaoInLoco ? (
+                          <ChevronUp size={15} />
+                        ) : (
+                          <ChevronDown size={15} />
+                        )}
+                      </button>
+                    </div>
+
+                    {openMenus.avaliacaoInLoco && (
+                      <ul className={styles.nestedSubMenu}>
+                        <li
+                          className={
+                            pathname.startsWith('/portal/avaliacaoInLoco/dados')
+                              ? styles.subMenuItemActive
+                              : styles.subMenuItem
+                          }
+                        >
+                          <Link href="/portal/avaliacaoInLoco/dados">
+                            Dados
+                          </Link>
+                        </li>
+                      </ul>
+                    )}
+                  </li>
+
+                  <li
+                    className={
+                      microdadosActive
+                        ? styles.subMenuItemActive
+                        : styles.subMenuItem
+                    }
+                  >
+                    <Link href="/portal/microdados">
+                      <Database size={16} />
+                      <span>Microdados Enade</span>
+                    </Link>
+                  </li>
+                </ul>
+              )}
+            </li>
           </ul>
 
-          {isAdmin && (
-            <ul>
-              <li className={pathname.startsWith('/portal/admin') ? styles.activeParent : ''}>
-                <Link href="/portal/admin/usuarios" className={styles.menuHeader}>
-                  <Users size={18} />
-                  <span>Usuários</span>
+          {showGenerateButton && (
+            <>
+              <p className={styles.sectionLabel}>Relatórios</p>
+              <div className={styles.generateReportContainer}>
+                <Link
+                  href={reportHref}
+                  aria-label="Gerar relatório"
+                  className={styles.generateReportBtn}
+                  style={activeReportBtnStyle}
+                  onClick={() => setIsLoading(true)}
+                >
+                  <Download size={18} />
+                  <span>Gerar relatório</span>
                 </Link>
-              </li>
-            </ul>
+              </div>
+            </>
           )}
 
-          {showGenerateButton && (
-            <div className={styles.generateReportContainer}>
-              <Link
-                href={reportHref}
-                aria-label="Gerar relatório"
-                className={styles.generateReportBtn}
-                style={activeReportBtnStyle}
-                onClick={() => setIsLoading(true)}
-              >
-                <Download size={18} />
-                <span>Gerar relatório</span>
-              </Link>
-            </div>
+          {isAdmin && (
+            <>
+              <p className={styles.sectionLabel}>Administração</p>
+              <ul>
+                <li
+                  className={
+                    pathname.startsWith('/portal/admin')
+                      ? styles.activeParent
+                      : ''
+                  }
+                >
+                  <Link
+                    href="/portal/admin/usuarios"
+                    className={styles.menuHeader}
+                  >
+                    <Users size={18} />
+                    <span>Usuários</span>
+                  </Link>
+                </li>
+              </ul>
+            </>
           )}
         </nav>
       </aside>
