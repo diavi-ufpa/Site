@@ -139,21 +139,20 @@ const Sidebar = () => {
       <aside className={styles.sidebar}>
         <div
           className={styles.logoContainer}
-          style={{ display: 'flex', alignItems: 'center', gap: 10 }}
         >
           <Image
             src="/DIAVI_logo.png"
             alt="Logo DIAVI"
-            width={150}
-            height={45}
+            width={112}
+            height={34}
             priority
             style={{ height: 'auto' }}
           />
           <Image
             src="/CPA%20logo.jpg"
             alt="Logo CPA"
-            width={120}
-            height={45}
+            width={86}
+            height={32}
             priority
             style={{ height: 'auto', objectFit: 'contain' }}
           />
