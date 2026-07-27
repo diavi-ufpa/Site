@@ -1075,10 +1075,13 @@ export default function EadDashboardClient({
 
   const boxplotPdfOptions = embedForPdf
     ? {
+        chart: { height: 300 },
         title: { text: '' },
         yaxis: { max: 4, tickAmount: 7 },
       }
-    : undefined;
+    : {
+        chart: { height: 360 },
+      };
 
   const useDesktopLikeLayout = embedForPdf || isWideViewport;
 
@@ -1106,9 +1109,11 @@ export default function EadDashboardClient({
     ? { gridColumn: '2 / 3', gridRow: '1', height: 360 }
     : { gridColumn: '1 / -1', gridRow: 'auto', height: 'clamp(300px, 40vh, 420px)' };
 
-  const rightBottom = useDesktopLikeLayout
-    ? { gridColumn: '2 / 3', gridRow: '2', height: 420 }
-    : { gridColumn: '1 / -1', gridRow: 'auto', height: 'clamp(320px, 44vh, 500px)' };
+  const rightBottom = embedForPdf
+    ? { gridColumn: '2 / 3', gridRow: '2', height: 500 }
+    : useDesktopLikeLayout
+      ? { gridColumn: '2 / 3', gridRow: '2', height: 460 }
+      : { gridColumn: '1 / -1', gridRow: 'auto', height: 'clamp(430px, 44vh, 520px)' };
 
   const gridThreeRows = {
     display: 'grid',
@@ -1117,8 +1122,37 @@ export default function EadDashboardClient({
   };
 
   const row1 = { gridColumn: '1 / -1', gridRow: 'auto', height: 'clamp(320px, 42vh, 420px)' };
-  const row2 = { gridColumn: '1 / -1', gridRow: 'auto', height: 'clamp(340px, 44vh, 440px)' };
+  const row2 = embedForPdf
+    ? { gridColumn: '1 / -1', gridRow: 'auto', height: 500 }
+    : { gridColumn: '1 / -1', gridRow: 'auto', height: 'clamp(430px, 44vh, 500px)' };
   const row3 = { gridColumn: '1 / -1', gridRow: 'auto', height: 'clamp(320px, 42vh, 420px)' };
+
+  const boxplotCardStyle = {
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+    isolation: 'isolate',
+    contain: 'layout paint',
+    position: 'relative',
+    zIndex: 0,
+    boxSizing: 'border-box',
+  };
+
+  const boxplotPlotAreaStyle = {
+    flex: '0 0 auto',
+    minHeight: 0,
+    overflow: 'hidden',
+  };
+
+  const boxplotDimPlotAreaStyle = {
+    ...boxplotPlotAreaStyle,
+    height: embedForPdf ? 310 : 360,
+  };
+
+  const boxplotItemPlotAreaStyle = {
+    ...boxplotPlotAreaStyle,
+    height: embedForPdf ? 310 : 360,
+  };
 
   const StatsTableInline = ({ id, title, rows, labelHeader = 'Item' }) => {
     if (!rows || !rows.length || !embedForPdf) return null;
@@ -1225,9 +1259,9 @@ export default function EadDashboardClient({
               <div
                 id="chart-boxplot-dimensoes"
                 className={styles.chartContainer}
-                style={{ ...rightBottom, display: 'flex', flexDirection: 'column' }}
+                style={{ ...rightBottom, ...boxplotCardStyle }}
               >
-                <div style={{ flex: '1 1 auto', minHeight: 270 }}>
+                <div style={boxplotDimPlotAreaStyle}>
                   <BoxplotChart
                     apiData={chartData.boxplotDimApex}
                     title={`Boxplot das Médias por Dimensão (${selectedFilters.ano})`}
@@ -1258,9 +1292,9 @@ export default function EadDashboardClient({
               <div
                 id="chart-boxplot-autoav"
                 className={styles.chartContainer}
-                style={{ ...row2, display: 'flex', flexDirection: 'column' }}
+                style={{ ...row2, ...boxplotCardStyle }}
               >
-                <div style={{ flex: '1 1 auto', minHeight: 250 }}>
+                <div style={boxplotItemPlotAreaStyle}>
                   <BoxplotChart
                     apiData={chartData.boxplotAutoApex}
                     title="Boxplot das Médias por Item (Autoavaliação)"
@@ -1298,9 +1332,9 @@ export default function EadDashboardClient({
               <div
                 id="chart-boxplot-atitude"
                 className={styles.chartContainer}
-                style={{ ...row2, display: 'flex', flexDirection: 'column' }}
+                style={{ ...row2, ...boxplotCardStyle }}
               >
-                <div style={{ flex: '1 1 auto', minHeight: 250 }}>
+                <div style={boxplotItemPlotAreaStyle}>
                   <BoxplotChart
                     apiData={chartData.boxplotAtitudeApex}
                     title="Boxplot das Médias por Item (Atitude Profissional)"
@@ -1338,9 +1372,9 @@ export default function EadDashboardClient({
               <div
                 id="chart-boxplot-gestao"
                 className={styles.chartContainer}
-                style={{ ...row2, display: 'flex', flexDirection: 'column' }}
+                style={{ ...row2, ...boxplotCardStyle }}
               >
-                <div style={{ flex: '1 1 auto', minHeight: 250 }}>
+                <div style={boxplotItemPlotAreaStyle}>
                   <BoxplotChart
                     apiData={chartData.boxplotGestaoApex}
                     title="Boxplot das Médias por Item (Gestão Didática)"
@@ -1378,9 +1412,9 @@ export default function EadDashboardClient({
               <div
                 id="chart-boxplot-processo"
                 className={styles.chartContainer}
-                style={{ ...row2, display: 'flex', flexDirection: 'column' }}
+                style={{ ...row2, ...boxplotCardStyle }}
               >
-                <div style={{ flex: '1 1 auto', minHeight: 250 }}>
+                <div style={boxplotItemPlotAreaStyle}>
                   <BoxplotChart
                     apiData={chartData.boxplotProcessoApex}
                     title="Boxplot das Médias por Item (Processo Avaliativo)"
@@ -1418,9 +1452,9 @@ export default function EadDashboardClient({
               <div
                 id="chart-boxplot-infra"
                 className={styles.chartContainer}
-                style={{ ...row2, display: 'flex', flexDirection: 'column' }}
+                style={{ ...row2, ...boxplotCardStyle }}
               >
-                <div style={{ flex: '1 1 auto', minHeight: 250 }}>
+                <div style={boxplotItemPlotAreaStyle}>
                   <BoxplotChart
                     apiData={chartData.boxplotInfraApex}
                     title="Boxplot das Médias por Item (Instalações e TI)"

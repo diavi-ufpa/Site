@@ -84,14 +84,25 @@ const ActivityChart = ({
         className={styles.chartCanvasWrapper}
         style={{
           display: 'flex',
+          flex: '1 1 auto',
+          flexDirection: 'column',
           alignItems: 'stretch',
-          flexWrap: 'wrap',
+          flexWrap: 'nowrap',
           gap: 12,
-          height
+          height,
+          minHeight: 0,
+          overflow: 'hidden'
         }}
       >
-        {/* Canvas ocupa todo o espaço disponível */}
-        <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+        {/* Canvas divide a altura disponível com a legenda sem escapar do card. */}
+        <div
+          style={{
+            position: 'relative',
+            flex: '1 1 0',
+            width: '100%',
+            minHeight: 0
+          }}
+        >
           <Bar options={finalOptions} data={chartData} />
         </div>
 
@@ -110,10 +121,10 @@ const ActivityChart = ({
                   }
                 : {
                     position: 'static',
-                    flex: `1 1 ${legendWidth}px`,
-                    minWidth: 140,
-                    maxWidth: 260,
-                    alignSelf: 'flex-start'
+                    flex: '0 0 auto',
+                    width: '100%',
+                    maxWidth: legendWidth,
+                    alignSelf: 'flex-end'
                   })
             }}
           >
