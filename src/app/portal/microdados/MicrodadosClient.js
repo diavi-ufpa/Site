@@ -12,6 +12,7 @@ import {
   PointElement,
   Tooltip,
 } from 'chart.js';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { useAuth } from '@/contexts/AuthContext';
 import LoadingOverlay from '@/components/ui/LoadingOverlay';
 import styles from '@/styles/dados.module.css';
@@ -23,7 +24,8 @@ ChartJS.register(
   Legend,
   LineElement,
   PointElement,
-  Tooltip
+  Tooltip,
+  ChartDataLabels
 );
 
 const tabs = [
@@ -77,6 +79,14 @@ function chartOptions({ horizontal = false, max = undefined, xTitle = '' } = {})
     maintainAspectRatio: false,
     plugins: {
       legend: { position: 'bottom' },
+      datalabels: {
+        display: true,
+        anchor: 'end',
+        align: 'end',
+        formatter: (value) => number(value),
+        color: '#444',
+        font: { size: 10 },
+      },
       tooltip: {
         callbacks: {
           label: (ctx) => {
