@@ -4,6 +4,20 @@ import { requireIdentityUser } from '@/lib/require-identity-user';
 export const dynamic = 'force-dynamic';
 
 const SCHEMA = 'avalia';
+const CACHE_TTL_MS = 5 * 60 * 1000;
+const CACHE_MAX_ENTRIES = 300;
+
+const globalForAvaliaRoute = globalThis;
+const responseCache = globalForAvaliaRoute.__avaliaDbResponseCache ?? new Map();
+const inflightRequests = globalForAvaliaRoute.__avaliaDbInflightRequests ?? new Map();
+
+if (!globalForAvaliaRoute.__avaliaDbResponseCache) {
+  globalForAvaliaRoute.__avaliaDbResponseCache = responseCache;
+}
+
+if (!globalForAvaliaRoute.__avaliaDbInflightRequests) {
+  globalForAvaliaRoute.__avaliaDbInflightRequests = inflightRequests;
+}
 
 const CONCEITOS = {
   4: 'Excelente',
@@ -233,36 +247,48 @@ async function getFilterPayload(filters = {}) {
 
 async function getSummary(filters = {}) {
   const responseFilters = sqlFilters(filters, { tipoMedida: 'LIKERT' });
-  const { rows: totalRows } = await queryAvaliaApi(
+  const { rows } = await queryAvaliaApi(
     `
-      SELECT COUNT(DISTINCT v.matricula_hash)::int AS total_respondentes
-      FROM ${SCHEMA}.vw_disc_resposta_long v
-      JOIN ${SCHEMA}.dim_oferta o ON o.oferta_id = v.oferta_id
-      ${responseFilters.whereSql}
+      WITH base AS MATERIALIZED (
+        SELECT
+          v.matricula_hash,
+          o.campus,
+          v.valor
+        FROM ${SCHEMA}.vw_disc_resposta_long v
+        JOIN ${SCHEMA}.dim_oferta o ON o.oferta_id = v.oferta_id
+        ${responseFilters.whereSql}
+      ),
+      campus_stats AS (
+        SELECT
+          campus,
+          ROUND(AVG(valor)::numeric, 2)::float AS media
+        FROM base
+        GROUP BY campus
+      )
+      SELECT
+        (SELECT COUNT(DISTINCT matricula_hash)::int FROM base) AS total_respondentes,
+        (SELECT row_to_json(best) FROM (
+          SELECT campus, media
+          FROM campus_stats
+          ORDER BY media DESC, campus
+          LIMIT 1
+        ) best) AS melhor_campus,
+        (SELECT row_to_json(worst) FROM (
+          SELECT campus, media
+          FROM campus_stats
+          ORDER BY media ASC, campus DESC
+          LIMIT 1
+        ) worst) AS pior_campus
     `,
     responseFilters.params
   );
 
-  const campusFilters = sqlFilters(filters, { tipoMedida: 'LIKERT' });
-  const { rows: campusRows } = await queryAvaliaApi(
-    `
-      SELECT
-        o.campus,
-        ROUND(AVG(v.valor)::numeric, 2)::float AS media
-      FROM ${SCHEMA}.vw_disc_resposta_long v
-      JOIN ${SCHEMA}.dim_oferta o ON o.oferta_id = v.oferta_id
-      ${campusFilters.whereSql}
-      GROUP BY o.campus
-      HAVING COUNT(*) > 0
-      ORDER BY media DESC, o.campus
-    `,
-    campusFilters.params
-  );
+  const summary = rows[0] ?? {};
 
   return {
-    total_respondentes: Number(totalRows[0]?.total_respondentes ?? 0),
-    campus_melhor_avaliado: campusRows[0] ? [campusRows[0]] : [],
-    campus_pior_avaliado: campusRows.at(-1) ? [campusRows.at(-1)] : [],
+    total_respondentes: Number(summary.total_respondentes ?? 0),
+    campus_melhor_avaliado: summary.melhor_campus ? [summary.melhor_campus] : [],
+    campus_pior_avaliado: summary.pior_campus ? [summary.pior_campus] : [],
   };
 }
 
@@ -430,7 +456,7 @@ async function getBoxplotPayload(filters = {}, options = {}) {
   const baseSql = sourceSql.replace('__WHERE__', filtersSql.whereSql);
   const { rows } = await queryAvaliaApi(
     `
-      WITH base AS (
+      WITH base AS MATERIALIZED (
         ${baseSql}
       ),
       stats AS (
@@ -448,10 +474,26 @@ async function getBoxplotPayload(filters = {}, options = {}) {
         FROM base
         WHERE value IS NOT NULL
         GROUP BY label
+      ),
+      outliers AS (
+        SELECT
+          b.label,
+          json_agg(b.value::float ORDER BY b.value) AS values
+        FROM base b
+        JOIN stats s ON s.label = b.label
+        WHERE b.value IS NOT NULL
+          AND (
+            b.value < (s.q1 - 1.5 * (s.q3 - s.q1))
+            OR b.value > (s.q3 + 1.5 * (s.q3 - s.q1))
+          )
+        GROUP BY b.label
       )
-      SELECT *
-      FROM stats
-      ORDER BY ordem_bloco, ordem_item, label
+      SELECT
+        s.*,
+        COALESCE(o.values, '[]'::json) AS outliers
+      FROM stats s
+      LEFT JOIN outliers o ON o.label = s.label
+      ORDER BY s.ordem_bloco, s.ordem_item, s.label
     `,
     filtersSql.params
   );
@@ -475,39 +517,17 @@ async function getBoxplotPayload(filters = {}, options = {}) {
     'label'
   );
 
-  const { rows: outlierRows } = await queryAvaliaApi(
-    `
-      WITH base AS (
-        ${baseSql}
-      ),
-      stats AS (
-        SELECT
-          label,
-          percentile_cont(0.25) WITHIN GROUP (ORDER BY value)::float AS q1,
-          percentile_cont(0.75) WITHIN GROUP (ORDER BY value)::float AS q3
-        FROM base
-        WHERE value IS NOT NULL
-        GROUP BY label
-      )
-      SELECT
-        b.label,
-        b.value::float AS value
-      FROM base b
-      JOIN stats s ON s.label = b.label
-      WHERE b.value IS NOT NULL
-        AND (
-          b.value < (s.q1 - 1.5 * (s.q3 - s.q1))
-          OR b.value > (s.q3 + 1.5 * (s.q3 - s.q1))
-        )
-      ORDER BY b.label, b.value
-    `,
-    filtersSql.params
-  );
+  const outliersData = rows.flatMap((row) => {
+    const label = options.outputKey === 'item'
+      ? normalizeQuestionCode(row.label)
+      : row.label;
+    const values = Array.isArray(row.outliers) ? row.outliers : [];
 
-  const outliersData = outlierRows.map((row) => ({
-    x: options.outputKey === 'item' ? normalizeQuestionCode(row.label) : row.label,
-    y: Number(Number(row.value ?? 0).toFixed(2)),
-  }));
+    return values.map((value) => ({
+      x: label,
+      y: Number(Number(value ?? 0).toFixed(2)),
+    }));
+  });
 
   const tabela2 = mapped.map((row) => ({
     Item: row.label,
@@ -702,6 +722,48 @@ async function getRankingPayload(endpoint, filters = {}) {
   return null;
 }
 
+function cacheKey(endpoint, filters) {
+  return JSON.stringify({ endpoint, ...filters });
+}
+
+function setCachedPayload(key, payload) {
+  responseCache.set(key, { payload, updatedAt: Date.now() });
+
+  while (responseCache.size > CACHE_MAX_ENTRIES) {
+    const oldestKey = responseCache.keys().next().value;
+    if (oldestKey === undefined) break;
+    responseCache.delete(oldestKey);
+  }
+}
+
+async function routeEndpointCached(endpoint, filters) {
+  const key = cacheKey(endpoint, filters);
+  const cached = responseCache.get(key);
+
+  if (cached && Date.now() - cached.updatedAt < CACHE_TTL_MS) {
+    return cached.payload;
+  }
+
+  if (inflightRequests.has(key)) {
+    return inflightRequests.get(key);
+  }
+
+  const request = routeEndpoint(endpoint, filters)
+    .then((payload) => {
+      const hasPartialErrors = payload?.errors && Object.keys(payload.errors).length > 0;
+      if (!hasPartialErrors) {
+        setCachedPayload(key, payload);
+      }
+      return payload;
+    })
+    .finally(() => {
+      inflightRequests.delete(key);
+    });
+
+  inflightRequests.set(key, request);
+  return request;
+}
+
 function json(payload, init = {}) {
   return Response.json(payload, {
     ...init,
@@ -831,7 +893,7 @@ export async function GET(req) {
       curso: normalizeParam(searchParams.get('curso'), 'todos'),
     };
 
-    const payload = await routeEndpoint(endpoint, filters);
+    const payload = await routeEndpointCached(endpoint, filters);
     return json(payload);
   } catch (err) {
     console.error('[avalia-db] fatal:', {

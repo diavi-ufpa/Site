@@ -459,9 +459,23 @@ const rankingEndpointByContext = {
 };
 
 async function fetchJson(url, signal, errMsg, fetcher = fetch) {
-  const r = await fetcher(url, { signal });
-  if (!r.ok) throw new Error(errMsg || 'Falha ao buscar dados da API R');
-  return r.json();
+  const maxAttempts = url.startsWith('/api/avalia-db') ? 2 : 1;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const r = await fetcher(url, { signal });
+    if (r.ok) return r.json();
+
+    const retryable = [500, 502, 503, 504].includes(r.status);
+    if (!retryable || attempt === maxAttempts) {
+      const body = await r.json().catch(() => null);
+      throw new Error(body?.details || body?.error || errMsg || 'Falha ao buscar dados');
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    if (signal?.aborted) throw abortError();
+  }
+
+  throw new Error(errMsg || 'Falha ao buscar dados');
 }
 
 async function fetchJsonOptional(url, signal, fetcher = fetch) {
@@ -929,6 +943,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [partialWarning, setPartialWarning] = useState(null);
 
   const [tabLoading, setTabLoading] = useState({});
   const [loadedTabs, setLoadedTabs] = useState({ dimensoes: true });
@@ -1119,6 +1134,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
     if (!hasRequiredFilters) {
       setIsLoading(false);
       setError(null);
+      setPartialWarning(null);
       setSummaryData(null);
       setDashboardData({
         proporcoes: null,
@@ -1157,6 +1173,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
     const run = async () => {
       setIsLoading(true);
       setError(null);
+      setPartialWarning(null);
 
       try {
         const urlSummary = make('/discente/geral/summary', selectedFilters);
@@ -1177,14 +1194,30 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
           selectedFilters
         );
 
-        const [summary, medias, proporcoes, boxplot, atividades] =
-          await Promise.all([
+        const initialResults = await Promise.allSettled([
             pFetch(urlSummary, 'Falha ao buscar summary'),
             pFetch(urlDiscMed, 'Falha ao buscar medias'),
             pFetch(urlDiscProp, 'Falha ao buscar proporcoes'),
             pFetch(urlDiscBox, 'Falha ao buscar boxplot'),
             pFetch(urlDiscAtiv, 'Falha ao buscar atividades'),
-          ]);
+        ]);
+        const [summary, medias, proporcoes, boxplot, atividades] = initialResults.map(
+          (result) => (result.status === 'fulfilled' ? result.value : null)
+        );
+        const failedInitialCount = initialResults.filter(
+          (result) => result.status === 'rejected'
+        ).length;
+
+        if (failedInitialCount === initialResults.length) {
+          throw new Error('O banco não retornou nenhum bloco do painel. Tente novamente.');
+        }
+
+        if (consultarBanco && failedInitialCount > 0) {
+          setPartialWarning(
+            `${failedInitialCount} bloco(s) demoraram mais que o esperado. ` +
+            'Os demais resultados continuam disponíveis.'
+          );
+        }
 
         const [docDimMedias, docDimProporcoes] = await Promise.all([
           pFetchOpt(urlDocDimMed),
@@ -2032,6 +2065,11 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
         }}
       >
         {error && <p className={styles.errorMessage}>{error}</p>}
+        {partialWarning && !error && (
+          <p className={styles.warningMessage} role={'status'}>
+            {partialWarning}
+          </p>
+        )}
 
         {!error && (
           <>
