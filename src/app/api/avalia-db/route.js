@@ -218,9 +218,13 @@ async function getFilterPayload(filters = {}) {
 
   const { rows: periodoRows } = await queryAvaliaApi(
     `
-      SELECT codigo_periodo
-      FROM ${SCHEMA}.dim_periodo
-      ORDER BY ano, periodo
+      SELECT DISTINCT
+        p.codigo_periodo,
+        p.ano,
+        p.periodo
+      FROM ${SCHEMA}.dim_periodo p
+      JOIN ${SCHEMA}.dim_oferta o ON o.periodo_id = p.periodo_id
+      ORDER BY p.ano, p.periodo
     `
   );
 
