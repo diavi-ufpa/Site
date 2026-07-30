@@ -1,16 +1,13 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { flushSync } from 'react-dom';
-import { toPng } from 'html-to-image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DiscenteFilters from '@/features/avalia/components/DiscenteFilterAvalia';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  AVALIA_DATA_SOURCE,
+  avaliaSourceFromDatabaseFlag,
   buildAvaliaApiUrl,
 } from '@/features/avalia/lib/avaliaDataSource';
-import BoxplotChart from '@/components/charts/BoxplotChart';
 import ReportViewer from '../../../../../components/ReportViewer';
 import { REPORT_CONTEXTS } from '../../../../../components/reportContexts';
 import styles from '../../../../../styles/dados.module.css';
@@ -37,10 +34,6 @@ function safeNum(val) {
   const strVal = String(val).replace(',', '.').trim();
   const num = Number(strVal);
   return Number.isNaN(num) ? NaN : num;
-}
-
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function normalizeCampusLabel(value) {
@@ -677,6 +670,7 @@ export default function RelatorioPresencialClient({
     ano: initialSelected?.ano || '',
     campus: normalizeCampusLabel(initialSelected?.campus || ''),
     curso: initialSelected?.curso || '',
+    consultarBanco: Boolean(initialSelected?.consultarBanco),
   });
 
   const [dynamicFilters, setDynamicFilters] = useState({
@@ -695,7 +689,6 @@ export default function RelatorioPresencialClient({
   const [pdfError, setPdfError] = useState('');
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
 
-  const [hiddenBoxplot, setHiddenBoxplot] = useState(null);
 
   const prevUrlRef = useRef('');
   const contentRef = useRef(null);
@@ -706,17 +699,17 @@ export default function RelatorioPresencialClient({
   const latestBuildRef = useRef(null);
   const selectedRef = useRef(selected);
   const summaryRef = useRef(summaryData);
-  const hiddenBoxplotRef = useRef(null);
 
   const hasSelectedYear = Boolean(selected.ano);
   const hasSelectedCampus = Boolean(selected.campus);
   const hasSelectedCourse = Boolean(selected.curso);
   const canGenerate = hasSelectedYear && hasSelectedCampus && hasSelectedCourse && summaryData !== null;
+  const consultarBanco = Boolean(selected.consultarBanco);
 
   const make = (endpoint, filters = {}) => {
     return buildAvaliaApiUrl(endpoint, filters, {
       fresh: true,
-      source: AVALIA_DATA_SOURCE.LEGACY_API,
+      source: avaliaSourceFromDatabaseFlag(filters?.consultarBanco ?? consultarBanco),
     });
   };
 
@@ -729,6 +722,9 @@ export default function RelatorioPresencialClient({
 
     if (next.curso && next.curso !== 'todos') sp.set('curso', next.curso);
     else sp.delete('curso');
+
+    if (next.consultarBanco) sp.set('consultarBanco', '1');
+    else sp.delete('consultarBanco');
 
     router.replace(sp.toString() ? `?${sp.toString()}` : '?');
   };
@@ -743,56 +739,149 @@ export default function RelatorioPresencialClient({
     }
   }
 
-  async function waitForChartRender(ref, timeout = 8000) {
-    const start = Date.now();
+  function normalizeBoxplotPoints(boxplotData) {
+    const source = boxplotData?.boxplot_data || boxplotData?.data || boxplotData?.rows || [];
+    const seriesData = Array.isArray(boxplotData?.series)
+      ? boxplotData.series.flatMap((serie) => serie?.data || [])
+      : [];
+    const rawPoints = Array.isArray(source) && source.length ? source : seriesData;
 
-    while (Date.now() - start < timeout) {
-      const el = ref.current;
-      if (
-        el &&
-        (el.querySelector('svg') ||
-          el.querySelector('canvas') ||
-          el.querySelector('.apexcharts-canvas') ||
-          el.querySelector('.apexcharts-svg'))
-      ) {
-        await sleep(200);
-        return;
+    return rawPoints
+      .map((point, index) => {
+        const yValues = Array.isArray(point?.y)
+          ? point.y
+          : [point?.min, point?.q1, point?.median, point?.q3, point?.max];
+        if (!Array.isArray(yValues) || yValues.length < 5) return null;
+
+        const values = yValues.slice(0, 5).map((value) => Number(value));
+        if (!values.every(Number.isFinite)) return null;
+
+        const label = point?.x ?? point?.item ?? point?.dimensao ?? point?.subdimensao ?? String(index + 1);
+        const [min, q1, median, q3, max] = values;
+        return { label: String(label), min, q1, median, q3, max };
+      })
+      .filter(Boolean)
+      .sort((a, b) => compareItemCodes(formatItemCodeLabel(a.label), formatItemCodeLabel(b.label)));
+  }
+
+  function normalizeBoxplotOutliers(boxplotData) {
+    const raw = Array.isArray(boxplotData?.outliers_data) ? boxplotData.outliers_data : [];
+    return raw
+      .map((point) => {
+        const y = Number(point?.y);
+        if (!Number.isFinite(y)) return null;
+        return { label: String(point?.x ?? point?.item ?? ''), y };
+      })
+      .filter(Boolean);
+  }
+
+  function drawBoxplotDirect(doc, y, pageWidth, title, boxplotData) {
+    const points = normalizeBoxplotPoints(boxplotData);
+    if (!points.length) return y;
+
+    const normalizedTitle = normalizeFigureTitle(title);
+    y = ensurePageSpace(doc, y, 330);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    const titleLines = doc.splitTextToSize(normalizedTitle, pageWidth - 100);
+    doc.text(titleLines, pageWidth / 2, y, { align: 'center' });
+    y += Math.max(20, titleLines.length * 12 + 8);
+
+    const chartX = 48;
+    const chartWidth = pageWidth - 96;
+    const chartHeight = 170;
+    const bottomY = y + chartHeight;
+    const minScale = 1;
+    const maxScale = 4;
+    const mapY = (value) => {
+      const clamped = Math.max(minScale, Math.min(maxScale, Number(value || minScale)));
+      return bottomY - ((clamped - minScale) / (maxScale - minScale)) * chartHeight;
+    };
+
+    doc.setDrawColor(175, 175, 175);
+    doc.setLineWidth(0.8);
+    doc.line(chartX, bottomY, chartX + chartWidth, bottomY);
+    doc.line(chartX, bottomY - chartHeight, chartX, bottomY);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(90, 90, 90);
+    [1, 2, 3, 4].forEach((tick) => {
+      const yTick = mapY(tick);
+      doc.line(chartX - 3, yTick, chartX, yTick);
+      doc.text(String(tick), chartX - 8, yTick + 3, { align: 'right' });
+    });
+
+    const groupWidth = chartWidth / points.length;
+    const boxWidth = Math.min(18, groupWidth * 0.55);
+    const outliersByLabel = new Map();
+    normalizeBoxplotOutliers(boxplotData).forEach((point) => {
+      const key = point.label;
+      if (!outliersByLabel.has(key)) outliersByLabel.set(key, []);
+      outliersByLabel.get(key).push(point.y);
+    });
+
+    let maxLabelLines = 1;
+
+    points.forEach((point, index) => {
+      const x = chartX + index * groupWidth + groupWidth / 2;
+      const yMin = mapY(point.min);
+      const yQ1 = mapY(point.q1);
+      const yMedian = mapY(point.median);
+      const yQ3 = mapY(point.q3);
+      const yMax = mapY(point.max);
+
+      doc.setDrawColor(30, 30, 30);
+      doc.setLineWidth(1);
+      doc.line(x, yMin, x, yMax);
+      doc.line(x - boxWidth / 4, yMin, x + boxWidth / 4, yMin);
+      doc.line(x - boxWidth / 4, yMax, x + boxWidth / 4, yMax);
+
+      doc.setDrawColor(40, 143, 180);
+      doc.setFillColor(160, 214, 232);
+      doc.rect(x - boxWidth / 2, yQ3, boxWidth, Math.max(1, yQ1 - yQ3), 'FD');
+
+      doc.setDrawColor(20, 20, 20);
+      doc.line(x - boxWidth / 2, yMedian, x + boxWidth / 2, yMedian);
+
+      const outliers = outliersByLabel.get(point.label) || outliersByLabel.get(Number(point.label)) || [];
+      if (outliers.length) {
+        doc.setFillColor(31, 41, 55);
+        outliers.slice(0, 25).forEach((value) => {
+          doc.circle(x, mapY(value), 1.6, 'F');
+        });
       }
-      await sleep(120);
-    }
 
-    throw new Error('O boxplot não renderizou a tempo para captura.');
+      const label = formatItemCodeLabel(point.label);
+      const split = doc.splitTextToSize(label, Math.max(18, groupWidth - 6));
+      maxLabelLines = Math.max(maxLabelLines, split.length);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(50, 50, 50);
+      doc.text(split, x, bottomY + 11, { align: 'center' });
+    });
+
+    doc.setTextColor(0, 0, 0);
+    return bottomY + maxLabelLines * 9 + 28;
   }
 
-  async function captureBoxplotPng({ key, title, apiData }) {
-    if (!hasAnyBoxplotPayload(apiData)) return null;
+  function addBoxplotFigure(doc, y, pageWidth, figureTitle, boxplotData) {
+    if (!hasAnyBoxplotPayload(boxplotData)) return y;
 
-    flushSync(() => {
-      setHiddenBoxplot({
-        key,
-        title,
-        apiData,
-      });
+    const nextY = drawBoxplotDirect(doc, y, pageWidth, figureTitle, boxplotData);
+    if (nextY !== y) return nextY;
+
+    y = ensurePageSpace(doc, y, 90);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(150, 50, 50);
+    doc.text('Dados insuficientes para gerar o boxplot nesta seleção.', pageWidth / 2, y + 20, {
+      align: 'center',
     });
-
-    await sleep(80);
-    await waitForChartRender(hiddenBoxplotRef);
-
-    const dataUrl = await toPng(hiddenBoxplotRef.current, {
-      cacheBust: true,
-      pixelRatio: 2,
-      backgroundColor: '#ffffff',
-    });
-
-    flushSync(() => {
-      setHiddenBoxplot(null);
-    });
-
-    await sleep(30);
-
-    return dataUrl;
+    doc.setTextColor(0, 0, 0);
+    return y + 40;
   }
-
   function extractTableDataFrom(source, primaryKey, secondaryKey, fallbackKey) {
     if (!source) return '—';
     const dataObj = Array.isArray(source) ? source[0] : source;
@@ -803,60 +892,6 @@ export default function RelatorioPresencialClient({
     }
     return val;
   }
-
-  async function addBoxplotFigure(doc, y, pageWidth, figureTitle, boxplotData) {
-    if (!hasAnyBoxplotPayload(boxplotData)) return y;
-
-    const normalizedFigureTitle = normalizeFigureTitle(figureTitle);
-
-    y = ensurePageSpace(doc, y, 320);
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    const titleLines = doc.splitTextToSize(normalizedFigureTitle, pageWidth - 100);
-    doc.text(titleLines, pageWidth / 2, y, { align: 'center' });
-    y += Math.max(18, titleLines.length * 12 + 6);
-
-    try {
-      const image = await captureBoxplotPng({
-        key: normalizedFigureTitle,
-        title: normalizedFigureTitle.replace(/^Figura \d+\s+[\u0012−-]\s+/, ''),
-        apiData: boxplotData,
-      });
-
-      if (!image) {
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(10);
-        doc.setTextColor(150, 50, 50);
-        doc.text(
-          'Dados insuficientes para gerar o boxplot nesta seleção.',
-          pageWidth / 2,
-          y + 20,
-          { align: 'center' }
-        );
-        doc.setTextColor(0, 0, 0);
-        return y + 40;
-      }
-
-      const imageWidth = pageWidth - 80;
-      const imageHeight = 250;
-      doc.addImage(image, 'PNG', 40, y, imageWidth, imageHeight);
-      y += imageHeight + 22;
-
-      return y;
-    } catch (err) {
-      console.error(`Erro ao capturar ${normalizedFigureTitle}:`, err);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      doc.setTextColor(150, 50, 50);
-      doc.text('Não foi possível capturar este boxplot para o PDF.', pageWidth / 2, y + 20, {
-        align: 'center',
-      });
-      doc.setTextColor(0, 0, 0);
-      return y + 40;
-    }
-  }
-
   function addDescritivasTable(doc, y, pageWidth, title, descritivas) {
     y = ensurePageSpace(doc, y, 180);
     y = addSectionTableTitle(doc, y, pageWidth, title);
@@ -1041,7 +1076,7 @@ export default function RelatorioPresencialClient({
 
     const loadInitialFilters = async () => {
       try {
-        const res = await authorizedFetch(make('/filters'), { signal: controller.signal, cache: 'no-store' });
+        const res = await authorizedFetch(make('/filters', { consultarBanco }), { signal: controller.signal, cache: 'no-store' });
         if (!res.ok) throw new Error('Falha ao carregar filtros iniciais');
         const data = await res.json();
 
@@ -1054,7 +1089,7 @@ export default function RelatorioPresencialClient({
 
     loadInitialFilters();
     return () => controller.abort();
-  }, [authorizedFetch]);
+  }, [authorizedFetch, consultarBanco]);
 
   useEffect(() => {
     if (!selected.ano) {
@@ -1071,7 +1106,7 @@ export default function RelatorioPresencialClient({
     const loadCampus = async () => {
       try {
         const res = await authorizedFetch(
-          make('/filters/campus', { ano: selected.ano }),
+          make('/filters/campus', { ano: selected.ano, consultarBanco }),
           { signal: controller.signal, cache: 'no-store' }
         );
         if (!res.ok) throw new Error('Falha ao carregar campi');
@@ -1088,7 +1123,7 @@ export default function RelatorioPresencialClient({
 
     loadCampus();
     return () => controller.abort();
-  }, [selected.ano, authorizedFetch]);
+  }, [selected.ano, consultarBanco, authorizedFetch]);
 
   useEffect(() => {
     if (!selected.ano || !selected.campus) {
@@ -1107,6 +1142,7 @@ export default function RelatorioPresencialClient({
           make('/filters', {
             ano: selected.ano,
             campus: selected.campus,
+            consultarBanco,
           }),
           { signal: controller.signal, cache: 'no-store' }
         );
@@ -1125,7 +1161,7 @@ export default function RelatorioPresencialClient({
     loadCursos();
 
     return () => controller.abort();
-  }, [selected.ano, selected.campus, authorizedFetch]);
+  }, [selected.ano, selected.campus, consultarBanco, authorizedFetch]);
 
   useEffect(() => {
     selectedRef.current = selected;
@@ -1161,7 +1197,7 @@ export default function RelatorioPresencialClient({
 
     loadSummary();
     return () => controller.abort();
-  }, [selected.ano, selected.campus, selected.curso, authorizedFetch]);
+  }, [selected.ano, selected.campus, selected.curso, consultarBanco, authorizedFetch]);
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
@@ -1178,7 +1214,7 @@ export default function RelatorioPresencialClient({
     let next = { ...selected, [name]: value };
 
     if (name === 'ano') {
-      next = { ano: value, campus: '', curso: '' };
+      next = { ano: value, campus: '', curso: '', consultarBanco };
     } else if (name === 'campus') {
       next = { ...selected, campus: value, curso: '' };
     }
@@ -1200,9 +1236,39 @@ export default function RelatorioPresencialClient({
     syncURL(next);
   };
 
+  const handleToggleConsultarBanco = (checked) => {
+    if (prevUrlRef.current) {
+      URL.revokeObjectURL(prevUrlRef.current);
+      prevUrlRef.current = '';
+    }
+
+    const next = {
+      ano: '',
+      campus: '',
+      curso: '',
+      consultarBanco: checked,
+    };
+
+    setPdfError('');
+    setPdfUrl('');
+    setSummaryData(null);
+    setIsGeneratingPreview(false);
+    setBlocking(false);
+    setProgress(0);
+    setProgressText('Preparando…');
+    setDynamicFilters((prev) => ({
+      ...prev,
+      anos: checked ? [] : filtersOptions?.anos || filtersOptions?.ano || [],
+      campus: [],
+      cursos: [],
+    }));
+    setSelected(next);
+    syncURL(next);
+  };
+
   async function buildPdf() {
     const selectedSnapshot = selectedRef.current;
-    const buildKey = `${selectedSnapshot?.ano || ''}|${selectedSnapshot?.campus || 'todos'}|${selectedSnapshot?.curso || 'todos'}`;
+    const buildKey = `${selectedSnapshot?.consultarBanco ? 'database' : 'legacy'}|${selectedSnapshot?.ano || ''}|${selectedSnapshot?.campus || 'todos'}|${selectedSnapshot?.curso || 'todos'}`;
 
     if (buildingRef.current) {
       if (buildKey !== currentBuildKeyRef.current) {
@@ -1222,7 +1288,7 @@ export default function RelatorioPresencialClient({
     setIsGeneratingPreview(true);
     setPdfError('');
     setProgress(5);
-    setProgressText('Coletando dados da API...');
+    setProgressText('Coletando dados...');
 
     const summarySnapshot = summaryRef.current;
     const canGenerateSnapshot =
@@ -2109,7 +2175,7 @@ export default function RelatorioPresencialClient({
 
     const t = setTimeout(buildPdf, 400);
     return () => clearTimeout(t);
-  }, [canGenerate, selected.ano, selected.campus, selected.curso, summaryData, authorizedFetch]);
+  }, [canGenerate, selected.ano, selected.campus, selected.curso, consultarBanco, summaryData, authorizedFetch]);
 
   useEffect(() => {
     return () => {
@@ -2142,6 +2208,8 @@ export default function RelatorioPresencialClient({
             filters={dynamicFilters}
             selectedFilters={selected}
             onFilterChange={handleFilterChange}
+            consultarBanco={consultarBanco}
+            onToggleConsultarBanco={handleToggleConsultarBanco}
             showDimensionFilter={false}
             showRankingToggle={false}
           />
@@ -2161,47 +2229,6 @@ export default function RelatorioPresencialClient({
           contextConfig={REPORT_CONTEXTS.presencial}
           isGeneratingPreview={isGeneratingPreview}
         />
-      </div>
-
-      <div
-        style={{
-          position: 'fixed',
-          left: '-99999px',
-          top: 0,
-          width: '1200px',
-          background: '#fff',
-          opacity: 1,
-          pointerEvents: 'none',
-          zIndex: -1,
-        }}
-      >
-        {hiddenBoxplot && (
-          <div
-            key={hiddenBoxplot.key}
-            ref={hiddenBoxplotRef}
-            style={{
-              width: '1200px',
-              minHeight: '480px',
-              background: '#fff',
-              padding: '24px',
-              boxSizing: 'border-box',
-            }}
-          >
-            <BoxplotChart
-              apiData={hiddenBoxplot.apiData}
-              title=""
-              customOptions={{
-                title: {
-                  text: '',
-                },
-                chart: {
-                  zoom: { enabled: false },
-                  toolbar: { show: false },
-                },
-              }}
-            />
-          </div>
-        )}
       </div>
     </div>
   );

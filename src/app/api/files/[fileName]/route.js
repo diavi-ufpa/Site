@@ -14,7 +14,7 @@ export async function GET(_request, { params }) {
       return NextResponse.json({ error: 'Arquivo não permitido.' }, { status: 404 });
     }
 
-    const filePath = path.join(process.cwd(), 'src', 'app', 'avaliacao', 'files', fileName);
+    const filePath = path.join(process.cwd(), 'src', 'app', 'portal', 'files', fileName);
     const fileBuffer = await readFile(filePath);
 
     return new NextResponse(fileBuffer, {
