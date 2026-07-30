@@ -2,7 +2,6 @@
 'use client';
 
 import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
-import { toPng } from 'html-to-image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import EadFilters from '@/features/avalia/components/EadFilters';
 import ReportViewer from '../../../../components/ReportViewer';
@@ -18,7 +17,6 @@ const CONCEITO_COLORS = {
 };
 
 const round2 = (n) => (Number.isFinite(n) ? Number(n.toFixed(2)) : 0);
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const meanOf = (arr = []) => {
   const v = arr.filter(Number.isFinite);
   return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
@@ -52,54 +50,6 @@ function calculateDescriptiveStats(label, values) {
     median: round2(percentile(sorted, 0.5)),
     q3: round2(percentile(sorted, 0.75)),
     max: round2(sorted[sorted.length - 1]),
-  };
-}
-
-function buildApexBoxplotFromValues(label, values, forceNumericX = false) {
-  const v = (values || []).filter((n) => Number.isFinite(n));
-  if (!v.length) {
-    return {
-      boxplot_data: [{ x: forceNumericX ? Number(label) : label, y: [0, 0, 0, 0, 0] }],
-      outliers_data: [],
-    };
-  }
-
-  const s = [...v].sort((a, b) => a - b);
-  const q1Raw = percentile(s, 0.25);
-  const medRaw = percentile(s, 0.5);
-  const q3Raw = percentile(s, 0.75);
-  const iqrRaw = q3Raw - q1Raw;
-  const lowerFence = q1Raw - 1.5 * iqrRaw;
-  const upperFence = q3Raw + 1.5 * iqrRaw;
-  const inliers = s.filter((x) => x >= lowerFence && x <= upperFence);
-
-  let whiskerMin = inliers.length ? Math.min(...inliers) : s[0];
-  let whiskerMax = inliers.length ? Math.max(...inliers) : s[s.length - 1];
-
-  const EPS = 0.06;
-  let q1 = q1Raw;
-  let med = medRaw;
-  let q3 = q3Raw;
-
-  if (q3 - q1 < EPS) {
-    q1 = Math.max(1.0, medRaw - EPS / 2);
-    q3 = Math.min(4.0, medRaw + EPS / 2);
-    whiskerMin = Math.min(whiskerMin, q1);
-    whiskerMax = Math.max(whiskerMax, q3);
-  }
-
-  whiskerMin = Math.max(1.0, Math.min(whiskerMin, 4.0));
-  whiskerMax = Math.max(1.0, Math.min(whiskerMax, 4.0));
-  q1 = Math.max(1.0, Math.min(q1, 4.0));
-  med = Math.max(1.0, Math.min(med, 4.0));
-  q3 = Math.max(1.0, Math.min(q3, 4.0));
-
-  const outliers = s.filter((x) => x < whiskerMin || x > whiskerMax);
-  const xLabel = forceNumericX ? Number(label) : label;
-
-  return {
-    boxplot_data: [{ x: xLabel, y: [whiskerMin, q1, med, q3, whiskerMax] }],
-    outliers_data: outliers.map((val) => ({ x: xLabel, y: val })),
   };
 }
 
@@ -840,24 +790,6 @@ function addStatsTable(doc, autoTable, y, pageWidth, title, rows) {
   return (doc.lastAutoTable?.finalY || y) + 18;
 }
 
-function buildBoxplotApexFromRaw(rawRows = [], labelField = 'item') {
-  const sorted = [...rawRows].sort((a, b) => {
-    if (labelField === 'item') return Number(a?.item) - Number(b?.item);
-    return String(a?.dimensao || '').localeCompare(String(b?.dimensao || ''), 'pt-BR');
-  });
-
-  const forceNumericX = labelField === 'item';
-  const all = sorted.map((it) => {
-    const xLabel = labelField === 'item' ? it.item : it.dimensao;
-    return buildApexBoxplotFromValues(xLabel, it.values || [], forceNumericX);
-  });
-
-  return {
-    boxplot_data: all.flatMap((o) => o.boxplot_data),
-    outliers_data: all.flatMap((o) => o.outliers_data),
-  };
-}
-
 export default function RelatorioEadClient({
   filtersByYear,
   reportDataByYear,
@@ -948,12 +880,9 @@ export default function RelatorioEadClient({
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
   const prevUrlRef = useRef('');
   const contentRef = useRef(null);
-  const chartsIframeRef = useRef(null);
-  const [iframeReady, setIframeReady] = useState(false);
 
   const pendingBuildRef = useRef(false);
   const latestCanGenerateRef = useRef(false);
-  const latestIframeReadyRef = useRef(false);
   const latestSelSigRef = useRef('');
   const buildingRef = useRef(false);
   const currentBuildSigRef = useRef('');
@@ -1108,18 +1037,6 @@ export default function RelatorioEadClient({
 
   const canGenerate = !!selected.ano && (yearDef.hasPolos ? !!selected.polo : !!selected.curso);
 
-  const iframeSrc = useMemo(() => {
-    const sp = new URLSearchParams();
-    sp.set('ano', selected.ano || '');
-    if (selected.curso) sp.set('curso', selected.curso);
-    if (yearDef.hasPolos && selected.polo && !isAllPolos) sp.set('polo', selected.polo);
-    sp.set('embedForPdf', '1');
-    return `/portal/ead?${sp.toString()}`;
-  }, [selected.ano, selected.curso, selected.polo, yearDef.hasPolos, isAllPolos]);
-
-  useEffect(() => {
-    setIframeReady(false);
-  }, [iframeSrc]);
 
   const fetchAsDataUrl = async (url) => {
     const resp = await fetch(url);
@@ -1204,253 +1121,6 @@ export default function RelatorioEadClient({
     return { ...aggregateFromRows2023(filtered, qHeaders), filteredRows: filtered };
   }, [reportDataByYear]);
 
-  const getIframeDoc = () => {
-    const ifr = chartsIframeRef.current;
-    return ifr?.contentWindow?.document || ifr?.contentDocument || null;
-  };
-
-  const nudgeIframeLayout = () => {
-    const ifr = chartsIframeRef.current;
-    if (!ifr) return;
-    try {
-      const win = ifr.contentWindow;
-      if (!win) return;
-      void ifr.offsetHeight;
-      win.dispatchEvent(new win.Event('resize'));
-      if (win.scrollTo) win.scrollTo(0, 1);
-    } catch {}
-  };
-
-  const ensureInView = async (el) => {
-    try {
-      el?.scrollIntoView?.({ block: 'center', inline: 'nearest' });
-    } catch {}
-    nudgeIframeLayout();
-    await sleep(70);
-    nudgeIframeLayout();
-    await sleep(70);
-  };
-
-  const findChartEl = (doc, id) => {
-    if (!doc) return null;
-    const el = doc.querySelector(`#${id}`);
-    if (!el) return null;
-    const c = el.querySelector('canvas');
-    const s = el.querySelector('svg');
-    if (c && c.width > 0 && c.height > 0) return el;
-    if (s) {
-      const bb = s.getBBox ? s.getBBox() : null;
-      if (!bb || (bb.width > 0 && bb.height > 0)) return el;
-    }
-    const rect = el.getBoundingClientRect?.();
-    if (rect && rect.width > 0 && rect.height > 0) return el;
-    return null;
-  };
-
-  const waitForChart = async (id, timeoutMs = 15000) => {
-    const start = performance.now();
-    while (performance.now() - start < timeoutMs) {
-      const el = findChartEl(getIframeDoc(), id);
-      if (el) return el;
-      nudgeIframeLayout();
-      await sleep(110);
-    }
-    return null;
-  };
-
-  const elementToPngDataUrl = async (el) => {
-    const rect = el.getBoundingClientRect();
-    const w = Math.max(1, Math.round(rect.width));
-    const h = Math.max(1, Math.round(rect.height));
-    const clone = el.cloneNode(true);
-    clone.style.background = '#ffffff';
-    const serializer = new XMLSerializer();
-    const xhtml = serializer.serializeToString(clone);
-    const svg =
-      `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">` +
-      `<foreignObject width="100%" height="100%">${xhtml}</foreignObject>` +
-      '</svg>';
-    const svg64 = typeof window.btoa === 'function' ? window.btoa(unescape(encodeURIComponent(svg))) : '';
-    const dataUrl = `data:image/svg+xml;base64,${svg64}`;
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    await new Promise((res, rej) => {
-      img.onload = res;
-      img.onerror = rej;
-      img.src = dataUrl;
-    });
-    const c = document.createElement('canvas');
-    c.width = img.naturalWidth || w;
-    c.height = img.naturalHeight || h;
-    const ctx = c.getContext('2d');
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, c.width, c.height);
-    ctx.drawImage(img, 0, 0);
-    return c.toDataURL('image/png');
-  };
-
-  const getDataUrlFromChartContainer = async (containerId) => {
-    const el = await waitForChart(containerId, 15000);
-    if (!el) return null;
-
-    const tryOnce = async () => {
-      await ensureInView(el);
-
-      const canvas = el.querySelector('canvas');
-      if (canvas) {
-        try {
-          const data = canvas.toDataURL('image/png');
-          if (data && data.length > 1000) return data;
-        } catch {}
-      }
-
-      const svg = el.querySelector('svg');
-      if (svg) {
-        try {
-          const cloned = svg.cloneNode(true);
-          cloned.setAttribute('style', 'background:#ffffff');
-          const serializer = new XMLSerializer();
-          const svgStr = serializer.serializeToString(cloned);
-          const svg64 = typeof window.btoa === 'function' ? window.btoa(unescape(encodeURIComponent(svgStr))) : '';
-          const image64 = `data:image/svg+xml;base64,${svg64}`;
-          const img = new Image();
-          img.crossOrigin = 'anonymous';
-          await new Promise((res, rej) => {
-            img.onload = res;
-            img.onerror = rej;
-            img.src = image64;
-          });
-          const c = document.createElement('canvas');
-          c.width = img.naturalWidth || 1600;
-          c.height = img.naturalHeight || 900;
-          const ctx = c.getContext('2d');
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(0, 0, c.width, c.height);
-          ctx.drawImage(img, 0, 0);
-          const data = c.toDataURL('image/png');
-          if (data && data.length > 1000) return data;
-        } catch {}
-      }
-
-      try {
-        const data = await elementToPngDataUrl(el);
-        if (data && data.length > 1000) return data;
-      } catch {}
-
-      return null;
-    };
-
-    for (let i = 0; i < 4; i++) {
-      const data = await tryOnce();
-      if (data) return data;
-      nudgeIframeLayout();
-      await sleep(120 + i * 80);
-    }
-
-    return null;
-  };
-
-  const waitForBoxplotGraphics = async (containerId, timeoutMs = 30000) => {
-    const start = performance.now();
-    while (performance.now() - start < timeoutMs) {
-      const doc = getIframeDoc();
-      const container = doc?.querySelector?.(`#${containerId}`);
-      const plotRoot = container?.querySelector?.('div:first-child');
-      const hasApex = !!(
-        plotRoot?.querySelector?.('.apexcharts-canvas') ||
-        plotRoot?.querySelector?.('.apexcharts-svg') ||
-        plotRoot?.querySelector?.('svg') ||
-        plotRoot?.querySelector?.('canvas')
-      );
-      const r = plotRoot?.getBoundingClientRect?.();
-      if (hasApex && r && r.width > 0 && r.height > 0) return plotRoot;
-      nudgeIframeLayout();
-      await sleep(130);
-    }
-    return null;
-  };
-
-  const getHighQualityBoxplotDataUrl = async (containerId) => {
-    const plotRoot = await waitForBoxplotGraphics(containerId, 32000);
-    if (!plotRoot) return null;
-
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        await ensureInView(plotRoot);
-        const rect = plotRoot.getBoundingClientRect();
-        const width = Math.max(1, Math.round(rect.width));
-        const height = Math.max(1, Math.round(rect.height));
-
-        const data = await toPng(plotRoot, {
-          cacheBust: true,
-          pixelRatio: 3,
-          backgroundColor: '#ffffff',
-          width,
-          height,
-          filter: (node) => {
-            try {
-              const cls = node?.classList;
-              if (!cls) return true;
-              if (cls.contains('apexcharts-title-text')) return false;
-              if (cls.contains('apexcharts-subtitle-text')) return false;
-              if (cls.contains('apexcharts-toolbar')) return false;
-              return true;
-            } catch {
-              return true;
-            }
-          },
-          style: {
-            margin: '0',
-            transform: 'none',
-            transformOrigin: 'top left',
-          },
-        });
-
-        if (data && data.length > 1500) return data;
-      } catch {}
-
-      nudgeIframeLayout();
-      await sleep(140 + attempt * 100);
-    }
-
-    return null;
-  };
-
-  const loadDashboardFor = async ({ ano, curso, poloName }) => {
-    const ifr = chartsIframeRef.current;
-    if (!ifr) return;
-
-    const sp = new URLSearchParams();
-    sp.set('ano', ano || '');
-    if (curso) sp.set('curso', curso);
-    if (yearDef.hasPolos && poloName) sp.set('polo', String(poloName));
-    sp.set('embedForPdf', '1');
-    const target = `/portal/ead?${sp.toString()}`;
-
-    try {
-      const current = ifr.getAttribute('src') || '';
-      if (current === target) {
-        await sleep(120);
-        nudgeIframeLayout();
-        return;
-      }
-    } catch {}
-
-    await new Promise((resolve) => {
-      const onLoad = async () => {
-        ifr.removeEventListener('load', onLoad);
-        await sleep(220);
-        nudgeIframeLayout();
-        resolve();
-      };
-      ifr.addEventListener('load', onLoad);
-      setIframeReady(false);
-      ifr.src = target;
-    });
-
-    await sleep(160);
-  };
-
   async function buildPdf(requestSig = latestSelSigRef.current) {
     if (buildingRef.current) {
       if (requestSig !== currentBuildSigRef.current) {
@@ -1470,7 +1140,7 @@ export default function RelatorioEadClient({
     setIsGeneratingPreview(true);
     setPdfError('');
 
-    if (!latestCanGenerateRef.current || !latestIframeReadyRef.current || isStale()) {
+    if (!latestCanGenerateRef.current || isStale()) {
       if (prevUrlRef.current) {
         URL.revokeObjectURL(prevUrlRef.current);
         prevUrlRef.current = '';
@@ -1555,30 +1225,8 @@ export default function RelatorioEadClient({
           : [selected.polo])
         : [null];
 
-      const addBoxplotFigure = async (sy, boxTitle, boxContainerId) => {
-        if (!boxContainerId) return sy;
-
-        sy = ensurePageSpace(doc, sy, 320);
-
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(11);
-        const titleLines = doc.splitTextToSize(boxTitle, pageWidth - 100);
-        doc.text(titleLines, pageWidth / 2, sy, { align: 'center' });
-        sy += Math.max(18, titleLines.length * 12 + 6);
-
-        try {
-          const image = await getHighQualityBoxplotDataUrl(boxContainerId);
-
-          if (!image) return sy;
-
-          const imageWidth = pageWidth - 80;
-          const imageMaxHeight = 280;
-          const { finalH, yPos } = await drawImageContain(doc, image, 40, sy, imageWidth, imageMaxHeight, 'PNG');
-          return yPos + finalH + 22;
-        } catch (err) {
-          console.error(`Erro ao capturar ${boxTitle}:`, err);
-          return sy;
-        }
+      const addBoxplotFigure = (sy, boxTitle, statsRows, labelField) => {
+        return drawBoxplotChart(doc, sy, pageWidth, boxTitle, statsRows, labelField);
       };
 
       const addSection = async (sectionTitle, agg, cfg) => {
@@ -1595,7 +1243,7 @@ export default function RelatorioEadClient({
         sy = addFigureCaption(doc, sy, pageWidth, cfg.propCaption, figRef);
         sy += FIGURE_GAP;
 
-        sy = await addBoxplotFigure(sy, cfg.boxTitle, cfg.boxContainerId);
+        sy = addBoxplotFigure(sy, cfg.boxTitle, agg[cfg.statsKey], cfg.labelField);
         sy = addFigureCaption(doc, sy, pageWidth, cfg.boxCaption, figRef);
         sy += FIGURE_GAP;
 
@@ -1619,15 +1267,6 @@ export default function RelatorioEadClient({
 
         const agg = computeAggregation(selected.ano, selected.curso, poloName);
 
-        await loadDashboardFor({ ano: selected.ano, curso: selected.curso, poloName });
-        await Promise.all([
-          waitForBoxplotGraphics('chart-boxplot-dimensoes', 32000),
-          waitForBoxplotGraphics('chart-boxplot-autoav', 32000),
-          waitForBoxplotGraphics('chart-boxplot-atitude', 32000),
-          waitForBoxplotGraphics('chart-boxplot-gestao', 32000),
-          waitForBoxplotGraphics('chart-boxplot-processo', 32000),
-          waitForBoxplotGraphics('chart-boxplot-infra', 32000),
-        ]);
 
         doc.addPage();
         const titulo1 = `RELATÓRIO AVALIA ${selected.ano}`;
@@ -1656,7 +1295,6 @@ export default function RelatorioEadClient({
           meanKey: 'mediasPorDim',
           statsKey: 'boxplotDimStats',
           labelField: 'dimensao',
-          boxContainerId: 'chart-boxplot-dimensoes',
           propTitle: `Proporções de Respostas por Dimensão (${selected.ano})`,
           boxTitle: `Boxplot das Médias por Dimensão (${selected.ano})`,
           meanTitle: `Médias por Dimensão (${selected.ano})`,
@@ -1671,7 +1309,6 @@ export default function RelatorioEadClient({
           meanKey: 'mediasItensAuto',
           statsKey: 'boxplotAutoStats',
           labelField: 'item',
-          boxContainerId: 'chart-boxplot-autoav',
           propTitle: `Proporções de Respostas por Item (${selected.ano})`,
           boxTitle: `Boxplot das Médias por Item (${selected.ano})`,
           meanTitle: `Médias dos Itens (${selected.ano})`,
@@ -1686,7 +1323,6 @@ export default function RelatorioEadClient({
           meanKey: 'mediasItensAtitude',
           statsKey: 'boxplotAtitudeStats',
           labelField: 'item',
-          boxContainerId: 'chart-boxplot-atitude',
           propTitle: `Proporções de Respostas por Item (${selected.ano})`,
           boxTitle: `Boxplot das Médias por Item (${selected.ano})`,
           meanTitle: `Médias dos Itens (${selected.ano})`,
@@ -1701,7 +1337,6 @@ export default function RelatorioEadClient({
           meanKey: 'mediasItensGestao',
           statsKey: 'boxplotGestaoStats',
           labelField: 'item',
-          boxContainerId: 'chart-boxplot-gestao',
           propTitle: `Proporções de Respostas por Item (${selected.ano})`,
           boxTitle: `Boxplot das Médias por Item (${selected.ano})`,
           meanTitle: `Médias dos Itens (${selected.ano})`,
@@ -1716,7 +1351,6 @@ export default function RelatorioEadClient({
           meanKey: 'mediasItensProcesso',
           statsKey: 'boxplotProcessoStats',
           labelField: 'item',
-          boxContainerId: 'chart-boxplot-processo',
           propTitle: `Proporções de Respostas por Item (${selected.ano})`,
           boxTitle: `Boxplot das Médias por Item (${selected.ano})`,
           meanTitle: `Médias dos Itens (${selected.ano})`,
@@ -1731,7 +1365,6 @@ export default function RelatorioEadClient({
           meanKey: 'mediasItensInfra',
           statsKey: 'boxplotInfraStats',
           labelField: 'item',
-          boxContainerId: 'chart-boxplot-infra',
           propTitle: `Proporções de Respostas por Item (${selected.ano})`,
           boxTitle: `Boxplot das Médias por Item (${selected.ano})`,
           meanTitle: `Médias dos Itens (${selected.ano})`,
@@ -1802,7 +1435,6 @@ export default function RelatorioEadClient({
 
   useEffect(() => {
     latestCanGenerateRef.current = canGenerate;
-    latestIframeReadyRef.current = iframeReady;
 
     if (!canGenerate) {
       if (prevUrlRef.current) {
@@ -1815,7 +1447,7 @@ export default function RelatorioEadClient({
     }
 
     function maybeBuild() {
-      if (!(canGenerate && iframeReady)) return;
+      if (!canGenerate) return;
       if (buildingRef.current) return;
       if (lastBuiltSigRef.current === selSig && pdfUrl) return;
 
@@ -1828,7 +1460,7 @@ export default function RelatorioEadClient({
     return () => {
       if (typeof cleanup === 'function') cleanup();
     };
-  }, [canGenerate, iframeReady, selSig, yearDef.hasPolos, isAllPolos, selected.ano, selected.curso]);
+  }, [canGenerate, selSig, yearDef.hasPolos, isAllPolos, selected.ano, selected.curso]);
 
   useEffect(() => {
     return () => {
@@ -1888,21 +1520,6 @@ export default function RelatorioEadClient({
           isGeneratingPreview={isGeneratingPreview}
         />
 
-        <iframe
-          ref={chartsIframeRef}
-          src={iframeSrc}
-          title="Fonte dos boxplots para o PDF"
-          style={{
-            position: 'absolute',
-            left: -99999,
-            top: -99999,
-            width: 2400,
-            height: 4200,
-            opacity: 0,
-            pointerEvents: 'none',
-          }}
-          onLoad={() => setIframeReady(true)}
-        />
       </div>
     </div>
   );
