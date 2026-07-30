@@ -44,8 +44,9 @@ function ReportPageContent() {
         anosDisponiveis={data.anosDisponiveis}
         initialSelected={{
           ano: searchParams.get('ano') || '',
+          campus: searchParams.get('campus') || '',
           curso: searchParams.get('curso') || '',
-          polo: searchParams.get('polo') || '',
+          consultarBanco: searchParams.get('consultarBanco') === '1',
         }}
       />
     </div>
