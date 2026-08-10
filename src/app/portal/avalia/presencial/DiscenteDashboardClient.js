@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import DiscenteFilters from '@/features/avalia/components/DiscenteFilterAvalia';
 import {
-  avaliaSourceFromDatabaseFlag,
+  avaliaSourceFromFlags,
   buildAvaliaApiUrl,
 } from '@/features/avalia/lib/avaliaDataSource';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,19 +21,19 @@ import InstalacoesFisicasTab from './instalacoes_fisicas/InstalacoesFisicasTab';
 
 const make = (endpoint, filters = {}) => {
   return buildAvaliaApiUrl(endpoint, filters, {
-    source: avaliaSourceFromDatabaseFlag(filters?.consultarBanco),
+    source: avaliaSourceFromFlags(filters),
   });
 };
 
-const makeCampusFilters = (ano, consultarBanco = false) => {
+const makeCampusFilters = (ano, sourceFlags = {}) => {
   return buildAvaliaApiUrl('/filters/campus', { ano }, {
-    source: avaliaSourceFromDatabaseFlag(consultarBanco),
+    source: avaliaSourceFromFlags(sourceFlags),
   });
 };
 
-const makeCourseFilters = (ano, campus, consultarBanco = false) => {
+const makeCourseFilters = (ano, campus, sourceFlags = {}) => {
   return buildAvaliaApiUrl('/filters/cursos', { ano, campus }, {
-    source: avaliaSourceFromDatabaseFlag(consultarBanco),
+    source: avaliaSourceFromFlags(sourceFlags),
   });
 };
 
@@ -459,7 +459,8 @@ const rankingEndpointByContext = {
 };
 
 async function fetchJson(url, signal, errMsg, fetcher = fetch) {
-  const maxAttempts = url.startsWith('/api/avalia-db') ? 2 : 1;
+  const maxAttempts =
+    url.startsWith('/api/avalia-db') || url.startsWith('/api/avalia-graph') ? 2 : 1;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const r = await fetcher(url, { signal });
@@ -911,6 +912,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
     campus: '',
     curso: '',
     consultarBanco: false,
+    usarBancoGrafico: false,
   });
 
   const [dynamicFilters, setDynamicFilters] = useState({
@@ -962,6 +964,8 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
   const selectedDimension = selectedFilters.dimensao || '';
   const isDimensionMode = Boolean(selectedDimension);
   const consultarBanco = Boolean(selectedFilters.consultarBanco);
+  const usarBancoGrafico = Boolean(selectedFilters.usarBancoGrafico);
+  const usesDatabaseSource = consultarBanco || usarBancoGrafico;
 
   const visibleRankingContexts = useMemo(() => {
     if (!hasRequiredFilters) return [];
@@ -981,7 +985,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
   }, [activeTab, hasRequiredFilters, isDimensionMode, selectedDimension]);
 
   useEffect(() => {
-    if (!consultarBanco && (filtersOptions?.anos?.length ?? 0) > 0) {
+    if (!usesDatabaseSource && (filtersOptions?.anos?.length ?? 0) > 0) {
       return;
     }
 
@@ -989,7 +993,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
 
     const loadInitialFilters = async () => {
       try {
-        const res = await authorizedFetch(make('/filters', { consultarBanco }), {
+        const res = await authorizedFetch(make('/filters', { consultarBanco, usarBancoGrafico }), {
           signal: controller.signal,
         });
 
@@ -1019,7 +1023,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
     loadInitialFilters();
 
     return () => controller.abort();
-  }, [filtersOptions?.anos, consultarBanco, authorizedFetch]);
+  }, [filtersOptions?.anos, consultarBanco, usarBancoGrafico, usesDatabaseSource, authorizedFetch]);
 
   useEffect(() => {
     if (!selectedFilters.ano) {
@@ -1038,7 +1042,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
       try {
         setFiltersLoading((prev) => ({ ...prev, campus: true }));
 
-        const res = await authorizedFetch(makeCampusFilters(selectedFilters.ano, consultarBanco), {
+        const res = await authorizedFetch(makeCampusFilters(selectedFilters.ano, { consultarBanco, usarBancoGrafico }), {
           signal: controller.signal,
         });
 
@@ -1078,7 +1082,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
     loadCampus();
 
     return () => controller.abort();
-  }, [selectedFilters.ano, filtersOptions?.anos, consultarBanco, authorizedFetch]);
+  }, [selectedFilters.ano, filtersOptions?.anos, consultarBanco, usarBancoGrafico, authorizedFetch]);
 
   useEffect(() => {
     if (!selectedFilters.ano || !selectedFilters.campus) {
@@ -1100,7 +1104,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
           makeCourseFilters(
             selectedFilters.ano,
             selectedFilters.campus,
-            consultarBanco
+            { consultarBanco, usarBancoGrafico }
           ),
           { signal: controller.signal }
         );
@@ -1128,7 +1132,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
     loadCourses();
 
     return () => controller.abort();
-  }, [selectedFilters.ano, selectedFilters.campus, consultarBanco, authorizedFetch]);
+  }, [selectedFilters.ano, selectedFilters.campus, consultarBanco, usarBancoGrafico, authorizedFetch]);
 
   useEffect(() => {
     if (!hasRequiredFilters) {
@@ -1212,7 +1216,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
           throw new Error('O banco não retornou nenhum bloco do painel. Tente novamente.');
         }
 
-        if (consultarBanco && failedInitialCount > 0) {
+        if (usesDatabaseSource && failedInitialCount > 0) {
           setPartialWarning(
             `${failedInitialCount} bloco(s) demoraram mais que o esperado. ` +
             'Os demais resultados continuam disponíveis.'
@@ -1724,6 +1728,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
           campus: '',
           curso: '',
           consultarBanco: prev.consultarBanco,
+          usarBancoGrafico: prev.usarBancoGrafico,
         };
       }
 
@@ -1756,6 +1761,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
       campus: '',
       curso: '',
       consultarBanco: checked,
+      usarBancoGrafico: false,
     }));
 
     setDynamicFilters((prev) => ({
@@ -1764,6 +1770,29 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
         { value: '2', label: 'DimensÃ£o 2' },
         { value: '3', label: 'DimensÃ£o 3' },
         { value: '4', label: 'DimensÃ£o 4' },
+      ],
+      anos: checked ? [] : filtersOptions?.anos ?? [],
+      campus: [],
+      cursos: [],
+    }));
+  };
+
+  const handleToggleUsarBancoGrafico = (checked) => {
+    setSelectedFilters((prev) => ({
+      dimensao: prev.dimensao ?? '',
+      ano: '',
+      campus: '',
+      curso: '',
+      consultarBanco: false,
+      usarBancoGrafico: checked,
+    }));
+
+    setDynamicFilters((prev) => ({
+      dimensoes: prev?.dimensoes ?? [
+        { value: '1', label: 'Dimensão 1' },
+        { value: '2', label: 'Dimensão 2' },
+        { value: '3', label: 'Dimensão 3' },
+        { value: '4', label: 'Dimensão 4' },
       ],
       anos: checked ? [] : filtersOptions?.anos ?? [],
       campus: [],
@@ -2120,6 +2149,9 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
                 onFilterChange={handleFilterChange}
                 consultarBanco={consultarBanco}
                 onToggleConsultarBanco={handleToggleConsultarBanco}
+                usarBancoGrafico={usarBancoGrafico}
+                onToggleUsarBancoGrafico={handleToggleUsarBancoGrafico}
+                showGraphDatabaseToggle
                 showRanking={showRanking}
                 onToggleRanking={() => setShowRanking((prev) => !prev)}
                 showRankingToggle={hasRequiredFilters}

@@ -234,6 +234,97 @@
   grid-column: 1 / -1;
 }
 
+.graphSourceToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  padding: 0.7rem 0.75rem;
+  color: #263244;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.graphSourceCopy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.graphSourceTitle {
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.graphSourceDescription {
+  color: #4b5563;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.switchControl {
+  position: relative;
+  flex: 0 0 auto;
+  width: 2.5rem;
+  height: 1.4rem;
+}
+
+.switchInput {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.switchTrack {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #9ca3af;
+  border-radius: 999px;
+  transition: background-color 180ms ease;
+}
+
+.switchTrack::after {
+  content: '';
+  position: absolute;
+  top: 0.2rem;
+  left: 0.2rem;
+  width: 1rem;
+  height: 1rem;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 180ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.switchInput:checked + .switchTrack {
+  background: #d96500;
+}
+
+.switchInput:checked + .switchTrack::after {
+  transform: translateX(1.1rem);
+}
+
+.switchInput:focus-visible + .switchTrack {
+  outline: 3px solid rgba(217, 101, 0, 0.28);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .switchTrack,
+  .switchTrack::after {
+    transition: none;
+  }
+}
+
 /* =========================
    COMPARAÇÃO (dentro do card de filtros)
 ========================= */

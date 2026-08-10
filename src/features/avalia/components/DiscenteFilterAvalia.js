@@ -12,6 +12,9 @@ export default function DiscenteFilters({
   onToggleRanking = () => {},
   consultarBanco = false,
   onToggleConsultarBanco = () => {},
+  usarBancoGrafico = false,
+  onToggleUsarBancoGrafico = () => {},
+  showGraphDatabaseToggle = false,
   showDimensionFilter = true,
   showRankingToggle = true,
   loadingCampus = false,
@@ -44,6 +47,28 @@ export default function DiscenteFilters({
           />
           Consultar no banco
         </label>
+
+        {showGraphDatabaseToggle ? (
+          <label className={`${styles.graphSourceToggle} ${styles.filterModeToggle}`}>
+            <span className={styles.graphSourceCopy}>
+              <span className={styles.graphSourceTitle}>Usar banco dos gráficos</span>
+              <span className={styles.graphSourceDescription}>
+                Consulta somente os resultados agregados pré-calculados.
+              </span>
+            </span>
+            <span className={styles.switchControl}>
+              <input
+                type="checkbox"
+                role="switch"
+                aria-label="Usar banco dos gráficos"
+                className={styles.switchInput}
+                checked={usarBancoGrafico}
+                onChange={(event) => onToggleUsarBancoGrafico(event.target.checked)}
+              />
+              <span className={styles.switchTrack} aria-hidden="true" />
+            </span>
+          </label>
+        ) : null}
 
         <select
           name="ano"
