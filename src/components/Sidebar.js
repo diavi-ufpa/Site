@@ -14,7 +14,6 @@ import {
   GraduationCap,
   Home,
   MapPinned,
-  Settings2,
   Users,
 } from 'lucide-react';
 import styles from '../styles/Sidebar.module.css';
@@ -401,18 +400,6 @@ const Sidebar = () => {
             <>
               <p className={styles.sectionLabel}>Administração</p>
               <ul>
-                <li
-                  className={
-                    pathname.startsWith('/portal/admin/dados')
-                      ? styles.activeParent
-                      : ''
-                  }
-                >
-                  <Link href={'/portal/admin/dados'} className={styles.menuHeader}>
-                    <Settings2 size={18} />
-                    <span>Dados</span>
-                  </Link>
-                </li>
                 <li
                   className={
                     pathname.startsWith('/portal/admin/usuarios')
