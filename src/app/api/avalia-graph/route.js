@@ -38,6 +38,12 @@ function json(payload, init = {}) {
   });
 }
 
+function fallbackToSpreadsheetApi(request) {
+  const fallbackUrl = new URL('/api/dashboard-cache', request.url);
+  fallbackUrl.search = new URL(request.url).search;
+  return Response.redirect(fallbackUrl, 307);
+}
+
 function cacheKey(endpoint, filters) {
   return JSON.stringify({ endpoint, ...filters });
 }
@@ -77,14 +83,7 @@ export async function GET(request) {
     if (!auth.ok) return json({ error: auth.error }, { status: auth.status });
 
     if (!isAvaliaGraphDatabaseConfigured()) {
-      return json(
-        {
-          error: 'Banco dos gráficos indisponível.',
-          details:
-            'AVALIA_PRESENCIAL_GRAPH_DATABASE_URL não está configurada no ambiente server-side.',
-        },
-        { status: 503 }
-      );
+      return fallbackToSpreadsheetApi(request);
     }
 
     const { searchParams } = new URL(request.url);
@@ -101,7 +100,7 @@ export async function GET(request) {
 
     const payload = await queryCached(endpoint, filters);
     if (payload === null) {
-      return json({ error: `Endpoint não suportado: ${endpoint}` }, { status: 404 });
+      return fallbackToSpreadsheetApi(request);
     }
     return json(payload);
   } catch (error) {
@@ -111,12 +110,6 @@ export async function GET(request) {
       message: error?.message,
       stack: error?.stack,
     });
-    return json(
-      {
-        error: 'Erro ao consultar o banco dos gráficos.',
-        details: error?.message ?? 'Erro desconhecido',
-      },
-      { status: error?.status ?? 500 }
-    );
+    return fallbackToSpreadsheetApi(request);
   }
 }

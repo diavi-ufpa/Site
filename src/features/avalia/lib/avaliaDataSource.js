@@ -1,16 +1,14 @@
 export const AVALIA_DATA_SOURCE = {
-  DATABASE: 'database',
   GRAPH_DATABASE: 'graph-database',
   LEGACY_API: 'legacy-api',
 };
 
 export const AVALIA_DATA_SOURCE_ROUTES = {
-  [AVALIA_DATA_SOURCE.DATABASE]: '/api/avalia-db',
   [AVALIA_DATA_SOURCE.GRAPH_DATABASE]: '/api/avalia-graph',
   [AVALIA_DATA_SOURCE.LEGACY_API]: '/api/dashboard-cache',
 };
 
-export const DEFAULT_AVALIA_DATA_SOURCE = AVALIA_DATA_SOURCE.LEGACY_API;
+export const DEFAULT_AVALIA_DATA_SOURCE = AVALIA_DATA_SOURCE.GRAPH_DATABASE;
 
 export function normalizeAvaliaFilterValue(value, fallback = 'todos') {
   if (value === null || value === undefined) return fallback;
@@ -55,15 +53,10 @@ export function buildAvaliaApiUrl(endpoint, filters = {}, options = {}) {
   return `${getAvaliaDataSourceRoute(options.source)}?${qs.toString()}`;
 }
 
-export function avaliaSourceFromFlags({
-  consultarBanco = false,
-  usarBancoGrafico = false,
-} = {}) {
-  if (usarBancoGrafico) return AVALIA_DATA_SOURCE.GRAPH_DATABASE;
-  if (consultarBanco) return AVALIA_DATA_SOURCE.DATABASE;
+export function avaliaSourceFromFlags() {
   return DEFAULT_AVALIA_DATA_SOURCE;
 }
 
-export function avaliaSourceFromDatabaseFlag(consultarBanco = false) {
-  return avaliaSourceFromFlags({ consultarBanco });
+export function avaliaSourceFromDatabaseFlag() {
+  return avaliaSourceFromFlags();
 }
