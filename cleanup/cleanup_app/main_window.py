@@ -25,6 +25,10 @@ from PySide6.QtWidgets import (
     QSpinBox,
     QVBoxLayout,
     QWidget,
+    QStackedWidget,
+    QGridLayout,
+    QButtonGroup,
+    QDialog,
 )
 
 from cleanup_app.database import DatabaseWorker
@@ -45,6 +49,14 @@ def _label(text: str, object_name: str, *, word_wrap: bool = False) -> QLabel:
 def _panel() -> tuple[QFrame, QVBoxLayout]:
     frame = QFrame()
     frame.setObjectName("panel")
+    layout = QVBoxLayout(frame)
+    layout.setContentsMargins(22, 20, 22, 20)
+    layout.setSpacing(14)
+    return frame, layout
+
+def _card() -> tuple[QFrame, QVBoxLayout]:
+    frame = QFrame()
+    frame.setProperty("class", "card")
     layout = QVBoxLayout(frame)
     layout.setContentsMargins(22, 20, 22, 20)
     layout.setSpacing(14)
@@ -85,8 +97,14 @@ class MainWindow(QMainWindow):
         root_layout.setSpacing(0)
         self.setCentralWidget(root)
 
+        self.stack = QStackedWidget()
+        self.stack.addWidget(self._build_page_home())      # 0
+        self.stack.addWidget(self._build_page_config())    # 1
+        self.stack.addWidget(self._build_page_avalia())    # 2
+        self.stack.addWidget(self._build_page_avalia_etl())# 3
+
         root_layout.addWidget(self._build_sidebar())
-        root_layout.addWidget(self._build_content(), 1)
+        root_layout.addWidget(self.stack, 1)
 
     def _build_sidebar(self) -> QWidget:
         sidebar = QWidget()
@@ -100,16 +118,34 @@ class MainWindow(QMainWindow):
         subtitle = _label("Administração de dados", "brandSubtitle", word_wrap=True)
         layout.addWidget(subtitle)
         layout.addSpacing(20)
+        layout.addWidget(_label("MENU", "sidebarCaption"))
+        
+        self.nav_group = QButtonGroup(self)
+        
+        self.btn_home = QPushButton("Início")
+        self.btn_home.setProperty("class", "navButton")
+        self.btn_home.setCheckable(True)
+        self.btn_home.setChecked(True)
+        self.btn_home.clicked.connect(lambda: self.stack.setCurrentIndex(0))
+        self.nav_group.addButton(self.btn_home)
+        layout.addWidget(self.btn_home)
+        
+        self.btn_config = QPushButton("Configurações")
+        self.btn_config.setProperty("class", "navButton")
+        self.btn_config.setCheckable(True)
+        self.btn_config.clicked.connect(lambda: self.stack.setCurrentIndex(1))
+        self.nav_group.addButton(self.btn_config)
+        layout.addWidget(self.btn_config)
+        
+        layout.addSpacing(10)
         layout.addWidget(_label("CARGAS", "sidebarCaption"))
 
-        selected = QFrame()
-        selected.setObjectName("navSelected")
-        selected_layout = QVBoxLayout(selected)
-        selected_layout.setContentsMargins(14, 12, 14, 12)
-        selected_layout.setSpacing(3)
-        selected_layout.addWidget(_label("Avalia Presencial", "navTitle"))
-        selected_layout.addWidget(_label("DISC + DOC", "mutedText"))
-        layout.addWidget(selected)
+        self.btn_avalia = QPushButton("Avalia Presencial\nDISC + DOC")
+        self.btn_avalia.setProperty("class", "navButton")
+        self.btn_avalia.setCheckable(True)
+        self.btn_avalia.clicked.connect(lambda: self.stack.setCurrentIndex(2))
+        self.nav_group.addButton(self.btn_avalia)
+        layout.addWidget(self.btn_avalia)
 
         layout.addStretch()
         privacy = _label(
@@ -121,9 +157,8 @@ class MainWindow(QMainWindow):
         layout.addWidget(privacy)
         return sidebar
 
-    def _build_content(self) -> QScrollArea:
+    def _create_scroll_page(self) -> tuple[QScrollArea, QVBoxLayout]:
         scroll = QScrollArea()
-        scroll.setObjectName("contentScroll")
         scroll.setWidgetResizable(True)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
@@ -135,25 +170,107 @@ class MainWindow(QMainWindow):
         content = QWidget()
         content.setMaximumWidth(980)
         content.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        self.content_layout = QVBoxLayout(content)
-        self.content_layout.setContentsMargins(0, 0, 0, 0)
-        self.content_layout.setSpacing(18)
-
-        self.content_layout.addLayout(self._build_header())
-        self.content_layout.addWidget(self._build_database_panel())
-        self.content_layout.addWidget(self._build_sources_panel())
-        self.content_layout.addWidget(self._build_execution_panel())
-        self.content_layout.addStretch()
+        content_layout = QVBoxLayout(content)
+        content_layout.setContentsMargins(0, 0, 0, 0)
+        content_layout.setSpacing(18)
 
         outer.addWidget(content, 1)
         outer.addStretch()
         scroll.setWidget(viewport)
+        return scroll, content_layout
+
+    def _build_page_home(self) -> QWidget:
+        scroll, layout = self._create_scroll_page()
+        
+        layout.addWidget(_label("Modalidades de Carga", "pageTitle"))
+        layout.addWidget(_label("Selecione a modalidade que deseja gerenciar.", "mutedText", word_wrap=True))
+        
+        grid = QGridLayout()
+        grid.setSpacing(16)
+        
+        def make_modality_card(title, subtitle, callback=None):
+            card, l = _card()
+            l.addWidget(_label(title, "sectionTitle"))
+            l.addWidget(_label(subtitle, "mutedText", word_wrap=True))
+            btn = QPushButton("Acessar")
+            btn.setObjectName("secondaryButton")
+            if callback:
+                btn.clicked.connect(callback)
+            else:
+                btn.setEnabled(False)
+            l.addWidget(btn, 0, Qt.AlignLeft)
+            return card
+            
+        grid.addWidget(make_modality_card("Avalia Presencial", "Submodalidades: DISC, DOC", lambda: (self.btn_avalia.setChecked(True), self.stack.setCurrentIndex(2))), 0, 0)
+        grid.addWidget(make_modality_card("In loco", "Dados de visitas e avaliações in loco"), 0, 1)
+        grid.addWidget(make_modality_card("Microdados", "Microdados consolidados e abertos"), 1, 0)
+        grid.addWidget(make_modality_card("Minha Opinião", "Formulários e opiniões gerais"), 1, 1)
+        
+        layout.addLayout(grid)
+        layout.addSpacing(20)
+        
+        layout.addWidget(_label("Perguntas Frequentes (FAQ)", "sectionTitle"))
+        
+        faq1, l1 = _panel()
+        l1.addWidget(_label("Como faço para adicionar uma nova carga?", "fieldLabel"))
+        l1.addWidget(_label("Texto temporário. Selecione a modalidade na tela inicial ou no menu lateral e clique em 'Adicionar nova carga'. Siga as instruções descritas na tela de upload.", "mutedText", word_wrap=True))
+        layout.addWidget(faq1)
+        
+        faq2, l2 = _panel()
+        l2.addWidget(_label("Qual formato de arquivo é aceito?", "fieldLabel"))
+        l2.addWidget(_label("Texto temporário. Geralmente aceitamos CSV e XLSX, mas cada carga tem suas regras específicas detalhadas na respectiva página.", "mutedText", word_wrap=True))
+        layout.addWidget(faq2)
+        
+        layout.addStretch()
         return scroll
 
-    def _build_header(self) -> QHBoxLayout:
+    def _build_page_config(self) -> QWidget:
+        scroll, layout = self._create_scroll_page()
+        layout.addWidget(_label("Configurações", "pageTitle"))
+        layout.addWidget(_label("Gerencie as conexões de banco de dados de todas as modalidades.", "mutedText", word_wrap=True))
+        
+        layout.addWidget(self._build_database_panel())
+        
+        layout.addStretch()
+        return scroll
+        
+    def _build_page_avalia(self) -> QWidget:
+        scroll, layout = self._create_scroll_page()
+        
+        layout.addWidget(_label("Avalia Presencial", "pageTitle"))
+        layout.addWidget(_label("O Avalia Presencial processa respostas de questionários discentes (DISC) e docentes (DOC), validando o cruzamento de turmas, disciplinas e médias.", "mutedText", word_wrap=True))
+        
+        panel, l = _panel()
+        l.addWidget(_label("Situação do Banco de Dados", "sectionTitle"))
+        
+        self.status_db_label = _label("Verifique a conexão em Configurações para ver os semestres publicados.", "mutedText", word_wrap=True)
+        l.addWidget(self.status_db_label)
+        
+        self.status_db_size = _label("Espaço consumido: (Disponível após verificação)", "mutedText")
+        l.addWidget(self.status_db_size)
+        
+        btn_add = QPushButton("Adicionar nova carga")
+        btn_add.setObjectName("primaryButton")
+        btn_add.clicked.connect(lambda: self.stack.setCurrentIndex(3))
+        
+        l.addWidget(btn_add, 0, Qt.AlignLeft)
+        
+        layout.addWidget(panel)
+        layout.addStretch()
+        return scroll
+
+    def _build_page_avalia_etl(self) -> QWidget:
+        scroll, layout = self._create_scroll_page()
+        
         row = QHBoxLayout()
         copy = QVBoxLayout()
         copy.setSpacing(5)
+        
+        btn_back = QPushButton("← Voltar")
+        btn_back.setProperty("class", "navButton")
+        btn_back.clicked.connect(lambda: self.stack.setCurrentIndex(2))
+        layout.addWidget(btn_back, 0, Qt.AlignLeft)
+        
         copy.addWidget(_label("Nova carga do Avalia Presencial", "pageTitle"))
         copy.addWidget(
             _label(
@@ -166,14 +283,33 @@ class MainWindow(QMainWindow):
         self.overall_status = _label("Aguardando arquivos", "statusNeutral")
         self.overall_status.setAlignment(Qt.AlignCenter)
         row.addWidget(self.overall_status, 0, Qt.AlignTop)
-        return row
+        
+        layout.addLayout(row)
+        
+        inst_panel, il = _panel()
+        il.addWidget(_label("Instruções para nova carga", "sectionTitle"))
+        inst_text = (
+            "1. Selecione o ano e o período (1 a 6) da carga.\n"
+            "2. Selecione o arquivo DISC (respostas discentes) em formato CSV ou XLSX.\n"
+            "3. Selecione o arquivo DOC (respostas docentes) em formato CSV ou XLSX.\n"
+            "4. Verifique se os arquivos são brutos (sem sufixo _SNTZD).\n"
+            "5. Clique em 'Validar arquivos' para realizar cálculos locais sem afetar o banco.\n"
+            "6. Após validação bem sucedida, marque a caixa de confirmação e publique."
+        )
+        il.addWidget(_label(inst_text, "mutedText", word_wrap=True))
+        layout.addWidget(inst_panel)
+
+        layout.addWidget(self._build_sources_panel())
+        layout.addWidget(self._build_execution_panel())
+        layout.addStretch()
+        return scroll
 
     def _build_database_panel(self) -> QFrame:
         frame, layout = _panel()
         heading = QHBoxLayout()
         title_copy = QVBoxLayout()
         title_copy.setSpacing(3)
-        title_copy.addWidget(_label("Conexão com o banco", "sectionTitle"))
+        title_copy.addWidget(_label("Conexão com o banco - Avalia Presencial", "sectionTitle"))
         title_copy.addWidget(
             _label(
                 "A credencial fica somente nesta sessão e nunca aparece no registro.",
@@ -210,20 +346,19 @@ class MainWindow(QMainWindow):
 
         database_actions = QHBoxLayout()
         self.database_detail = _label(
-            "Informe a URL ou defina a variável no arquivo cleanup/.env.",
+            "Informe a URL ou defina a variável no arquivo cleanup/.env.\n"
+            "O arquivo de modelagem de banco de dados é lido para compreender a situação do banco, "
+            "mas indicamos que sua execução seja feita diretamente no seu editor SQL (ex: DBeaver, pgAdmin).",
             "mutedText",
             word_wrap=True,
         )
         database_actions.addWidget(self.database_detail, 1)
-        self.initialize_schema_button = QPushButton("Criar estrutura do banco")
-        self.initialize_schema_button.setObjectName("quietButton")
-        self.initialize_schema_button.clicked.connect(self._confirm_initialize_schema)
-        database_actions.addWidget(self.initialize_schema_button)
+        self.view_schema_button = QPushButton("Visualizar modelagem do banco")
+        self.view_schema_button.setObjectName("quietButton")
+        self.view_schema_button.clicked.connect(self._view_database_schema)
+        database_actions.addWidget(self.view_schema_button)
         layout.addLayout(database_actions)
 
-        self.periods_label = _label("Semestres publicados: conexão ainda não verificada.", "mutedText")
-        self.periods_label.setWordWrap(True)
-        layout.addWidget(self.periods_label)
         return frame
 
     def _build_sources_panel(self) -> QFrame:
@@ -361,7 +496,7 @@ class MainWindow(QMainWindow):
         self.imported_periods.clear()
         self._set_status(self.database_status, "Não verificado", "neutral")
         self.database_detail.setText("Verifique a conexão antes de publicar.")
-        self.periods_label.setText("Semestres publicados: conexão ainda não verificada.")
+        self.status_db_label.setText("Semestres publicados: conexão ainda não verificada.")
         self._refresh_controls()
 
     def _inputs_changed(self, *_args) -> None:
@@ -426,20 +561,27 @@ class MainWindow(QMainWindow):
     def _check_database(self) -> None:
         self._start_database_worker(initialize=False)
 
-    def _confirm_initialize_schema(self) -> None:
-        if not self.database_url.text().strip():
-            QMessageBox.warning(self, "Conexão ausente", "Informe a URL do banco primeiro.")
+    def _view_database_schema(self) -> None:
+        try:
+            with open(SCHEMA_FILE, "r", encoding="utf-8") as f:
+                schema_content = f.read()
+        except Exception as e:
+            QMessageBox.warning(self, "Erro", f"Não foi possível ler o arquivo de modelagem: {e}")
             return
-        answer = QMessageBox.question(
-            self,
-            "Criar estrutura do banco",
-            "A estrutura avalia_presencial_graph será criada no banco informado. "
-            "Tabelas existentes serão preservadas. Deseja continuar?",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No,
-        )
-        if answer == QMessageBox.Yes:
-            self._start_database_worker(initialize=True)
+            
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Visualizar Modelagem (schema.sql)")
+        dialog.resize(600, 500)
+        layout = QVBoxLayout(dialog)
+        layout.addWidget(_label("Conteúdo do arquivo schema.sql:", "fieldLabel"))
+        text_edit = QPlainTextEdit()
+        text_edit.setReadOnly(True)
+        text_edit.setPlainText(schema_content)
+        layout.addWidget(text_edit)
+        btn_close = QPushButton("Fechar")
+        btn_close.clicked.connect(dialog.accept)
+        layout.addWidget(btn_close, 0, Qt.AlignRight)
+        dialog.exec()
 
     def _start_database_worker(self, *, initialize: bool) -> None:
         database_url = self.database_url.text().strip()
@@ -479,16 +621,16 @@ class MainWindow(QMainWindow):
             )
             if self.imported_periods:
                 periods = ", ".join(sorted(self.imported_periods, reverse=True))
-                self.periods_label.setText(f"Semestres publicados: {periods}")
+                self.status_db_label.setText(f"Semestres publicados: {periods}")
             else:
-                self.periods_label.setText("Nenhum semestre foi publicado neste banco.")
+                self.status_db_label.setText("Nenhum semestre foi publicado neste banco.")
         else:
             self._set_status(self.database_status, "Estrutura ausente", "warning")
             self.database_detail.setText(
                 "A conexão funciona, mas a estrutura de resultados ainda não existe."
             )
-            self.periods_label.setText(
-                "Use “Criar estrutura do banco” antes da primeira publicação."
+            self.status_db_label.setText(
+                "Execute o arquivo de modelagem no banco de dados antes da primeira publicação."
             )
         self._validate_input_contract(show_dialog=False)
 
@@ -497,7 +639,7 @@ class MainWindow(QMainWindow):
         self.imported_periods.clear()
         self._set_status(self.database_status, "Falha", "error")
         self.database_detail.setText(f"Não foi possível verificar a conexão: {message}")
-        self.periods_label.setText("Semestres publicados: indisponível.")
+        self.status_db_label.setText("Semestres publicados: conexão com banco indisponível.")
 
     def _database_worker_finished(self) -> None:
         if self.database_worker:
@@ -508,6 +650,16 @@ class MainWindow(QMainWindow):
     def _start_validation(self) -> None:
         if not self._validate_input_contract(show_dialog=True):
             return
+            
+        from cleanup_app.entity_resolver import check_and_resolve_entities
+        resolved = check_and_resolve_entities(
+            self,
+            self.disc_picker.path,
+            self.doc_picker.path
+        )
+        if not resolved:
+            return
+            
         self._start_etl("validate")
 
     def _start_publication(self) -> None:
@@ -708,12 +860,7 @@ class MainWindow(QMainWindow):
         self.test_database_button.setEnabled(
             not running and not checking_database and bool(self.database_url.text().strip())
         )
-        self.initialize_schema_button.setEnabled(
-            not running
-            and not checking_database
-            and not self.database_ready
-            and bool(self.database_url.text().strip())
-        )
+        self.view_schema_button.setEnabled(not running)
         self.validate_button.setEnabled(not running and has_valid_inputs and semester_available)
         self.publish_button.setEnabled(
             not running
@@ -723,6 +870,10 @@ class MainWindow(QMainWindow):
             and self.confirmation.isChecked()
         )
         self.cancel_button.setEnabled(running and self.process_mode == "validate")
+        
+        self.btn_home.setEnabled(not running)
+        self.btn_config.setEnabled(not running)
+        self.btn_avalia.setEnabled(not running)
 
     def closeEvent(self, event: QCloseEvent) -> None:
         if self.process.state() == QProcess.ProcessState.NotRunning:
@@ -750,3 +901,4 @@ class MainWindow(QMainWindow):
             event.accept()
         else:
             event.ignore()
+

@@ -5,12 +5,12 @@ QWidget {
     font-size: 14px;
 }
 
-QMainWindow, QWidget#appRoot, QScrollArea#contentScroll {
-    background: #f7f8fa;
+QMainWindow, QWidget#appRoot, QScrollArea, QScrollArea > QWidget > QWidget {
+    background: #ffffff;
 }
 
 QWidget#sidebar {
-    background: #ffffff;
+    background: #f9fafb;
     border-right: 1px solid #e4e7ec;
 }
 
@@ -210,5 +210,34 @@ QToolTip {
     border: 1px solid #d0d5dd;
     background: #ffffff;
     color: #101828;
+}
+
+QPushButton.navButton {
+    text-align: left;
+    border: none;
+    background: transparent;
+    color: #667085;
+    font-weight: 600;
+    padding: 10px 14px;
+    border-radius: 8px;
+    min-height: 20px;
+}
+QPushButton.navButton:hover {
+    background: #f2f4f7;
+    color: #101828;
+}
+QPushButton.navButton:checked {
+    background: #fff4eb;
+    color: #8f3508;
+    border: 1px solid #f7c9a5;
+}
+
+QFrame.card {
+    background: #ffffff;
+    border: 1px solid #e4e7ec;
+    border-radius: 12px;
+}
+QFrame.card:hover {
+    border: 1px solid #b54708;
 }
 """
