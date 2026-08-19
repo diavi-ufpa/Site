@@ -402,7 +402,7 @@ const Sidebar = () => {
               <ul>
                 <li
                   className={
-                    pathname.startsWith('/portal/admin')
+                    pathname.startsWith('/portal/admin/usuarios')
                       ? styles.activeParent
                       : ''
                   }

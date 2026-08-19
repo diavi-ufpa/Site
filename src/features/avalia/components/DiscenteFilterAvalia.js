@@ -10,8 +10,6 @@ export default function DiscenteFilters({
   onFilterChange,
   showRanking = false,
   onToggleRanking = () => {},
-  consultarBanco = false,
-  onToggleConsultarBanco = () => {},
   showDimensionFilter = true,
   showRankingToggle = true,
   loadingCampus = false,
@@ -36,14 +34,7 @@ export default function DiscenteFilters({
       </button>
 
       <div className={`${styles.filtersContent} ${isOpen ? styles.open : ''}`}>
-        <label className={`${styles.compareInlineLabel} ${styles.filterModeToggle}`}>
-          <input
-            type="checkbox"
-            checked={consultarBanco}
-            onChange={(event) => onToggleConsultarBanco(event.target.checked)}
-          />
-          Consultar no banco
-        </label>
+
 
         <select
           name="ano"

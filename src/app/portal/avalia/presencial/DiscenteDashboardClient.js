@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import DiscenteFilters from '@/features/avalia/components/DiscenteFilterAvalia';
 import {
-  avaliaSourceFromDatabaseFlag,
+  avaliaSourceFromFlags,
   buildAvaliaApiUrl,
 } from '@/features/avalia/lib/avaliaDataSource';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,19 +21,19 @@ import InstalacoesFisicasTab from './instalacoes_fisicas/InstalacoesFisicasTab';
 
 const make = (endpoint, filters = {}) => {
   return buildAvaliaApiUrl(endpoint, filters, {
-    source: avaliaSourceFromDatabaseFlag(filters?.consultarBanco),
+    source: avaliaSourceFromFlags(filters),
   });
 };
 
-const makeCampusFilters = (ano, consultarBanco = false) => {
+const makeCampusFilters = (ano, sourceFlags = {}) => {
   return buildAvaliaApiUrl('/filters/campus', { ano }, {
-    source: avaliaSourceFromDatabaseFlag(consultarBanco),
+    source: avaliaSourceFromFlags(sourceFlags),
   });
 };
 
-const makeCourseFilters = (ano, campus, consultarBanco = false) => {
+const makeCourseFilters = (ano, campus, sourceFlags = {}) => {
   return buildAvaliaApiUrl('/filters/cursos', { ano, campus }, {
-    source: avaliaSourceFromDatabaseFlag(consultarBanco),
+    source: avaliaSourceFromFlags(sourceFlags),
   });
 };
 
@@ -41,6 +41,33 @@ const makeCourseFilters = (ano, campus, consultarBanco = false) => {
 // LIMITADOR GLOBAL DE CONCORRÊNCIA (2–3 simultâneos)
 // ======================================================
 const MAX_CONCURRENT_REQUESTS = 3;
+const AVALIA_TIMING_ENABLED = process.env.NODE_ENV !== 'production';
+
+function avaliaTimingStart() {
+  return typeof performance !== 'undefined' ? performance.now() : Date.now();
+}
+
+function avaliaTimingLog(event, startedAt, details = {}) {
+  if (!AVALIA_TIMING_ENABLED) return;
+
+  const finishedAt = avaliaTimingStart();
+  console.info('[AVALIA_TIMING]', JSON.stringify({
+    event,
+    durationMs: Math.round((finishedAt - startedAt) * 100) / 100,
+    timestamp: new Date().toISOString(),
+    ...details,
+  }));
+}
+
+function avaliaTimingContext(filters = {}) {
+  return {
+    source: avaliaSourceFromFlags(filters),
+    ano: filters?.ano || null,
+    campus: filters?.campus || null,
+    curso: filters?.curso || null,
+    dimensao: filters?.dimensao || null,
+  };
+}
 
 function abortError() {
   const e = new Error('Aborted');
@@ -459,15 +486,55 @@ const rankingEndpointByContext = {
 };
 
 async function fetchJson(url, signal, errMsg, fetcher = fetch) {
-  const maxAttempts = url.startsWith('/api/avalia-db') ? 2 : 1;
+  const isDatabaseRequest = url.startsWith('/api/avalia-db') || url.startsWith('/api/avalia-graph');
+  const maxAttempts = isDatabaseRequest ? 2 : 1;
+  const timingStartedAt = avaliaTimingStart();
+  const parsedUrl = new URL(url, window.location.origin);
+  const timingDetails = {
+    source: url.startsWith('/api/avalia-graph')
+      ? 'graph-database'
+      : url.startsWith('/api/avalia-db')
+        ? 'database'
+        : 'legacy-api',
+    endpoint: parsedUrl.searchParams.get('endpoint'),
+    ano: parsedUrl.searchParams.get('ano'),
+    campus: parsedUrl.searchParams.get('campus'),
+    curso: parsedUrl.searchParams.get('curso'),
+  };
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    const r = await fetcher(url, { signal });
-    if (r.ok) return r.json();
+    let r;
+    try {
+      r = await fetcher(url, { signal });
+    } catch (err) {
+      avaliaTimingLog('request', timingStartedAt, {
+        ...timingDetails,
+        attempts: attempt,
+        outcome: err?.name === 'AbortError' ? 'aborted' : 'error',
+        error: err?.message ?? 'Erro de rede',
+      });
+      throw err;
+    }
+    if (r.ok) {
+      const payload = await r.json();
+      avaliaTimingLog('request', timingStartedAt, {
+        ...timingDetails,
+        status: r.status,
+        attempts: attempt,
+        outcome: 'success',
+      });
+      return payload;
+    }
 
     const retryable = [500, 502, 503, 504].includes(r.status);
     if (!retryable || attempt === maxAttempts) {
       const body = await r.json().catch(() => null);
+      avaliaTimingLog('request', timingStartedAt, {
+        ...timingDetails,
+        status: r.status,
+        attempts: attempt,
+        outcome: 'error',
+      });
       throw new Error(body?.details || body?.error || errMsg || 'Falha ao buscar dados');
     }
 
@@ -911,6 +978,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
     campus: '',
     curso: '',
     consultarBanco: false,
+    usarBancoGrafico: false,
   });
 
   const [dynamicFilters, setDynamicFilters] = useState({
@@ -962,6 +1030,8 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
   const selectedDimension = selectedFilters.dimensao || '';
   const isDimensionMode = Boolean(selectedDimension);
   const consultarBanco = Boolean(selectedFilters.consultarBanco);
+  const usarBancoGrafico = Boolean(selectedFilters.usarBancoGrafico);
+  const usesDatabaseSource = consultarBanco || usarBancoGrafico;
 
   const visibleRankingContexts = useMemo(() => {
     if (!hasRequiredFilters) return [];
@@ -981,15 +1051,16 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
   }, [activeTab, hasRequiredFilters, isDimensionMode, selectedDimension]);
 
   useEffect(() => {
-    if (!consultarBanco && (filtersOptions?.anos?.length ?? 0) > 0) {
+    if (!usesDatabaseSource && (filtersOptions?.anos?.length ?? 0) > 0) {
       return;
     }
 
     const controller = new AbortController();
 
     const loadInitialFilters = async () => {
+      const timingStartedAt = avaliaTimingStart();
       try {
-        const res = await authorizedFetch(make('/filters', { consultarBanco }), {
+        const res = await authorizedFetch(make('/filters', { consultarBanco, usarBancoGrafico }), {
           signal: controller.signal,
         });
 
@@ -1010,8 +1081,24 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
           campus: [],
           cursos: [],
         }));
+        avaliaTimingLog('filters.initial', timingStartedAt, {
+          ...avaliaTimingContext({ consultarBanco, usarBancoGrafico }),
+          outcome: 'success',
+          resultCount: data?.anos?.length ?? 0,
+        });
       } catch (err) {
-        if (err?.name === 'AbortError') return;
+        if (err?.name === 'AbortError') {
+          avaliaTimingLog('filters.initial', timingStartedAt, {
+            ...avaliaTimingContext({ consultarBanco, usarBancoGrafico }),
+            outcome: 'aborted',
+          });
+          return;
+        }
+        avaliaTimingLog('filters.initial', timingStartedAt, {
+          ...avaliaTimingContext({ consultarBanco, usarBancoGrafico }),
+          outcome: 'error',
+          error: err?.message ?? 'Erro desconhecido',
+        });
         setError(err?.message ?? 'Erro ao carregar filtros iniciais');
       }
     };
@@ -1019,7 +1106,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
     loadInitialFilters();
 
     return () => controller.abort();
-  }, [filtersOptions?.anos, consultarBanco, authorizedFetch]);
+  }, [filtersOptions?.anos, consultarBanco, usarBancoGrafico, usesDatabaseSource, authorizedFetch]);
 
   useEffect(() => {
     if (!selectedFilters.ano) {
@@ -1035,10 +1122,11 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
     const controller = new AbortController();
 
     const loadCampus = async () => {
+      const timingStartedAt = avaliaTimingStart();
       try {
         setFiltersLoading((prev) => ({ ...prev, campus: true }));
 
-        const res = await authorizedFetch(makeCampusFilters(selectedFilters.ano, consultarBanco), {
+        const res = await authorizedFetch(makeCampusFilters(selectedFilters.ano, { consultarBanco, usarBancoGrafico }), {
           signal: controller.signal,
         });
 
@@ -1065,8 +1153,24 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
           campus: '',
           curso: '',
         }));
+        avaliaTimingLog('filters.campus', timingStartedAt, {
+          ...avaliaTimingContext({ ano: selectedFilters.ano, consultarBanco, usarBancoGrafico }),
+          outcome: 'success',
+          resultCount: data?.campus?.length ?? 0,
+        });
       } catch (err) {
-        if (err?.name === 'AbortError') return;
+        if (err?.name === 'AbortError') {
+          avaliaTimingLog('filters.campus', timingStartedAt, {
+            ...avaliaTimingContext({ ano: selectedFilters.ano, consultarBanco, usarBancoGrafico }),
+            outcome: 'aborted',
+          });
+          return;
+        }
+        avaliaTimingLog('filters.campus', timingStartedAt, {
+          ...avaliaTimingContext({ ano: selectedFilters.ano, consultarBanco, usarBancoGrafico }),
+          outcome: 'error',
+          error: err?.message ?? 'Erro desconhecido',
+        });
         setError(err?.message ?? 'Erro ao carregar campi');
       } finally {
         if (!controller.signal.aborted) {
@@ -1078,7 +1182,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
     loadCampus();
 
     return () => controller.abort();
-  }, [selectedFilters.ano, filtersOptions?.anos, consultarBanco, authorizedFetch]);
+  }, [selectedFilters.ano, filtersOptions?.anos, consultarBanco, usarBancoGrafico, authorizedFetch]);
 
   useEffect(() => {
     if (!selectedFilters.ano || !selectedFilters.campus) {
@@ -1093,6 +1197,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
     const controller = new AbortController();
 
     const loadCourses = async () => {
+      const timingStartedAt = avaliaTimingStart();
       try {
         setFiltersLoading((prev) => ({ ...prev, curso: true }));
 
@@ -1100,7 +1205,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
           makeCourseFilters(
             selectedFilters.ano,
             selectedFilters.campus,
-            consultarBanco
+            { consultarBanco, usarBancoGrafico }
           ),
           { signal: controller.signal }
         );
@@ -1115,8 +1220,24 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
           ...prev,
           cursos: data?.cursos ?? [],
         }));
+        avaliaTimingLog('filters.courses', timingStartedAt, {
+          ...avaliaTimingContext(selectedFilters),
+          outcome: 'success',
+          resultCount: data?.cursos?.length ?? 0,
+        });
       } catch (err) {
-        if (err?.name === 'AbortError') return;
+        if (err?.name === 'AbortError') {
+          avaliaTimingLog('filters.courses', timingStartedAt, {
+            ...avaliaTimingContext(selectedFilters),
+            outcome: 'aborted',
+          });
+          return;
+        }
+        avaliaTimingLog('filters.courses', timingStartedAt, {
+          ...avaliaTimingContext(selectedFilters),
+          outcome: 'error',
+          error: err?.message ?? 'Erro desconhecido',
+        });
         setError(err?.message ?? 'Erro ao carregar cursos');
       } finally {
         if (!controller.signal.aborted) {
@@ -1128,7 +1249,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
     loadCourses();
 
     return () => controller.abort();
-  }, [selectedFilters.ano, selectedFilters.campus, consultarBanco, authorizedFetch]);
+  }, [selectedFilters.ano, selectedFilters.campus, consultarBanco, usarBancoGrafico, authorizedFetch]);
 
   useEffect(() => {
     if (!hasRequiredFilters) {
@@ -1171,6 +1292,8 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
       );
 
     const run = async () => {
+      const timingStartedAt = avaliaTimingStart();
+      let timingOutcome = 'success';
       setIsLoading(true);
       setError(null);
       setPartialWarning(null);
@@ -1212,7 +1335,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
           throw new Error('O banco não retornou nenhum bloco do painel. Tente novamente.');
         }
 
-        if (consultarBanco && failedInitialCount > 0) {
+        if (usesDatabaseSource && failedInitialCount > 0) {
           setPartialWarning(
             `${failedInitialCount} bloco(s) demoraram mais que o esperado. ` +
             'Os demais resultados continuam disponíveis.'
@@ -1272,9 +1395,17 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
           turmaDimDescritivas,
         });
       } catch (err) {
-        if (cancelled || err?.name === 'AbortError') return;
+        if (cancelled || err?.name === 'AbortError') {
+          timingOutcome = 'aborted';
+          return;
+        }
+        timingOutcome = 'error';
         setError(err?.message ?? 'Erro ao carregar dados gerais');
       } finally {
+        avaliaTimingLog('dashboard.initial', timingStartedAt, {
+          ...avaliaTimingContext(selectedFilters),
+          outcome: cancelled ? 'aborted' : timingOutcome,
+        });
         if (!cancelled) setIsLoading(false);
       }
     };
@@ -1316,6 +1447,8 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
       if (!tabKey || tabKey === 'dimensoes') return;
       if (loadedTabs[tabKey]) return;
 
+      const timingStartedAt = avaliaTimingStart();
+      let timingOutcome = 'success';
       setTabLoading((p) => ({ ...p, [tabKey]: true }));
       setError(null);
 
@@ -1604,9 +1737,18 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
 
         if (!cancelled) setLoadedTabs((p) => ({ ...p, [tabKey]: true }));
       } catch (err) {
-        if (cancelled || err?.name === 'AbortError') return;
+        if (cancelled || err?.name === 'AbortError') {
+          timingOutcome = 'aborted';
+          return;
+        }
+        timingOutcome = 'error';
         setError(err?.message ?? 'Erro ao carregar dados da aba');
       } finally {
+        avaliaTimingLog('dashboard.tab', timingStartedAt, {
+          ...avaliaTimingContext(selectedFilters),
+          tab: tabKey,
+          outcome: cancelled ? 'aborted' : timingOutcome,
+        });
         if (!cancelled) setTabLoading((p) => ({ ...p, [tabKey]: false }));
       }
     };
@@ -1637,6 +1779,8 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
     const runRanking = async (contextKey) => {
       if (!contextKey || loadedRankings[contextKey]) return;
 
+      const timingStartedAt = avaliaTimingStart();
+      let timingOutcome = 'success';
       setRankingLoading((prev) => ({ ...prev, [contextKey]: true }));
       setError(null);
 
@@ -1666,9 +1810,18 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
           [contextKey]: true,
         }));
       } catch (err) {
-        if (cancelled || err?.name === 'AbortError') return;
+        if (cancelled || err?.name === 'AbortError') {
+          timingOutcome = 'aborted';
+          return;
+        }
+        timingOutcome = 'error';
         setError(err?.message ?? 'Erro ao carregar ranking');
       } finally {
+        avaliaTimingLog('dashboard.ranking', timingStartedAt, {
+          ...avaliaTimingContext(selectedFilters),
+          context: contextKey,
+          outcome: cancelled ? 'aborted' : timingOutcome,
+        });
         if (!cancelled) {
           setRankingLoading((prev) => ({
             ...prev,
@@ -1724,6 +1877,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
           campus: '',
           curso: '',
           consultarBanco: prev.consultarBanco,
+          usarBancoGrafico: prev.usarBancoGrafico,
         };
       }
 
@@ -1756,6 +1910,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
       campus: '',
       curso: '',
       consultarBanco: checked,
+      usarBancoGrafico: false,
     }));
 
     setDynamicFilters((prev) => ({
@@ -1764,6 +1919,29 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
         { value: '2', label: 'DimensÃ£o 2' },
         { value: '3', label: 'DimensÃ£o 3' },
         { value: '4', label: 'DimensÃ£o 4' },
+      ],
+      anos: checked ? [] : filtersOptions?.anos ?? [],
+      campus: [],
+      cursos: [],
+    }));
+  };
+
+  const handleToggleUsarBancoGrafico = (checked) => {
+    setSelectedFilters((prev) => ({
+      dimensao: prev.dimensao ?? '',
+      ano: '',
+      campus: '',
+      curso: '',
+      consultarBanco: false,
+      usarBancoGrafico: checked,
+    }));
+
+    setDynamicFilters((prev) => ({
+      dimensoes: prev?.dimensoes ?? [
+        { value: '1', label: 'Dimensão 1' },
+        { value: '2', label: 'Dimensão 2' },
+        { value: '3', label: 'Dimensão 3' },
+        { value: '4', label: 'Dimensão 4' },
       ],
       anos: checked ? [] : filtersOptions?.anos ?? [],
       campus: [],
@@ -2120,6 +2298,9 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
                 onFilterChange={handleFilterChange}
                 consultarBanco={consultarBanco}
                 onToggleConsultarBanco={handleToggleConsultarBanco}
+                usarBancoGrafico={usarBancoGrafico}
+                onToggleUsarBancoGrafico={handleToggleUsarBancoGrafico}
+                showGraphDatabaseToggle
                 showRanking={showRanking}
                 onToggleRanking={() => setShowRanking((prev) => !prev)}
                 showRankingToggle={hasRequiredFilters}
