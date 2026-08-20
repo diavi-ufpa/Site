@@ -79,8 +79,10 @@ def resolve_file(
         )
     expected_prefix = f"{instrument}_{year}_{period}"
     if not path.stem.upper().startswith(expected_prefix):
-        raise ValueError(
-            f"{path.name} não declara o instrumento/semestre esperado {expected_prefix}."
+        from src.utils.logger import warn
+        warn(
+            f"{path.name} não segue o padrão de nome {expected_prefix}. "
+            "O semestre selecionado na interface será utilizado."
         )
     return path
 
@@ -94,15 +96,46 @@ def sha256_file(path: Path) -> str:
 
 
 def validate_doc_semester(doc: object, year: int, period: int) -> None:
-    missing = {"ANO", "PERIODO"}.difference(doc.columns)
-    if missing:
-        raise ValueError(f"Base DOC sem declaração de semestre: {', '.join(sorted(missing))}.")
-    source_years = set(doc["ANO"].astype(str).str.strip()) - {""}
-    source_periods = set(doc["PERIODO"].astype(str).str.strip()) - {""}
-    if source_years != {str(year)} or source_periods != {str(period)}:
-        raise ValueError(
-            f"Base DOC declara ano/período {sorted(source_years)}/{sorted(source_periods)}, "
-            f"mas a execução espera {year}-{period}."
+    """Verifica se as colunas ANO/PERIODO do DOC coincidem com a execução.
+
+    Se as colunas estiverem ausentes ou vazias, aceita silenciosamente — o
+    semestre selecionado na interface prevalece.  Se os valores existirem e
+    divergirem, emite um aviso sem interromper a carga.
+    """
+    has_year = "ANO" in doc.columns
+    has_period = "PERIODO" in doc.columns
+
+    if not has_year and not has_period:
+        # Nenhuma declaração na planilha; o semestre da interface prevalece.
+        return
+
+    source_years = set()
+    source_periods = set()
+    if has_year:
+        source_years = set(doc["ANO"].astype(str).str.strip()) - {""}
+    if has_period:
+        source_periods = set(doc["PERIODO"].astype(str).str.strip()) - {""}
+
+    if not source_years and not source_periods:
+        # Colunas existem, mas estão todas vazias; aceita normalmente.
+        return
+
+    mismatches: list[str] = []
+    if source_years and source_years != {str(year)}:
+        mismatches.append(
+            f"ANO na planilha = {sorted(source_years)}, esperado = {year}"
+        )
+    if source_periods and source_periods != {str(period)}:
+        mismatches.append(
+            f"PERIODO na planilha = {sorted(source_periods)}, esperado = {period}"
+        )
+
+    if mismatches:
+        from src.utils.logger import warn
+        warn(
+            "A base DOC declara ano/período diferente do selecionado na interface: "
+            + "; ".join(mismatches) + ". "
+            "O semestre da interface será utilizado."
         )
 
 

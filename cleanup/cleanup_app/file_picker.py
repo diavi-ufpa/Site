@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from PySide6.QtCore import Signal
@@ -12,6 +13,23 @@ from PySide6.QtWidgets import (
     QPushButton,
     QVBoxLayout,
 )
+
+
+_SEMESTER_RE = re.compile(
+    r"^(DISC|DOC)[_\-](\d{4})[_\-](\d{1,2})",
+    re.IGNORECASE,
+)
+
+
+def extract_semester_from_filename(path: Path) -> tuple[int, int] | None:
+    """Extrai (ano, período) do nome do arquivo, se seguir o padrão INSTR_AAAA_P.
+
+    Retorna None quando o nome não permite dedução.
+    """
+    match = _SEMESTER_RE.match(path.stem)
+    if not match:
+        return None
+    return int(match.group(2)), int(match.group(3))
 
 
 def format_bytes(size: int) -> str:

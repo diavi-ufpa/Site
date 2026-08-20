@@ -4,3 +4,7 @@ __pycache__/
 *.py[cod]
 *.log
 
+# Dados brutos — nunca versionar
+*.xlsx
+*.csv
+

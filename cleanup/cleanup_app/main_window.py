@@ -32,7 +32,7 @@ from PySide6.QtWidgets import (
 )
 
 from cleanup_app.database import DatabaseWorker
-from cleanup_app.file_picker import FilePicker
+from cleanup_app.file_picker import FilePicker, extract_semester_from_filename
 from cleanup_app.paths import APP_ROOT, ETL_SCRIPT, SCHEMA_FILE, SITE_ROOT
 
 
@@ -504,8 +504,26 @@ class MainWindow(QMainWindow):
         self.confirmation.setChecked(False)
         self.confirmation.setEnabled(False)
         self._set_status(self.execution_status, "Pendente", "neutral")
+        self._check_file_semester_hint()
         self._validate_input_contract(show_dialog=False)
         self._refresh_controls()
+
+    def _check_file_semester_hint(self) -> None:
+        """Detecta ano/período nos nomes dos arquivos e avisa se divergem da seleção."""
+        for picker in (self.disc_picker, self.doc_picker):
+            path = picker.path
+            if path is None or not path.is_file():
+                continue
+            detected = extract_semester_from_filename(path)
+            if detected is None:
+                continue
+            file_year, file_period = detected
+            if file_year != self.year_input.value() or str(file_period) != self.period_input.currentText():
+                self._append_log(
+                    f"[AVISO] O arquivo {path.name} sugere o semestre "
+                    f"{file_year}-{file_period}, mas a interface está "
+                    f"configurada para {self.semester}."
+                )
 
     def _current_signature(self) -> tuple | None:
         paths = (self.disc_picker.path, self.doc_picker.path)
@@ -521,8 +539,19 @@ class MainWindow(QMainWindow):
 
     def _validate_input_contract(self, *, show_dialog: bool) -> bool:
         errors: list[str] = []
+        warnings: list[str] = []
         year = self.year_input.value()
         period = self.period_input.currentText()
+
+        # --- Verificação de semestre já publicado (prioridade) ---
+        if self.semester in self.imported_periods:
+            message = f"O semestre {self.semester} já foi publicado e não pode ser substituído."
+            self.input_message.setText(message)
+            self.input_message.setStyleSheet("color: #b42318;")
+            if show_dialog:
+                QMessageBox.warning(self, "Semestre já publicado", message)
+            return False
+
         for instrument, picker in (("DISC", self.disc_picker), ("DOC", self.doc_picker)):
             path = picker.path
             if path is None:
@@ -533,11 +562,23 @@ class MainWindow(QMainWindow):
                 continue
             if path.suffix.lower() not in {".csv", ".xlsx"}:
                 errors.append(f"O arquivo {instrument} deve ser CSV ou XLSX.")
-            expected = f"{instrument}_{year}_{period}"
-            if not path.stem.upper().startswith(expected):
-                errors.append(f"O nome de {instrument} deve começar com {expected}.")
             if path.stem.upper().endswith("_SNTZD"):
                 errors.append(f"O arquivo {instrument} é derivado (_SNTZD); use a fonte bruta.")
+
+            # Nome do arquivo: aviso informativo, não bloqueia.
+            expected = f"{instrument}_{year}_{period}"
+            if not path.stem.upper().startswith(expected):
+                detected = extract_semester_from_filename(path)
+                if detected:
+                    det_year, det_period = detected
+                    warnings.append(
+                        f"{instrument}: arquivo sugere {det_year}-{det_period}, "
+                        f"mas a interface está configurada para {year}-{period}."
+                    )
+                else:
+                    warnings.append(
+                        f"O nome de {instrument} não segue o padrão {expected}."
+                    )
 
         if errors:
             self.input_message.setText(errors[0])
@@ -546,16 +587,14 @@ class MainWindow(QMainWindow):
                 QMessageBox.warning(self, "Revise os arquivos", "\n".join(errors))
             return False
 
-        if self.semester in self.imported_periods:
-            message = f"O semestre {self.semester} já foi publicado e não pode ser substituído."
-            self.input_message.setText(message)
-            self.input_message.setStyleSheet("color: #b42318;")
-            if show_dialog:
-                QMessageBox.warning(self, "Semestre já publicado", message)
-            return False
-
-        self.input_message.setText("Arquivos compatíveis com o semestre selecionado.")
-        self.input_message.setStyleSheet("color: #027a48;")
+        if warnings:
+            self.input_message.setText(
+                "⚠ " + warnings[0] + " Verifique se o semestre selecionado está correto."
+            )
+            self.input_message.setStyleSheet("color: #b45309;")
+        else:
+            self.input_message.setText("Arquivos compatíveis com o semestre selecionado.")
+            self.input_message.setStyleSheet("color: #027a48;")
         return True
 
     def _check_database(self) -> None:
@@ -624,6 +663,30 @@ class MainWindow(QMainWindow):
                 self.status_db_label.setText(f"Semestres publicados: {periods}")
             else:
                 self.status_db_label.setText("Nenhum semestre foi publicado neste banco.")
+
+            # Exibe tamanho do banco
+            db_size = result.get("database_size", 0)
+            if db_size > 0:
+                if db_size < 1024 ** 2:
+                    size_text = f"{db_size / 1024:.1f} KB"
+                else:
+                    size_text = f"{db_size / 1024 ** 2:.1f} MB"
+                self.status_db_size.setText(f"Espaço consumido: {size_text}")
+            else:
+                self.status_db_size.setText("Espaço consumido: (indisponível)")
+
+            # Log de detalhes das cargas existentes
+            period_details = result.get("period_details", [])
+            if period_details:
+                self._append_log("\n--- Cargas existentes no banco ---")
+                for detail in period_details:
+                    self._append_log(
+                        f"  {detail['codigo']}  |  "
+                        f"DISC: {detail['arquivo_disc']} ({detail['linhas_disc']} linhas)  |  "
+                        f"DOC: {detail['arquivo_doc']} ({detail['linhas_doc']} linhas)  |  "
+                        f"Inserido em: {detail['inserido_em'][:19]}"
+                    )
+                self._append_log("-----------------------------------\n")
         else:
             self._set_status(self.database_status, "Estrutura ausente", "warning")
             self.database_detail.setText(
