@@ -122,3 +122,18 @@ Dados brutos **nunca** devem ser versionados.
 - Nenhuma resposta individual, matrícula ou dado pessoal é enviado ao PostgreSQL.
 - Somente resultados agregados (médias, proporções, boxplots, rankings) são persistidos.
 - Os arquivos são processados localmente no computador do operador.
+
+---
+
+## 9. Resolução e Sanitização de Entidades
+
+### 9.1 Validação de Cursos e Campi
+- Não existe etapa de mapeamento de sinônimos ("x equivale a y") na interface gráfica para cursos nem para campi. Quaisquer novas entidades não cadastradas são identificadas, sanitizadas e automaticamente inseridas no banco de dados durante a carga do período correspondente.
+
+### 9.2 Sanitização obrigatória de Cursos
+- Os nomes dos cursos devem ser convertidos **totalmente para maiúsculas, sem acentos, e sem espaços** (separados apenas por hífens simples, ex: `MATEMATICA-INTENSIVO-BACHARELADO`).
+
+### 9.3 Verificação de Duplicidade/Divergência no mesmo Período
+- Cada período e campus possui seus próprios cursos, contudo, não devem existir cursos com nomes excessivamente semelhantes dentro do mesmo período e no mesmo campus (ex: `MATEMATICA-INTENSIVO-BACHARELADO` e `MATEMATICA-INTENSIV-BACHARELADO`).
+- Quando forem detectados nomes semelhantes, o sistema deve apresentar um alerta formal informando sobre a possível divergência de grafia no período e campus correspondentes.
+- Este alerta **não é impeditivo**: a carga de dados poderá prosseguir sob responsabilidade do operador caso ele confirme a execução (ou seja, a publicação não será bloqueada por isso, mas caberá ao operador validar ou corrigir a planilha na origem).

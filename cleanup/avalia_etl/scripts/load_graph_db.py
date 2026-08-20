@@ -181,9 +181,22 @@ def main() -> None:
     sha_doc = sha256_file(doc_file)
     disc = read_source(disc_file)
     doc = read_source(doc_file)
-    validate_doc_semester(doc, year, period)
-    results = calculate_graphs(disc, doc, questionnaire, entities)
+    results = calculate_graphs(
+        disc, doc, questionnaire, entities,
+        disc_label=disc_file.name,
+        doc_label=doc_file.name
+    )
     print_result_counts(results)
+
+    if entities.discovered_campuses:
+        from src.utils.logger import warn
+        print()
+        warn("=== AVISO: Campi não registrados no catálogo ===")
+        warn("Os seguintes campi foram sanitizados e serão inseridos automaticamente no banco,")
+        warn("mas não estão configurados em config/entidades.json:")
+        warn(f"  • Campi: {', '.join(sorted(entities.discovered_campuses.keys()))}")
+        warn("Para manter a consistência e evitar duplicados em outros semestres, adicione-os ao JSON.")
+        print()
 
     if sha256_file(disc_file) != sha_disc or sha256_file(doc_file) != sha_doc:
         raise RuntimeError("Uma fonte foi alterada durante o cálculo; carga cancelada.")
@@ -210,6 +223,37 @@ def main() -> None:
     finally:
         connection.close()
     success(f"Semestre {year}-{period} inserido com semestre_id={semester_id}.")
+
+    if entities.discovered_campuses:
+        try:
+            update_entidades_json(entities_path, list(entities.discovered_campuses.values()))
+        except Exception as e:
+            from src.utils.logger import warn
+            warn(f"Não foi possível atualizar entidades.json: {e}")
+
+
+def update_entidades_json(path: Path, new_campuses: list[str]) -> None:
+    import json
+    if not path.is_file():
+        return
+    with path.open("r", encoding="utf-8") as f:
+        data = json.load(f)
+    
+    campi = data.setdefault("campi", [])
+    updated = False
+    from src.utils.normalizer import normalize_text
+    for nc in new_campuses:
+        nc_norm = normalize_text(nc)
+        if not any(normalize_text(c) == nc_norm for c in campi):
+            campi.append(nc)
+            updated = True
+            
+    if updated:
+        data["campi"] = sorted(campi)
+        with path.open("w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        from src.utils.logger import info
+        info(f"O arquivo {path.name} foi atualizado com os novos campi.")
 
 
 if __name__ == "__main__":

@@ -58,21 +58,30 @@ def _insert_questionnaire(cursor: Any, questionnaire: Questionnaire) -> int:
 def _insert_entities(
     cursor: Any, entities: EntityCatalog
 ) -> tuple[dict[str, int], dict[str, int]]:
+    campuses_to_insert = [(normalize_text(name), name) for name in entities.campuses]
+    for code, name in entities.discovered_campuses.items():
+        campuses_to_insert.append((code, name))
+        
     execute_values(
         cursor,
         f"""
         INSERT INTO {SCHEMA}.campus (codigo, nome) VALUES %s
         ON CONFLICT (codigo) DO NOTHING
         """,
-        [(normalize_text(name), name) for name in entities.campuses],
+        campuses_to_insert,
     )
+    
+    courses_to_insert = [(normalize_text(name), name) for name in entities.courses]
+    for code, name in entities.discovered_courses.items():
+        courses_to_insert.append((code, name))
+        
     execute_values(
         cursor,
         f"""
         INSERT INTO {SCHEMA}.curso (codigo, nome) VALUES %s
         ON CONFLICT (codigo) DO NOTHING
         """,
-        [(normalize_text(name), name) for name in entities.courses],
+        courses_to_insert,
     )
     cursor.execute(f"SELECT codigo, campus_id FROM {SCHEMA}.campus")
     campus_ids = {row[0]: int(row[1]) for row in cursor.fetchall()}

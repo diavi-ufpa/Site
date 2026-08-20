@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from src.utils.normalizer import normalize_header, normalize_text
+from src.utils.normalizer import normalize_header, normalize_text, normalize_course
 
 
 @dataclass(frozen=True)
@@ -61,14 +61,14 @@ class EntityCatalog:
         self.sha256 = hashlib.sha256(canonical_bytes).hexdigest()
         self.version = int(payload["versao"])
         self.campuses = tuple(str(value).strip() for value in payload["campi"])
-        self.courses = tuple(str(value).strip() for value in payload["cursos"])
+        self.courses = ()
         aliases = payload.get("aliases", {})
         self._campus_lookup = self._build_lookup(
             self.campuses, aliases.get("campi", {}), "campus"
         )
-        self._course_lookup = self._build_lookup(
-            self.courses, aliases.get("cursos", {}), "curso"
-        )
+        self._course_lookup = {}
+        self.discovered_campuses: dict[str, str] = {}
+        self.discovered_courses: dict[str, str] = {}
 
     @staticmethod
     def _build_lookup(
@@ -102,19 +102,24 @@ class EntityCatalog:
         return self._resolve(raw_value, self._campus_lookup, "campus")
 
     def course(self, raw_value: Any) -> tuple[str, str]:
-        return self._resolve(raw_value, self._course_lookup, "curso")
+        code = normalize_course(raw_value)
+        if not code:
+            raise ValueError("Curso vazio na fonte.")
+        display_name = code
+        self.discovered_courses[code] = display_name
+        return code, display_name
 
-    @staticmethod
-    def _resolve(raw_value: Any, lookup: dict[str, str], entity_name: str) -> tuple[str, str]:
+    def _resolve(self, raw_value: Any, lookup: dict[str, str], entity_name: str) -> tuple[str, str]:
         code = normalize_text(raw_value)
         if not code:
             raise ValueError(f"{entity_name.capitalize()} vazio na fonte.")
         display_name = lookup.get(code)
         if display_name is None:
-            raise ValueError(
-                f"{entity_name.capitalize()} não cadastrado: {raw_value!r}. "
-                "Atualize config/entidades.json antes de carregar o semestre."
-            )
+            # Novo campus (não cadastrado em entidades.json)
+            display_name = str(raw_value).strip()
+            lookup[code] = display_name
+            if entity_name == "campus":
+                self.discovered_campuses[code] = display_name
         return normalize_text(display_name), display_name
 
 
