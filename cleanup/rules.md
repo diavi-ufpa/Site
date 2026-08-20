@@ -137,3 +137,11 @@ Dados brutos **nunca** devem ser versionados.
 - Cada período e campus possui seus próprios cursos, contudo, não devem existir cursos com nomes excessivamente semelhantes dentro do mesmo período e no mesmo campus (ex: `MATEMATICA-INTENSIVO-BACHARELADO` e `MATEMATICA-INTENSIV-BACHARELADO`).
 - Quando forem detectados nomes semelhantes, o sistema deve apresentar um alerta formal informando sobre a possível divergência de grafia no período e campus correspondentes.
 - Este alerta **não é impeditivo**: a carga de dados poderá prosseguir sob responsabilidade do operador caso ele confirme a execução (ou seja, a publicação não será bloqueada por isso, mas caberá ao operador validar ou corrigir a planilha na origem).
+
+---
+
+## 10. Padrões Visuais e Temas (UI/UX)
+
+### 10.1 Compatibilidade com Temas do Sistema Operacional (Dark Mode)
+- Todas as janelas (`QMainWindow`), diálogos (`QDialog`, `QMessageBox`), abas (`QTabWidget`, `QTabBar`) e containers principais devem ter seu fundo configurado explicitamente como **branco** (`#ffffff`) via QSS.
+- Essa especificação garante consistência de contraste e evita que componentes gráficos incorporem cores escuras nativas do sistema operacional (como Windows Dark Mode), o que prejudicaria a legibilidade de textos e painéis da interface.

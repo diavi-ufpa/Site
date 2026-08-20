@@ -5,7 +5,7 @@ QWidget {
     font-size: 14px;
 }
 
-QMainWindow, QWidget#appRoot, QScrollArea, QScrollArea > QWidget > QWidget {
+QMainWindow, QDialog, QMessageBox, QTabWidget, QTabBar, QWidget#appRoot, QScrollArea, QScrollArea > QWidget > QWidget {
     background: #ffffff;
 }
 
