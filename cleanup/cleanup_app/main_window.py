@@ -622,14 +622,18 @@ class MainWindow(QMainWindow):
         layout.addWidget(btn_close, 0, Qt.AlignRight)
         dialog.exec()
 
-    def _start_database_worker(self, *, initialize: bool) -> None:
+    def _start_database_worker(self, *, initialize: bool = False) -> None:
         database_url = self.database_url.text().strip()
         if not database_url:
-            QMessageBox.warning(self, "Conexão ausente", "Informe a URL do banco primeiro.")
+            self._set_status(self.database_status, "Vazio", "neutral")
+            self.database_detail.setText("Configure a URL nas configurações para conectar.")
             return
+
         if self.database_worker and self.database_worker.isRunning():
             return
 
+        db_name = database_url.split("/")[-1].split("?")[0] if "/" in database_url else database_url
+        print(f"[DIAVI] Verificando o banco '{db_name}'...")
         self.database_ready = False
         self._set_status(self.database_status, "Verificando…", "warning")
         self.database_detail.setText(
@@ -653,6 +657,7 @@ class MainWindow(QMainWindow):
         self.database_ready = bool(result["schema_ready"])
         self.imported_periods = set(result["periods"])
         if self.database_ready:
+            print("[DIAVI] Conexão com o banco estabelecida e estrutura pronta.")
             self._set_status(self.database_status, "Pronto", "success")
             action = "Estrutura criada. " if result["initialized"] else ""
             self.database_detail.setText(
@@ -688,6 +693,7 @@ class MainWindow(QMainWindow):
                     )
                 self._append_log("-----------------------------------\n")
         else:
+            print("[DIAVI] Erro: Conexão bem-sucedida, mas estrutura de tabelas ausente no banco.")
             self._set_status(self.database_status, "Estrutura ausente", "warning")
             self.database_detail.setText(
                 "A conexão funciona, mas a estrutura de resultados ainda não existe."
@@ -703,6 +709,7 @@ class MainWindow(QMainWindow):
         self._set_status(self.database_status, "Falha", "error")
         self.database_detail.setText(f"Não foi possível verificar a conexão: {message}")
         self.status_db_label.setText("Semestres publicados: conexão com banco indisponível.")
+        print(f"[DIAVI] Falha na conexão com o banco: {message}")
 
     def _database_worker_finished(self) -> None:
         if self.database_worker:
@@ -711,7 +718,9 @@ class MainWindow(QMainWindow):
         self._refresh_controls()
 
     def _start_validation(self) -> None:
+        print(f"[DIAVI] Validando carga {self.semester}...")
         if not self._validate_input_contract(show_dialog=True):
+            print(f"[DIAVI] Erro de contrato de validação da carga {self.semester}.")
             return
             
         from cleanup_app.entity_resolver import check_and_resolve_entities
@@ -721,15 +730,19 @@ class MainWindow(QMainWindow):
             self.doc_picker.path
         )
         if not resolved:
+            print(f"[DIAVI] Validação da carga {self.semester} abortada na etapa de verificação.")
             return
             
         self._start_etl("validate")
 
     def _start_publication(self) -> None:
+        print(f"[DIAVI] Subindo carga {self.semester}...")
         if not self._validate_input_contract(show_dialog=True):
+            print(f"[DIAVI] Carga abortada: Contrato de entrada inválido.")
             return
         signature = self._current_signature()
         if signature is None or signature != self.validated_signature:
+            print(f"[DIAVI] Carga abortada: A assinatura dos arquivos mudou desde a última validação.")
             QMessageBox.warning(
                 self,
                 "Validação necessária",
@@ -737,6 +750,7 @@ class MainWindow(QMainWindow):
             )
             return
         if not self.database_ready:
+            print(f"[DIAVI] Carga abortada: Banco de dados não verificado ou com erro.")
             QMessageBox.warning(
                 self,
                 "Banco não verificado",
@@ -744,6 +758,7 @@ class MainWindow(QMainWindow):
             )
             return
         if not self.confirmation.isChecked():
+            print(f"[DIAVI] Carga abortada: Caixa de confirmação não está marcada.")
             return
 
         answer = QMessageBox.question(
@@ -757,7 +772,10 @@ class MainWindow(QMainWindow):
             QMessageBox.No,
         )
         if answer == QMessageBox.Yes:
+            print(f"[DIAVI] Publicando carga {self.semester}...")
             self._start_etl("publish")
+        else:
+            print(f"[DIAVI] Publicação cancelada pelo usuário.")
 
     def _start_etl(self, mode: str) -> None:
         if self.process.state() != QProcess.ProcessState.NotRunning:
@@ -819,12 +837,14 @@ class MainWindow(QMainWindow):
             self._append_log(f"\n[{datetime.now():%H:%M:%S}] Validação cancelada pelo usuário.\n")
             self._set_status(self.execution_status, "Cancelada", "neutral")
             self._set_status(self.overall_status, "Aguardando validação", "neutral")
+            print(f"[DIAVI] Processo de {mode} cancelado pelo usuário.")
         elif exit_code == 0 and mode == "validate":
             self.validated_signature = self._current_signature()
             self.confirmation.setEnabled(True)
             self._append_log(f"\n[{datetime.now():%H:%M:%S}] Validação concluída com sucesso.\n")
             self._set_status(self.execution_status, "Validado", "success")
             self._set_status(self.overall_status, "Pronto para publicar", "success")
+            print(f"[DIAVI] Carga {self.semester} validada com sucesso localmente.")
         elif exit_code == 0 and mode == "publish":
             published_semester = self.semester
             self.validated_signature = None
@@ -834,6 +854,7 @@ class MainWindow(QMainWindow):
             self._append_log(f"\n[{datetime.now():%H:%M:%S}] Publicação concluída com sucesso.\n")
             self._set_status(self.execution_status, "Publicado", "success")
             self._set_status(self.overall_status, f"{published_semester} publicado", "success")
+            print(f"[DIAVI] Carga {published_semester} publicada com sucesso.")
             QMessageBox.information(
                 self,
                 "Publicação concluída",
@@ -850,6 +871,7 @@ class MainWindow(QMainWindow):
             )
             self._set_status(self.execution_status, "Falha", "error")
             self._set_status(self.overall_status, f"Falha na {action}", "error")
+            print(f"[DIAVI] Falha no processo de {action} (código {exit_code}).")
             QMessageBox.critical(
                 self,
                 f"Falha na {action}",
