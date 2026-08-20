@@ -88,6 +88,7 @@ class MainWindow(QMainWindow):
 
         self._build_ui()
         self._refresh_controls()
+        self._start_database_worker(initialize=False)
 
     def _build_ui(self) -> None:
         root = QWidget()
@@ -959,6 +960,44 @@ class MainWindow(QMainWindow):
         self.btn_home.setEnabled(not running)
         self.btn_config.setEnabled(not running)
         self.btn_avalia.setEnabled(not running)
+
+        # Update overall status dynamically if not currently running a process
+        if not running:
+            exec_text = self.execution_status.text()
+            if exec_text == "Falha":
+                pass
+            elif exec_text == "Publicado":
+                pass
+            elif exec_text == "Cancelada":
+                self._set_status(self.overall_status, "Aguardando validação", "neutral")
+            else:
+                if not has_valid_inputs:
+                    self._set_status(self.overall_status, "Aguardando arquivos", "neutral")
+                elif not semester_available:
+                    self._set_status(self.overall_status, "Semestre já publicado", "error")
+                elif not validated:
+                    self._set_status(self.overall_status, "Aguardando validação", "neutral")
+                elif not self.database_ready:
+                    self._set_status(self.overall_status, "Banco não verificado", "warning")
+                elif not self.confirmation.isChecked():
+                    self._set_status(self.overall_status, "Aguardando confirmação", "warning")
+                else:
+                    self._set_status(self.overall_status, "Pronto para publicar", "success")
+
+        # Tooltips to clarify button disabled state
+        if self.publish_button.isEnabled():
+            self.publish_button.setToolTip("Publica os resultados da carga no banco de dados.")
+        else:
+            if running:
+                self.publish_button.setToolTip("Um processo já está em execução.")
+            elif not validated:
+                self.publish_button.setToolTip("Você precisa validar os arquivos com sucesso antes de publicar.")
+            elif not self.database_ready:
+                self.publish_button.setToolTip("A conexão com o banco de dados não foi verificada ou falhou. Acesse as Configurações.")
+            elif not semester_available:
+                self.publish_button.setToolTip("Este semestre já foi publicado anteriormente.")
+            elif not self.confirmation.isChecked():
+                self.publish_button.setToolTip("Você deve marcar a caixa de confirmação para poder publicar.")
 
     def closeEvent(self, event: QCloseEvent) -> None:
         if self.process.state() == QProcess.ProcessState.NotRunning:
