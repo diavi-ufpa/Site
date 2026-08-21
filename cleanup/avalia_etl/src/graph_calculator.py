@@ -48,17 +48,17 @@ def read_source(path: Path) -> pd.DataFrame:
         if len(sheets) != 1:
             names = ", ".join(sheets)
             raise ValueError(
-                f"{path.name} deve conter exatamente uma planilha; encontradas "
+                f"[{path.name}] Deve conter exatamente uma planilha; encontradas "
                 f"{len(sheets)} ({names})."
             )
         frame = next(iter(sheets.values()))
     else:
-        raise ValueError(f"Formato não suportado: {path.suffix}. Use CSV ou XLSX.")
+        raise ValueError(f"[{path.name}] Formato não suportado: {path.suffix}. Use CSV ou XLSX.")
 
     normalized_columns = [normalize_header(column) for column in frame.columns]
     duplicates = pd.Series(normalized_columns)[pd.Series(normalized_columns).duplicated()].unique()
     if len(duplicates):
-        raise ValueError(f"Colunas duplicadas após normalização: {', '.join(duplicates)}.")
+        raise ValueError(f"[{path.name}] Colunas duplicadas após normalização: {', '.join(duplicates)}.")
     frame.columns = normalized_columns
     frame = frame.fillna("")
     non_empty_rows = frame.astype(str).apply(
@@ -630,8 +630,15 @@ def calculate_graphs(
     disc_label: str = "DISC",
     doc_label: str = "DOC",
 ) -> GraphResults:
-    disc = _prepare_source(disc_source, "DISC", questionnaire, entities)
-    doc = _prepare_source(doc_source, "DOC", questionnaire, entities)
+    try:
+        disc = _prepare_source(disc_source, "DISC", questionnaire, entities)
+    except ValueError as e:
+        raise ValueError(f"[{disc_label}] {e}") from e
+
+    try:
+        doc = _prepare_source(doc_source, "DOC", questionnaire, entities)
+    except ValueError as e:
+        raise ValueError(f"[{doc_label}] {e}") from e
     
     # Validação de similaridade entre entidades do mesmo período
     _check_similar_entities(
@@ -655,14 +662,44 @@ def calculate_graphs(
 
     results = GraphResults(rows_disc=len(disc), rows_doc=len(doc))
 
-    disc_long = _likert_long(disc, "DISC", questionnaire)
-    doc_long = _likert_long(doc, "DOC", questionnaire)
-    _append_likert_results(results, disc_long, "DISC")
-    _append_likert_results(results, doc_long, "DOC")
-    _append_activity_results(results, disc, "DISC", questionnaire)
-    _append_activity_results(results, doc, "DOC", questionnaire)
+    try:
+        disc_long = _likert_long(disc, "DISC", questionnaire)
+    except ValueError as e:
+        raise ValueError(f"[{disc_label}] {e}") from e
+
+    try:
+        doc_long = _likert_long(doc, "DOC", questionnaire)
+    except ValueError as e:
+        raise ValueError(f"[{doc_label}] {e}") from e
+
+    try:
+        _append_likert_results(results, disc_long, "DISC")
+    except ValueError as e:
+        raise ValueError(f"[{disc_label}] {e}") from e
+
+    try:
+        _append_likert_results(results, doc_long, "DOC")
+    except ValueError as e:
+        raise ValueError(f"[{doc_label}] {e}") from e
+
+    try:
+        _append_activity_results(results, disc, "DISC", questionnaire)
+    except ValueError as e:
+        raise ValueError(f"[{disc_label}] {e}") from e
+
+    try:
+        _append_activity_results(results, doc, "DOC", questionnaire)
+    except ValueError as e:
+        raise ValueError(f"[{doc_label}] {e}") from e
+
     _append_summaries(results, disc_long)
-    _append_boxplots(results, _disc_media_long(disc, questionnaire), "DISC")
+
+    try:
+        disc_media = _disc_media_long(disc, questionnaire)
+    except ValueError as e:
+        raise ValueError(f"[{disc_label}] {e}") from e
+
+    _append_boxplots(results, disc_media, "DISC")
     _append_boxplots(results, doc_long, "DOC")
     _append_rankings(results)
     validate_results(results)

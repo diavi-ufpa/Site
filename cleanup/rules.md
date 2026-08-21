@@ -145,3 +145,23 @@ Dados brutos **nunca** devem ser versionados.
 ### 10.1 Compatibilidade com Temas do Sistema Operacional (Dark Mode)
 - Todas as janelas (`QMainWindow`), diálogos (`QDialog`, `QMessageBox`), abas (`QTabWidget`, `QTabBar`) e containers principais devem ter seu fundo configurado explicitamente como **branco** (`#ffffff`) via QSS.
 - Essa especificação garante consistência de contraste e evita que componentes gráficos incorporem cores escuras nativas do sistema operacional (como Windows Dark Mode), o que prejudicaria a legibilidade de textos e painéis da interface.
+
+---
+
+## 11. Tratamento de Erros e Mensagens de Validação
+
+### 11.1 Indicação do arquivo de origem nos erros
+
+Qualquer erro de validação de dados ou inconsistência de estrutura que interrompa o processo (por exemplo, no script `load_graph_db.py` ou na interface gráfica) deve, obrigatoriamente, indicar em qual arquivo (DISC ou DOC) o problema foi encontrado.
+
+- **Formato padrão das mensagens**: As mensagens de erro que impedem a validação de um arquivo devem conter o nome do arquivo (ou rótulo descritivo) entre colchetes como prefixo da mensagem.
+  - *Exemplo*: `[DOC_2025_4.xlsx] Colunas duplicadas após normalização: CAMPUS.`
+  - *Exemplo*: `[DISC_2025_4.csv] Base DISC sem colunas obrigatórias: MATRICULA.`
+- Essa regra aplica-se a:
+  - Formatos não suportados ou erros de leitura de planilhas.
+  - Colunas duplicadas após normalização de cabeçalhos.
+  - Colunas obrigatórias ausentes.
+  - Itens ou perguntas fora da versão do questionário.
+  - Valores nulos/vazios em campos obrigatórios (ex: matrícula ou ID da oferta).
+  - Valores fora da escala inteira esperada (ex: respostas de escala Likert fora de 1..4).
+  - Valores inválidos ou não-numéricos em campos de atividade.
