@@ -39,10 +39,16 @@ class GraphResults:
 def read_source(path: Path) -> pd.DataFrame:
     suffix = path.suffix.lower()
     if suffix == ".csv":
-        frame = pd.read_csv(
-            path, sep=";", dtype=str, keep_default_na=False,
-            na_filter=False, encoding="utf-8-sig",
-        )
+        try:
+            frame = pd.read_csv(
+                path, sep=";", dtype=str, keep_default_na=False,
+                na_filter=False, encoding="utf-8-sig",
+            )
+        except UnicodeDecodeError:
+            frame = pd.read_csv(
+                path, sep=";", dtype=str, keep_default_na=False,
+                na_filter=False, encoding="latin1",
+            )
     elif suffix == ".xlsx":
         sheets = pd.read_excel(path, sheet_name=None, dtype=str, keep_default_na=False)
         if len(sheets) != 1:
@@ -303,17 +309,44 @@ def _append_activity_results(
             })
 
 
-def _append_summaries(results: GraphResults, disc_long: pd.DataFrame) -> None:
+def _append_summaries(
+    results: GraphResults,
+    disc: pd.DataFrame,
+    doc: pd.DataFrame,
+    disc_long: pd.DataFrame,
+) -> None:
     for scope_level, scope_columns in SCOPE_SPECS:
         participant_lookup: dict[tuple[Any, ...], int] = {}
+        docente_lookup: dict[tuple[Any, ...], int] = {}
+        turma_lookup: dict[tuple[Any, ...], int] = {}
+
         if scope_columns:
             participants = disc_long.groupby(scope_columns)["__matricula"].nunique()
             participant_lookup = {
                 key if isinstance(key, tuple) else (key,): int(value)
                 for key, value in participants.items()
             }
+            if "DOCENTE" in doc.columns:
+                docentes = doc.groupby(scope_columns)["DOCENTE"].nunique()
+                docente_lookup = {
+                    key if isinstance(key, tuple) else (key,): int(value)
+                    for key, value in docentes.items()
+                }
+            elif "__oferta" in doc.columns:
+                docentes = doc.groupby(scope_columns)["__oferta"].nunique()
+                docente_lookup = {
+                    key if isinstance(key, tuple) else (key,): int(value)
+                    for key, value in docentes.items()
+                }
+            turmas = disc.groupby(scope_columns)["__oferta"].nunique()
+            turma_lookup = {
+                key if isinstance(key, tuple) else (key,): int(value)
+                for key, value in turmas.items()
+            }
         else:
             participant_lookup[()] = int(disc_long["__matricula"].nunique())
+            docente_lookup[()] = int(doc["DOCENTE"].nunique()) if "DOCENTE" in doc.columns else int(doc["__oferta"].nunique())
+            turma_lookup[()] = int(disc["__oferta"].nunique())
 
         campus_keys = list(scope_columns)
         if "__campus" not in campus_keys:
@@ -337,6 +370,8 @@ def _append_summaries(results: GraphResults, disc_long: pd.DataFrame) -> None:
             results.summaries.append({
                 "scope": scope,
                 "participants": total,
+                "total_docentes": docente_lookup.get(scope_values, 0),
+                "total_turmas": turma_lookup.get(scope_values, 0),
                 "best_campus": best[0] if best else None,
                 "best_mean": round(best[1], 4) if best else None,
                 "worst_campus": worst[0] if worst else None,
@@ -384,11 +419,15 @@ def _append_boxplots(
             level_data = level_data[
                 level_data["__dimension"] != "INSTALACOES_FISICAS"
             ]
-        offer_keys = ["__campus", "__curso", "__oferta", group_column]
-        per_offer = level_data.groupby(offer_keys, dropna=False)["__value"].mean().reset_index()
+        if instrument == "DISC":
+            obs_to_use = level_data
+        else:
+            offer_keys = ["__campus", "__curso", "__oferta", group_column]
+            obs_to_use = level_data.groupby(offer_keys, dropna=False)["__value"].mean().reset_index()
+
         for scope_level, scope_columns in SCOPE_SPECS:
             keys = scope_columns + [group_column]
-            for group_values, values in per_offer.groupby(keys, dropna=False)["__value"]:
+            for group_values, values in obs_to_use.groupby(keys, dropna=False)["__value"]:
                 group_values = group_values if isinstance(group_values, tuple) else (group_values,)
                 row = pd.Series(dict(zip(keys, group_values)))
                 scope = _scope_from_row(scope_level, row)
@@ -521,11 +560,20 @@ def _check_similar_entities(
         
     registered_lower = {n.lower() for n in registered_names}
     names_list = sorted(list(names))
+
+    # Pre-index course to campuses mapping to avoid dataframe rescanning
+    campus_by_course: dict[str, set[str]] = {}
+    if entity_type == "curso":
+        for df in [disc_df, doc_df]:
+            if df is not None and "CAMPUS" in df.columns and "CURSO" in df.columns:
+                for campus_val, course_val in zip(df["CAMPUS"], df["CURSO"]):
+                    c_norm = normalize_course(course_val)
+                    campus_by_course.setdefault(c_norm, set()).add(str(campus_val))
+
     for i in range(len(names_list)):
         for j in range(i + 1, len(names_list)):
             n1, n2 = names_list[i], names_list[j]
             
-            # Se ambos os nomes forem entidades oficiais já cadastradas, não consideramos erro
             if n1.lower() in registered_lower and n2.lower() in registered_lower:
                 continue
                 
@@ -545,16 +593,8 @@ def _check_similar_entities(
             
             if jaccard >= 0.8:
                 if entity_type == "curso":
-                    # Encontrar campuses onde eles aparecem
-                    campuses_n1 = set()
-                    campuses_n2 = set()
-                    for df in [disc_df, doc_df]:
-                        if df is not None and "CAMPUS" in df.columns and "CURSO" in df.columns:
-                            mask_n1 = df["CURSO"].map(normalize_course) == n1
-                            mask_n2 = df["CURSO"].map(normalize_course) == n2
-                            campuses_n1.update(df[mask_n1]["CAMPUS"].unique())
-                            campuses_n2.update(df[mask_n2]["CAMPUS"].unique())
-                    
+                    campuses_n1 = campus_by_course.get(n1, set())
+                    campuses_n2 = campus_by_course.get(n2, set())
                     common_campuses = campuses_n1.intersection(campuses_n2)
                     if not common_campuses:
                         continue
@@ -692,7 +732,7 @@ def calculate_graphs(
     except ValueError as e:
         raise ValueError(f"[{doc_label}] {e}") from e
 
-    _append_summaries(results, disc_long)
+    _append_summaries(results, disc, doc, disc_long)
 
     try:
         disc_media = _disc_media_long(disc, questionnaire)

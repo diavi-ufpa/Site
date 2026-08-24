@@ -13,7 +13,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from src.catalog import EntityCatalog, load_questionnaire
 from src.db.graph_connection import get_graph_connection
-from src.db.graph_repository import assert_semester_missing, persist_semester
+from src.db.graph_repository import assert_semester_missing, delete_semester, persist_semester
 from src.graph_calculator import calculate_graphs, read_source
 from src.utils.logger import info, section, success
 
@@ -35,6 +35,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--data-dir", type=Path, default=PROJECT_ROOT / "data",
         help="Diretório usado para descobrir DISC/DOC quando os caminhos não forem informados.",
+    )
+    parser.add_argument(
+        "--replace", action="store_true",
+        help="Substitui o semestre no banco caso ele já exista.",
     )
     parser.add_argument(
         "--dry-run", action="store_true",
@@ -173,7 +177,10 @@ def main() -> None:
     if not args.dry_run:
         preflight_connection = get_graph_connection()
         try:
-            assert_semester_missing(preflight_connection, year, period)
+            if args.replace:
+                delete_semester(preflight_connection, year, period)
+            else:
+                assert_semester_missing(preflight_connection, year, period)
         finally:
             preflight_connection.close()
 
