@@ -106,6 +106,8 @@ CREATE INDEX recorte_filtro_idx
 CREATE TABLE resultado_resumo (
     recorte_id             BIGINT PRIMARY KEY REFERENCES recorte ON DELETE RESTRICT,
     total_respondentes     INTEGER NOT NULL CHECK (total_respondentes >= 0),
+    total_docentes         INTEGER NOT NULL DEFAULT 0 CHECK (total_docentes >= 0),
+    total_turmas           INTEGER NOT NULL DEFAULT 0 CHECK (total_turmas >= 0),
     melhor_campus_id       SMALLINT REFERENCES campus,
     melhor_campus_media    NUMERIC(7,4) CHECK (melhor_campus_media BETWEEN 1 AND 4),
     pior_campus_id         SMALLINT REFERENCES campus,

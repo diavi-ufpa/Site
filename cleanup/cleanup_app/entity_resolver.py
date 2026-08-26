@@ -1,164 +1,159 @@
 import difflib
 import json
 from pathlib import Path
-from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QPushButton,
-    QScrollArea, QWidget, QMessageBox
-)
+from PySide6.QtWidgets import QMessageBox
 from PySide6.QtCore import Qt
 
-from cleanup_app.paths import APP_ROOT
+from cleanup_app.paths import APP_ROOT, ETL_ROOT
 
 import sys
 if str(APP_ROOT) not in sys.path:
     sys.path.insert(0, str(APP_ROOT))
+if str(ETL_ROOT) not in sys.path:
+    sys.path.insert(0, str(ETL_ROOT))
 
-def get_entities_path() -> Path:
-    return APP_ROOT / "avalia_etl" / "config" / "entidades.json"
+def get_occurrences_str(disc_df, doc_df, disc_label, doc_label, campus_norm, curso_norm) -> str:
+    from src.utils.normalizer import normalize_text, normalize_course
+    infos = []
+    
+    if disc_df is not None and "CAMPUS" in disc_df.columns and "CURSO" in disc_df.columns:
+        disc_campus_norm = disc_df["CAMPUS"].map(normalize_text)
+        disc_course_norm = disc_df["CURSO"].map(normalize_course)
+        mask = (disc_campus_norm == campus_norm) & (disc_course_norm == curso_norm)
+        matches = disc_df[mask]
+        if not matches.empty:
+            count = len(matches)
+            originals = sorted(matches["CURSO"].unique())
+            orig_str = ", ".join(f"'{o}'" for o in originals)
+            infos.append(f"{count}x em {disc_label} (original: {orig_str})")
+            
+    if doc_df is not None and "CAMPUS" in doc_df.columns and "CURSO" in doc_df.columns:
+        doc_campus_norm = doc_df["CAMPUS"].map(normalize_text)
+        doc_course_norm = doc_df["CURSO"].map(normalize_course)
+        mask = (doc_campus_norm == campus_norm) & (doc_course_norm == curso_norm)
+        matches = doc_df[mask]
+        if not matches.empty:
+            count = len(matches)
+            originals = sorted(matches["CURSO"].unique())
+            orig_str = ", ".join(f"'{o}'" for o in originals)
+            infos.append(f"{count}x em {doc_label} (original: {orig_str})")
+            
+    return "; ".join(infos)
+
+
+def find_similar_courses(disc_df, doc_df, disc_label: str, doc_label: str) -> list[dict]:
+    import re
+    import difflib
+    import pandas as pd
+    from src.utils.normalizer import normalize_text, normalize_course
+    
+    combined = []
+    if disc_df is not None and "CAMPUS" in disc_df.columns and "CURSO" in disc_df.columns:
+        combined.append(disc_df[["CAMPUS", "CURSO"]])
+    if doc_df is not None and "CAMPUS" in doc_df.columns and "CURSO" in doc_df.columns:
+        combined.append(doc_df[["CAMPUS", "CURSO"]])
+        
+    if not combined:
+        return []
+        
+    df = pd.concat(combined).drop_duplicates()
+    
+    def get_tokens(text: str) -> set[str]:
+        return set(w for w in re.findall(r'\w+', str(text).lower()) if len(w) > 2)
+        
+    warnings = []
+    
+    df["CAMPUS_NORM"] = df["CAMPUS"].map(normalize_text)
+    df["CURSO_NORM"] = df["CURSO"].map(normalize_course)
+    
+    for campus_norm, group in df.groupby("CAMPUS_NORM"):
+        campus_name = group["CAMPUS"].iloc[0]
+        courses = sorted(group["CURSO_NORM"].unique())
+        
+        for i in range(len(courses)):
+            for j in range(i + 1, len(courses)):
+                n1, n2 = courses[i], courses[j]
+                
+                t1, t2 = get_tokens(n1), get_tokens(n2)
+                if not t1 or not t2:
+                    continue
+                
+                matching_tokens = 0
+                for w1 in t1:
+                    for w2 in t2:
+                        if w1 == w2 or difflib.SequenceMatcher(None, w1, w2).ratio() >= 0.88:
+                            matching_tokens += 1
+                            break
+                
+                union_size = len(t1) + len(t2) - matching_tokens
+                jaccard = matching_tokens / union_size if union_size > 0 else 0
+                
+                if jaccard >= 0.8:
+                    n1_info = get_occurrences_str(disc_df, doc_df, disc_label, doc_label, campus_norm, n1)
+                    n2_info = get_occurrences_str(disc_df, doc_df, disc_label, doc_label, campus_norm, n2)
+                    warnings.append({
+                        "campus": campus_name,
+                        "n1": n1,
+                        "n1_info": n1_info,
+                        "n2": n2,
+                        "n2_info": n2_info
+                    })
+    return warnings
+
 
 def check_and_resolve_entities(parent, disc_path: Path, doc_path: Path) -> bool:
     try:
-        from avalia_etl.src.catalog import EntityCatalog
-        from avalia_etl.src.graph_calculator import read_source
-        from avalia_etl.src.utils.normalizer import normalize_text
-    except ImportError:
-        # Se falhar o import, ignora e deixa o script de ETL lidar com isso.
+        from src.graph_calculator import read_source
+    except ImportError as e:
+        print(f"Erro de importação no verificador de entidades: {e}")
         return True
 
-    entities_path = get_entities_path()
-    try:
-        catalog = EntityCatalog(entities_path)
-    except Exception:
-        return True
-
-    unknown_campuses = set()
-    unknown_courses = set()
-
-    for path in [disc_path, doc_path]:
-        if not path or not path.is_file():
-            continue
+    # Similarity Check for Courses in the same campus/period
+    disc_df = None
+    doc_df = None
+    if disc_path and disc_path.is_file():
         try:
-            df = read_source(path)
+            disc_df = read_source(disc_path)
         except Exception:
-            continue
-            
-        if "CAMPUS" in df.columns:
-            for raw in df["CAMPUS"].unique():
-                try:
-                    catalog.campus(raw)
-                except ValueError:
-                    normalized = normalize_text(raw)
-                    if normalized:
-                        unknown_campuses.add(raw)
-                        
-        if "CURSO" in df.columns:
-            for raw in df["CURSO"].unique():
-                try:
-                    catalog.course(raw)
-                except ValueError:
-                    normalized = normalize_text(raw)
-                    if normalized:
-                        unknown_courses.add(raw)
+            pass
+    if doc_path and doc_path.is_file():
+        try:
+            doc_df = read_source(doc_path)
+        except Exception:
+            pass
 
-    if not unknown_campuses and not unknown_courses:
-        return True
-
-    return _show_resolution_dialog(parent, catalog, entities_path, unknown_campuses, unknown_courses)
-
-def _show_resolution_dialog(parent, catalog, entities_path, unknown_campuses, unknown_courses) -> bool:
-    from avalia_etl.src.utils.normalizer import normalize_text
-    
-    dialog = QDialog(parent)
-    dialog.setWindowTitle("Resolver Nomes Desconhecidos")
-    dialog.resize(700, 500)
-    
-    layout = QVBoxLayout(dialog)
-    layout.addWidget(QLabel("Foram encontrados nomes de Campus ou Cursos na planilha que não constam na base oficial."))
-    layout.addWidget(QLabel("Por favor, selecione qual é o nome correto para cada um deles (mapeamento de sinônimos)."))
-    
-    scroll = QScrollArea()
-    scroll.setWidgetResizable(True)
-    viewport = QWidget()
-    form_layout = QVBoxLayout(viewport)
-    
-    results = {}
-    
-    def add_section(title, unknowns, known_canonical):
-        if not unknowns: return
-        
-        lbl = QLabel(title)
-        lbl.setStyleSheet("font-weight: bold; margin-top: 10px; font-size: 16px; color: #101828;")
-        form_layout.addWidget(lbl)
-        
-        for raw in sorted(unknowns):
-            row = QHBoxLayout()
-            row_label = QLabel(f"'{raw}' equivale a:")
-            row_label.setWordWrap(True)
-            row.addWidget(row_label)
-            
-            combo = QComboBox()
-            combo.addItem("-- Selecione o nome correto --", None)
-            
-            normalized_raw = normalize_text(raw)
-            known_normalized = {normalize_text(k): k for k in known_canonical}
-            matches = difflib.get_close_matches(normalized_raw, known_normalized.keys(), n=1, cutoff=0.5)
-            
-            for k in sorted(known_canonical):
-                combo.addItem(k, k)
+    if disc_df is not None or doc_df is not None:
+        disc_label = disc_path.name if disc_path else "DISC"
+        doc_label = doc_path.name if doc_path else "DOC"
+        similar_warnings = find_similar_courses(disc_df, doc_df, disc_label, doc_label)
+        if similar_warnings:
+            import html
+            period_str = f" do período {parent.semester}" if hasattr(parent, "semester") else ""
+            msg = (
+                f"<b>Atenção:</b> Foram detectados nomes de cursos muito semelhantes no mesmo campus{period_str}. "
+                "Isso pode indicar erros de digitação nas planilhas de origem.<br><br>"
+                "<b>Detecções:</b><br>"
+            )
+            for warn in similar_warnings:
+                msg += (
+                    f"• Campus <b>{html.escape(warn['campus'])}</b>:<br>"
+                    f"  - <code>'{html.escape(warn['n1'])}'</code>: {html.escape(warn['n1_info'])}<br>"
+                    f"  - <code>'{html.escape(warn['n2'])}'</code>: {html.escape(warn['n2_info'])}<br><br>"
+                )
                 
-            if matches:
-                best_match = known_normalized[matches[0]]
-                idx = combo.findText(best_match)
-                if idx >= 0:
-                    combo.setCurrentIndex(idx)
-                    
-            row.addWidget(combo, 1)
-            form_layout.addLayout(row)
+            msg += (
+                "Deseja prosseguir com a carga dos dados sob sua responsabilidade?<br>"
+                "Se as informações estiverem incorretas, cancele a operação, corrija as planilhas e tente novamente."
+            )
             
-            results[raw] = combo
+            reply = QMessageBox.warning(
+                parent,
+                "Possível Divergência de Cursos",
+                msg,
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+            if reply == QMessageBox.No:
+                return False
 
-    add_section("Campuses Desconhecidos", unknown_campuses, catalog.campuses)
-    add_section("Cursos Desconhecidos", unknown_courses, catalog.courses)
-    
-    form_layout.addStretch()
-    scroll.setWidget(viewport)
-    layout.addWidget(scroll)
-    
-    btn_layout = QHBoxLayout()
-    btn_cancel = QPushButton("Cancelar Validação")
-    btn_cancel.clicked.connect(dialog.reject)
-    btn_save = QPushButton("Salvar Mapeamentos")
-    btn_save.setObjectName("primaryButton")
-    
-    def on_save():
-        for combo in results.values():
-            if combo.currentData() is None:
-                QMessageBox.warning(dialog, "Atenção", "Por favor, mapeie todos os nomes desconhecidos antes de continuar.")
-                return
-        dialog.accept()
-        
-    btn_save.clicked.connect(on_save)
-    
-    btn_layout.addStretch()
-    btn_layout.addWidget(btn_cancel)
-    btn_layout.addWidget(btn_save)
-    layout.addLayout(btn_layout)
-    
-    if dialog.exec() == QDialog.Accepted:
-        with open(entities_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            
-        aliases = data.setdefault("aliases", {})
-        campi_aliases = aliases.setdefault("campi", {})
-        cursos_aliases = aliases.setdefault("cursos", {})
-        
-        for raw in unknown_campuses:
-            campi_aliases[raw] = results[raw].currentData()
-        for raw in unknown_courses:
-            cursos_aliases[raw] = results[raw].currentData()
-            
-        with open(entities_path, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-            
-        return True
-    return False
+    return True

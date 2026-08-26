@@ -36,6 +36,10 @@ def warning(message: str) -> None:
     print(paint(f"[WARN] {message}", "yellow"))
 
 
+# Alias para conveniência
+warn = warning
+
+
 def error(message: str) -> None:
     print(paint(f"[ERRO] {message}", "red"))
 

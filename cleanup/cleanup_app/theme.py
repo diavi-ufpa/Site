@@ -5,7 +5,7 @@ QWidget {
     font-size: 14px;
 }
 
-QMainWindow, QWidget#appRoot, QScrollArea, QScrollArea > QWidget > QWidget {
+QMainWindow, QDialog, QMessageBox, QTabWidget, QTabBar, QWidget#appRoot, QScrollArea, QScrollArea > QWidget > QWidget {
     background: #ffffff;
 }
 
@@ -128,7 +128,7 @@ QPushButton#quietButton {
     padding: 0 11px;
 }
 
-QPushButton:disabled {
+QPushButton:disabled, QPushButton#primaryButton:disabled, QPushButton#secondaryButton:disabled {
     border-color: #e4e7ec;
     background: #f2f4f7;
     color: #98a2b3;

@@ -35,6 +35,17 @@ def normalize_text(value: Any) -> str:
     return text.upper()
 
 
+def normalize_course(value: Any) -> str:
+    if is_nullish(value):
+        return ""
+    text = str(value).strip()
+    text = remove_accents(text)
+    text = text.upper()
+    text = re.sub(r"[^A-Z0-9]+", "-", text)
+    return text.strip("-")
+
+
+
 def normalize_header(value: Any) -> str:
     normalized = normalize_text(value)
     normalized = normalized.replace("-", "_")

@@ -13,7 +13,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from src.catalog import EntityCatalog, load_questionnaire
 from src.db.graph_connection import get_graph_connection
-from src.db.graph_repository import assert_semester_missing, persist_semester
+from src.db.graph_repository import assert_semester_missing, delete_semester, persist_semester
 from src.graph_calculator import calculate_graphs, read_source
 from src.utils.logger import info, section, success
 
@@ -35,6 +35,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--data-dir", type=Path, default=PROJECT_ROOT / "data",
         help="Diretório usado para descobrir DISC/DOC quando os caminhos não forem informados.",
+    )
+    parser.add_argument(
+        "--replace", action="store_true",
+        help="Substitui o semestre no banco caso ele já exista.",
     )
     parser.add_argument(
         "--dry-run", action="store_true",
@@ -79,8 +83,10 @@ def resolve_file(
         )
     expected_prefix = f"{instrument}_{year}_{period}"
     if not path.stem.upper().startswith(expected_prefix):
-        raise ValueError(
-            f"{path.name} não declara o instrumento/semestre esperado {expected_prefix}."
+        from src.utils.logger import warn
+        warn(
+            f"{path.name} não segue o padrão de nome {expected_prefix}. "
+            "O semestre selecionado na interface será utilizado."
         )
     return path
 
@@ -94,15 +100,46 @@ def sha256_file(path: Path) -> str:
 
 
 def validate_doc_semester(doc: object, year: int, period: int) -> None:
-    missing = {"ANO", "PERIODO"}.difference(doc.columns)
-    if missing:
-        raise ValueError(f"Base DOC sem declaração de semestre: {', '.join(sorted(missing))}.")
-    source_years = set(doc["ANO"].astype(str).str.strip()) - {""}
-    source_periods = set(doc["PERIODO"].astype(str).str.strip()) - {""}
-    if source_years != {str(year)} or source_periods != {str(period)}:
-        raise ValueError(
-            f"Base DOC declara ano/período {sorted(source_years)}/{sorted(source_periods)}, "
-            f"mas a execução espera {year}-{period}."
+    """Verifica se as colunas ANO/PERIODO do DOC coincidem com a execução.
+
+    Se as colunas estiverem ausentes ou vazias, aceita silenciosamente — o
+    semestre selecionado na interface prevalece.  Se os valores existirem e
+    divergirem, emite um aviso sem interromper a carga.
+    """
+    has_year = "ANO" in doc.columns
+    has_period = "PERIODO" in doc.columns
+
+    if not has_year and not has_period:
+        # Nenhuma declaração na planilha; o semestre da interface prevalece.
+        return
+
+    source_years = set()
+    source_periods = set()
+    if has_year:
+        source_years = set(doc["ANO"].astype(str).str.strip()) - {""}
+    if has_period:
+        source_periods = set(doc["PERIODO"].astype(str).str.strip()) - {""}
+
+    if not source_years and not source_periods:
+        # Colunas existem, mas estão todas vazias; aceita normalmente.
+        return
+
+    mismatches: list[str] = []
+    if source_years and source_years != {str(year)}:
+        mismatches.append(
+            f"ANO na planilha = {sorted(source_years)}, esperado = {year}"
+        )
+    if source_periods and source_periods != {str(period)}:
+        mismatches.append(
+            f"PERIODO na planilha = {sorted(source_periods)}, esperado = {period}"
+        )
+
+    if mismatches:
+        from src.utils.logger import warn
+        warn(
+            "A base DOC declara ano/período diferente do selecionado na interface: "
+            + "; ".join(mismatches) + ". "
+            "O semestre da interface será utilizado."
         )
 
 
@@ -140,7 +177,10 @@ def main() -> None:
     if not args.dry_run:
         preflight_connection = get_graph_connection()
         try:
-            assert_semester_missing(preflight_connection, year, period)
+            if args.replace:
+                delete_semester(preflight_connection, year, period)
+            else:
+                assert_semester_missing(preflight_connection, year, period)
         finally:
             preflight_connection.close()
 
@@ -148,9 +188,22 @@ def main() -> None:
     sha_doc = sha256_file(doc_file)
     disc = read_source(disc_file)
     doc = read_source(doc_file)
-    validate_doc_semester(doc, year, period)
-    results = calculate_graphs(disc, doc, questionnaire, entities)
+    results = calculate_graphs(
+        disc, doc, questionnaire, entities,
+        disc_label=disc_file.name,
+        doc_label=doc_file.name
+    )
     print_result_counts(results)
+
+    if entities.discovered_campuses:
+        from src.utils.logger import warn
+        print()
+        warn("=== AVISO: Campi não registrados no catálogo ===")
+        warn("Os seguintes campi foram sanitizados e serão inseridos automaticamente no banco,")
+        warn("mas não estão configurados em config/entidades.json:")
+        warn(f"  • Campi: {', '.join(sorted(entities.discovered_campuses.keys()))}")
+        warn("Para manter a consistência e evitar duplicados em outros semestres, adicione-os ao JSON.")
+        print()
 
     if sha256_file(disc_file) != sha_disc or sha256_file(doc_file) != sha_doc:
         raise RuntimeError("Uma fonte foi alterada durante o cálculo; carga cancelada.")
@@ -177,6 +230,37 @@ def main() -> None:
     finally:
         connection.close()
     success(f"Semestre {year}-{period} inserido com semestre_id={semester_id}.")
+
+    if entities.discovered_campuses:
+        try:
+            update_entidades_json(entities_path, list(entities.discovered_campuses.values()))
+        except Exception as e:
+            from src.utils.logger import warn
+            warn(f"Não foi possível atualizar entidades.json: {e}")
+
+
+def update_entidades_json(path: Path, new_campuses: list[str]) -> None:
+    import json
+    if not path.is_file():
+        return
+    with path.open("r", encoding="utf-8") as f:
+        data = json.load(f)
+    
+    campi = data.setdefault("campi", [])
+    updated = False
+    from src.utils.normalizer import normalize_text
+    for nc in new_campuses:
+        nc_norm = normalize_text(nc)
+        if not any(normalize_text(c) == nc_norm for c in campi):
+            campi.append(nc)
+            updated = True
+            
+    if updated:
+        data["campi"] = sorted(campi)
+        with path.open("w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        from src.utils.logger import info
+        info(f"O arquivo {path.name} foi atualizado com os novos campi.")
 
 
 if __name__ == "__main__":

@@ -912,103 +912,65 @@ export default function RelatorioPresencialClient({
       return y + 40;
     }
 
-    const lowerTitle = title.toLowerCase();
+    const LABEL_MAP = {
+      AUTOAVALIACAO_DISCENTE: 'Autoavaliação Discente',
+      ACAO_DOCENTE: 'Ação Docente',
+      INSTALACOES_FISICAS: 'Instalações Físicas',
+      ATITUDE_PROFISSIONAL: 'Atitude Profissional',
+      GESTAO_DIDATICA: 'Gestão Didática',
+      PROCESSO_AVALIATIVO: 'Processo Avaliativo',
+      AVALIACAO_TURMA: 'Avaliação da Turma',
+      AUTOAVALIACAO_ACAO_DOCENTE: 'Autoavaliação da Ação Docente',
+    };
 
-    const isTabela2 =
-      title.includes('Tabela 2') ||
-      lowerTitle.includes('médias das avaliações das turmas/docentes por dimensão');
+    const hasOwn = (obj, k) => Object.prototype.hasOwnProperty.call(obj, k);
+    const pick = (obj, candidates) => {
+      for (const c of candidates) if (hasOwn(obj, c)) return obj[c];
+      return undefined;
+    };
 
-    const isTabela3 =
-      title.includes('Tabela 3') ||
-      lowerTitle.includes('subdimensão da ação docente') ||
-      lowerTitle.includes('subdimensões da ação docente');
+    const firstRowKeys = Object.keys(rows[0] || {});
+    const statKey = firstRowKeys.find(
+      (k) => k.toLowerCase() === 'estatística' || k.toLowerCase() === 'estatistica'
+    );
 
-    const isTabela4 =
-      title.includes('Tabela 4') ||
-      lowerTitle.includes('item relacionado à autoavaliação discente') ||
-      lowerTitle.includes('itens relacionados à autoavaliação discente');
+    if (statKey && rows.length >= 5) {
+      let headers = firstRowKeys;
+      const lowerTitle = title.toLowerCase();
 
-    const isTabela5 =
-      title.includes('Tabela 5') ||
-      lowerTitle.includes('item relacionado à atitude profissional') ||
-      lowerTitle.includes('itens relacionados à atitude profissional');
-
-    const isTabela6 =
-      title.includes('Tabela 6') ||
-      lowerTitle.includes('item relacionado à gestão didática') ||
-      lowerTitle.includes('itens relacionados à gestão didática') ||
-      lowerTitle.includes('item relacionado à gestao didatica') ||
-      lowerTitle.includes('itens relacionados à gestao didatica');
-
-    const isTabela7 =
-      title.includes('Tabela 7') ||
-      lowerTitle.includes('item relacionado ao processo avaliativo') ||
-      lowerTitle.includes('itens relacionados ao processo avaliativo');
-
-    const isTabela8 =
-      title.includes('Tabela 8') ||
-      lowerTitle.includes('item relacionado às instalações físicas') ||
-      lowerTitle.includes('itens relacionados às instalações físicas') ||
-      lowerTitle.includes('item relacionado as instalações físicas') ||
-      lowerTitle.includes('itens relacionados as instalações físicas') ||
-      lowerTitle.includes('item relacionado às instalacoes fisicas') ||
-      lowerTitle.includes('itens relacionados às instalacoes fisicas') ||
-      lowerTitle.includes('item relacionado as instalacoes fisicas') ||
-      lowerTitle.includes('itens relacionados as instalacoes fisicas');
-
-    if (isTabela4 || isTabela5 || isTabela6 || isTabela7 || isTabela8) {
-      const hasOwn = (obj, k) => Object.prototype.hasOwnProperty.call(obj, k);
-
-      const pick = (obj, candidates) => {
-        for (const c of candidates) if (hasOwn(obj, c)) return obj[c];
-        return undefined;
-      };
-
-      const itemKey =
-        Object.keys(rows[0] || {}).find((k) => k.toLowerCase() === 'item') || 'item';
-
-      const byItem = new Map();
-
-      for (const r of rows) {
-        const rawItem = pick(r, [itemKey, 'Item', 'ITEM']);
-        if (rawItem !== undefined && rawItem !== null && String(rawItem).trim() !== '') {
-          const normalizedItem = formatItemCodeLabel(String(rawItem).trim());
-          byItem.set(normalizedItem, r);
-        }
+      if (title.includes('Tabela 2') || lowerTitle.includes('dimensão')) {
+        const preferred = ['Estatística', 'Estatistica', 'Autoavaliação Discente', 'Ação Docente', 'Instalações Físicas'];
+        headers = preferred.filter((h) => headers.includes(h)).concat(headers.filter((h) => !preferred.includes(h)));
+      } else if (title.includes('Tabela 3') || lowerTitle.includes('subdimensão')) {
+        const preferred = ['Estatística', 'Estatistica', 'Atitude Profissional', 'Gestão Didática', 'Processo Avaliativo'];
+        headers = preferred.filter((h) => headers.includes(h)).concat(headers.filter((h) => !preferred.includes(h)));
       }
 
-      const items = Array.from(byItem.keys()).sort(compareItemCodes);
+      const body = rows.map((row) =>
+        headers.map((h, i) => {
+          let val = row?.[h];
+          if (i === 0) {
+            const s = String(val ?? '').trim();
+            if (s === 'Q1' || s === '1st Qu.' || s === '1st Qu') return '1º Q.';
+            if (s === 'Q3' || s === '3rd Qu.' || s === '3rd Qu') return '3º Q.';
+            if (s === 'Media' || s === 'mean' || s === 'Mean') return 'Média';
+            return s;
+          }
+          return formatPdfCell(val);
+        })
+      );
 
-      const stats = [
-        { value: 'Min', keys: ['Min', 'min', 'MIN'] },
-        { value: 'Q1', keys: ['Q1', 'q1', '1st Qu.', '1st Qu', '1st_qu', '1st_qu.'] },
-        { value: 'Mediana', keys: ['Mediana', 'mediana', 'Median', 'median'] },
-        { value: 'Média', keys: ['Media', 'media', 'Média', 'média', 'Mean', 'mean'] },
-        { value: 'Q3', keys: ['Q3', 'q3', '3rd Qu.', '3rd Qu', '3rd_qu', '3rd_qu.'] },
-        { value: 'Max', keys: ['Max', 'max', 'MAX'] },
-      ];
-
-      const headers = ['Estatística', ...items];
-      const body = stats.map((st) => [
-        st.value,
-        ...items.map((it) => {
-          const row = byItem.get(it);
-          const value = row ? pick(row, st.keys) : '';
-          return formatPdfCell(value);
-        }),
-      ]);
+      const cleanHeaders = headers.map((h) => (h === 'Estatistica' ? 'Estatística' : h));
 
       autoTable(doc, {
         startY: y,
-        head: [headers],
+        head: [cleanHeaders],
         body,
         theme: 'striped',
         headStyles: { fillColor: [40, 143, 180] },
         margin: { left: 40, right: 40 },
         styles: { fontSize: 8, cellPadding: 4, overflow: 'linebreak', cellWidth: 'wrap' },
-        columnStyles: {
-          0: { cellWidth: 70, fontStyle: 'bold' },
-        },
+        columnStyles: { 0: { cellWidth: 70, fontStyle: 'bold' } },
         horizontalPageBreak: true,
         horizontalPageBreakRepeat: 0,
       });
@@ -1016,47 +978,53 @@ export default function RelatorioPresencialClient({
       return doc.lastAutoTable.finalY + 30;
     }
 
-    let headers = Object.keys(rows[0] || {});
+    const itemKey =
+      firstRowKeys.find(
+        (k) => k.toLowerCase() === 'item' || k.toLowerCase() === 'agrupador' || k.toLowerCase() === 'label' || k.toLowerCase() === 'dimensao' || k.toLowerCase() === 'subdimensao'
+      ) || firstRowKeys[0];
 
-    if (isTabela2) {
-      const preferredOrder = [
-        'Estatística',
-        'Estatistica',
-        'Autoavaliação Discente',
-        'Ação Docente',
-        'Instalações Físicas',
-      ];
-
-      const ordered = [];
-      for (const h of preferredOrder) {
-        if (headers.includes(h)) ordered.push(h);
+    const byGroup = new Map();
+    for (const r of rows) {
+      const rawGroup = pick(r, [itemKey, 'Item', 'item', 'label', 'dimensao', 'subdimensao', 'agrupador']);
+      if (rawGroup !== undefined && rawGroup !== null && String(rawGroup).trim() !== '') {
+        let name = String(rawGroup).trim();
+        if (LABEL_MAP[name]) name = LABEL_MAP[name];
+        else if (name.includes('.')) name = formatItemCodeLabel(name);
+        byGroup.set(name, r);
       }
-      for (const h of headers) {
-        if (!ordered.includes(h)) ordered.push(h);
-      }
-      headers = ordered;
     }
 
-    if (isTabela3) {
-      const preferredOrder = [
-        'Estatística',
-        'Estatistica',
-        'Atitude Profissional',
-        'Gestão Didática',
-        'Processo Avaliativo',
-      ];
+    let groups = Array.from(byGroup.keys());
+    const lowerTitle = title.toLowerCase();
 
-      const ordered = [];
-      for (const h of preferredOrder) {
-        if (headers.includes(h)) ordered.push(h);
-      }
-      for (const h of headers) {
-        if (!ordered.includes(h)) ordered.push(h);
-      }
-      headers = ordered;
+    if (title.includes('Tabela 2') || lowerTitle.includes('dimensão')) {
+      const preferred = ['Autoavaliação Discente', 'Ação Docente', 'Instalações Físicas'];
+      groups = preferred.filter((g) => groups.includes(g)).concat(groups.filter((g) => !preferred.includes(g)));
+    } else if (title.includes('Tabela 3') || lowerTitle.includes('subdimensão')) {
+      const preferred = ['Atitude Profissional', 'Gestão Didática', 'Processo Avaliativo'];
+      groups = preferred.filter((g) => groups.includes(g)).concat(groups.filter((g) => !preferred.includes(g)));
+    } else {
+      groups.sort(compareItemCodes);
     }
 
-    const body = rows.map((row) => headers.map((h) => formatPdfCell(row?.[h])));
+    const stats = [
+      { value: 'Min', keys: ['Min', 'min', 'MIN', 'minimo'] },
+      { value: '1º Q.', keys: ['1º Q.', '1st Qu.', 'Q1', 'q1', '1st_qu', '1st_qu.'] },
+      { value: 'Mediana', keys: ['Mediana', 'mediana', 'Median', 'median'] },
+      { value: 'Média', keys: ['Média', 'Media', 'media', 'Mean', 'mean'] },
+      { value: '3º Q.', keys: ['3º Q.', '3rd Qu.', 'Q3', 'q3', '3rd_qu', '3rd_qu.'] },
+      { value: 'Max', keys: ['Max', 'max', 'MAX', 'maximo'] },
+    ];
+
+    const headers = ['Estatística', ...groups];
+    const body = stats.map((st) => [
+      st.value,
+      ...groups.map((g) => {
+        const row = byGroup.get(g);
+        const value = row ? pick(row, st.keys) : '';
+        return formatPdfCell(value);
+      }),
+    ]);
 
     autoTable(doc, {
       startY: y,
@@ -1066,6 +1034,11 @@ export default function RelatorioPresencialClient({
       headStyles: { fillColor: [40, 143, 180] },
       margin: { left: 40, right: 40 },
       styles: { fontSize: 8, cellPadding: 4, overflow: 'linebreak', cellWidth: 'wrap' },
+      columnStyles: {
+        0: { cellWidth: 70, fontStyle: 'bold' },
+      },
+      horizontalPageBreak: true,
+      horizontalPageBreakRepeat: 0,
     });
 
     return doc.lastAutoTable.finalY + 30;
@@ -1549,9 +1522,15 @@ export default function RelatorioPresencialClient({
       // BOXPLOT DIMENSÕES E DESCRITIVAS
       // ---------------------------------------------------------------------
       let turmaDimBoxplot = await fetchJsonOptional(
-        '/docente/avaliacaoturma/dimensoes/boxplot',
+        '/discente/dimensoes/boxplot',
         selectedSnapshot
       );
+      if (!turmaDimBoxplot) {
+        turmaDimBoxplot = await fetchJsonOptional(
+          '/docente/avaliacaoturma/dimensoes/boxplot',
+          selectedSnapshot
+        );
+      }
       if (!turmaDimBoxplot) {
         turmaDimBoxplot = await fetchJsonOptional('/docente/dimensoes/boxplot', selectedSnapshot);
       }

@@ -54,21 +54,39 @@ class DatabaseWorker(QThread):
                 )
                 schema_ready = cursor.fetchone()[0] is not None
                 periods: list[str] = []
+                period_details: list[dict] = []
+                database_size: int = 0
                 if schema_ready:
                     cursor.execute(
                         f"""
-                        SELECT codigo
+                        SELECT codigo, ano, periodo, arquivo_disc, arquivo_doc,
+                               linhas_disc, linhas_doc, inserido_em
                         FROM {SCHEMA_NAME}.semestre
                         ORDER BY ano DESC, periodo DESC
                         """
                     )
-                    periods = [str(row[0]) for row in cursor.fetchall()]
+                    for row in cursor.fetchall():
+                        periods.append(str(row[0]))
+                        period_details.append({
+                            "codigo": str(row[0]),
+                            "ano": int(row[1]),
+                            "periodo": int(row[2]),
+                            "arquivo_disc": str(row[3]),
+                            "arquivo_doc": str(row[4]),
+                            "linhas_disc": int(row[5]),
+                            "linhas_doc": int(row[6]),
+                            "inserido_em": str(row[7]),
+                        })
+                    cursor.execute("SELECT pg_database_size(current_database())")
+                    database_size = int(cursor.fetchone()[0])
 
             self.completed.emit(
                 {
                     "database_name": database_name,
                     "schema_ready": schema_ready,
                     "periods": periods,
+                    "period_details": period_details,
+                    "database_size": database_size,
                     "initialized": self.initialize_schema,
                 }
             )

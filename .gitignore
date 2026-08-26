@@ -18,3 +18,7 @@ yarn-error.log*
 .cache/
 dist/
 build/
+
+# Dados brutos — nunca versionar
+*.xlsx
+*.csv

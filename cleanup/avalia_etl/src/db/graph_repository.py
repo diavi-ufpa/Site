@@ -58,21 +58,30 @@ def _insert_questionnaire(cursor: Any, questionnaire: Questionnaire) -> int:
 def _insert_entities(
     cursor: Any, entities: EntityCatalog
 ) -> tuple[dict[str, int], dict[str, int]]:
+    campuses_to_insert = [(normalize_text(name), name) for name in entities.campuses]
+    for code, name in entities.discovered_campuses.items():
+        campuses_to_insert.append((code, name))
+        
     execute_values(
         cursor,
         f"""
         INSERT INTO {SCHEMA}.campus (codigo, nome) VALUES %s
         ON CONFLICT (codigo) DO NOTHING
         """,
-        [(normalize_text(name), name) for name in entities.campuses],
+        campuses_to_insert,
     )
+    
+    courses_to_insert = [(normalize_text(name), name) for name in entities.courses]
+    for code, name in entities.discovered_courses.items():
+        courses_to_insert.append((code, name))
+        
     execute_values(
         cursor,
         f"""
         INSERT INTO {SCHEMA}.curso (codigo, nome) VALUES %s
         ON CONFLICT (codigo) DO NOTHING
         """,
-        [(normalize_text(name), name) for name in entities.courses],
+        courses_to_insert,
     )
     cursor.execute(f"SELECT codigo, campus_id FROM {SCHEMA}.campus")
     campus_ids = {row[0]: int(row[1]) for row in cursor.fetchall()}
@@ -224,11 +233,13 @@ def _insert_results(
 ) -> None:
     _bulk_insert(
         cursor, "resultado_resumo",
-        "recorte_id, total_respondentes, melhor_campus_id, melhor_campus_media, "
+        "recorte_id, total_respondentes, total_docentes, total_turmas, melhor_campus_id, melhor_campus_media, "
         "pior_campus_id, pior_campus_media",
         [
             (
                 scope_ids[row["scope"]], row["participants"],
+                row.get("total_docentes", 0),
+                row.get("total_turmas", 0),
                 campus_ids[row["best_campus"]] if row["best_campus"] else None,
                 row["best_mean"],
                 campus_ids[row["worst_campus"]] if row["worst_campus"] else None,
@@ -355,6 +366,51 @@ def persist_semester(
                     f"A carga ultrapassaria o limite de 500 MB ({database_size} bytes)."
                 )
             return semester_id
+
+
+def delete_semester(connection: Any, year: int, period: int) -> None:
+    with connection:
+        with connection.cursor() as cursor:
+            _ensure_schema(cursor)
+            cursor.execute(
+                f"SELECT semestre_id FROM {SCHEMA}.semestre WHERE ano = %s AND periodo = %s",
+                (year, period),
+            )
+            row = cursor.fetchone()
+            if not row:
+                return
+            semestre_id = row[0]
+            cursor.execute(
+                f"""
+                DELETE FROM {SCHEMA}.resultado_boxplot_outlier
+                WHERE recorte_id IN (SELECT recorte_id FROM {SCHEMA}.recorte WHERE semestre_id = %s);
+
+                DELETE FROM {SCHEMA}.resultado_boxplot
+                WHERE recorte_id IN (SELECT recorte_id FROM {SCHEMA}.recorte WHERE semestre_id = %s);
+
+                DELETE FROM {SCHEMA}.resultado_media_likert
+                WHERE recorte_id IN (SELECT recorte_id FROM {SCHEMA}.recorte WHERE semestre_id = %s);
+
+                DELETE FROM {SCHEMA}.resultado_proporcao_likert
+                WHERE recorte_id IN (SELECT recorte_id FROM {SCHEMA}.recorte WHERE semestre_id = %s);
+
+                DELETE FROM {SCHEMA}.resultado_atividade
+                WHERE recorte_id IN (SELECT recorte_id FROM {SCHEMA}.recorte WHERE semestre_id = %s);
+
+                DELETE FROM {SCHEMA}.resultado_resumo
+                WHERE recorte_id IN (SELECT recorte_id FROM {SCHEMA}.recorte WHERE semestre_id = %s);
+
+                DELETE FROM {SCHEMA}.ranking_media_curso
+                WHERE recorte_id IN (SELECT recorte_id FROM {SCHEMA}.recorte WHERE semestre_id = %s);
+
+                DELETE FROM {SCHEMA}.ranking_atividade_curso
+                WHERE recorte_id IN (SELECT recorte_id FROM {SCHEMA}.recorte WHERE semestre_id = %s);
+
+                DELETE FROM {SCHEMA}.recorte WHERE semestre_id = %s;
+                DELETE FROM {SCHEMA}.semestre WHERE semestre_id = %s;
+                """,
+                (semestre_id,) * 10,
+            )
 
 
 def assert_semester_missing(connection: Any, year: int, period: int) -> None:

@@ -39,26 +39,32 @@ class GraphResults:
 def read_source(path: Path) -> pd.DataFrame:
     suffix = path.suffix.lower()
     if suffix == ".csv":
-        frame = pd.read_csv(
-            path, sep=";", dtype=str, keep_default_na=False,
-            na_filter=False, encoding="utf-8-sig",
-        )
+        try:
+            frame = pd.read_csv(
+                path, sep=";", dtype=str, keep_default_na=False,
+                na_filter=False, encoding="utf-8-sig",
+            )
+        except UnicodeDecodeError:
+            frame = pd.read_csv(
+                path, sep=";", dtype=str, keep_default_na=False,
+                na_filter=False, encoding="latin1",
+            )
     elif suffix == ".xlsx":
         sheets = pd.read_excel(path, sheet_name=None, dtype=str, keep_default_na=False)
         if len(sheets) != 1:
             names = ", ".join(sheets)
             raise ValueError(
-                f"{path.name} deve conter exatamente uma planilha; encontradas "
+                f"[{path.name}] Deve conter exatamente uma planilha; encontradas "
                 f"{len(sheets)} ({names})."
             )
         frame = next(iter(sheets.values()))
     else:
-        raise ValueError(f"Formato não suportado: {path.suffix}. Use CSV ou XLSX.")
+        raise ValueError(f"[{path.name}] Formato não suportado: {path.suffix}. Use CSV ou XLSX.")
 
     normalized_columns = [normalize_header(column) for column in frame.columns]
     duplicates = pd.Series(normalized_columns)[pd.Series(normalized_columns).duplicated()].unique()
     if len(duplicates):
-        raise ValueError(f"Colunas duplicadas após normalização: {', '.join(duplicates)}.")
+        raise ValueError(f"[{path.name}] Colunas duplicadas após normalização: {', '.join(duplicates)}.")
     frame.columns = normalized_columns
     frame = frame.fillna("")
     non_empty_rows = frame.astype(str).apply(
@@ -303,17 +309,44 @@ def _append_activity_results(
             })
 
 
-def _append_summaries(results: GraphResults, disc_long: pd.DataFrame) -> None:
+def _append_summaries(
+    results: GraphResults,
+    disc: pd.DataFrame,
+    doc: pd.DataFrame,
+    disc_long: pd.DataFrame,
+) -> None:
     for scope_level, scope_columns in SCOPE_SPECS:
         participant_lookup: dict[tuple[Any, ...], int] = {}
+        docente_lookup: dict[tuple[Any, ...], int] = {}
+        turma_lookup: dict[tuple[Any, ...], int] = {}
+
         if scope_columns:
             participants = disc_long.groupby(scope_columns)["__matricula"].nunique()
             participant_lookup = {
                 key if isinstance(key, tuple) else (key,): int(value)
                 for key, value in participants.items()
             }
+            if "DOCENTE" in doc.columns:
+                docentes = doc.groupby(scope_columns)["DOCENTE"].nunique()
+                docente_lookup = {
+                    key if isinstance(key, tuple) else (key,): int(value)
+                    for key, value in docentes.items()
+                }
+            elif "__oferta" in doc.columns:
+                docentes = doc.groupby(scope_columns)["__oferta"].nunique()
+                docente_lookup = {
+                    key if isinstance(key, tuple) else (key,): int(value)
+                    for key, value in docentes.items()
+                }
+            turmas = disc.groupby(scope_columns)["__oferta"].nunique()
+            turma_lookup = {
+                key if isinstance(key, tuple) else (key,): int(value)
+                for key, value in turmas.items()
+            }
         else:
             participant_lookup[()] = int(disc_long["__matricula"].nunique())
+            docente_lookup[()] = int(doc["DOCENTE"].nunique()) if "DOCENTE" in doc.columns else int(doc["__oferta"].nunique())
+            turma_lookup[()] = int(disc["__oferta"].nunique())
 
         campus_keys = list(scope_columns)
         if "__campus" not in campus_keys:
@@ -337,6 +370,8 @@ def _append_summaries(results: GraphResults, disc_long: pd.DataFrame) -> None:
             results.summaries.append({
                 "scope": scope,
                 "participants": total,
+                "total_docentes": docente_lookup.get(scope_values, 0),
+                "total_turmas": turma_lookup.get(scope_values, 0),
                 "best_campus": best[0] if best else None,
                 "best_mean": round(best[1], 4) if best else None,
                 "worst_campus": worst[0] if worst else None,
@@ -384,11 +419,15 @@ def _append_boxplots(
             level_data = level_data[
                 level_data["__dimension"] != "INSTALACOES_FISICAS"
             ]
-        offer_keys = ["__campus", "__curso", "__oferta", group_column]
-        per_offer = level_data.groupby(offer_keys, dropna=False)["__value"].mean().reset_index()
+        if instrument == "DISC":
+            obs_to_use = level_data
+        else:
+            offer_keys = ["__campus", "__curso", "__oferta", group_column]
+            obs_to_use = level_data.groupby(offer_keys, dropna=False)["__value"].mean().reset_index()
+
         for scope_level, scope_columns in SCOPE_SPECS:
             keys = scope_columns + [group_column]
-            for group_values, values in per_offer.groupby(keys, dropna=False)["__value"]:
+            for group_values, values in obs_to_use.groupby(keys, dropna=False)["__value"]:
                 group_values = group_values if isinstance(group_values, tuple) else (group_values,)
                 row = pd.Series(dict(zip(keys, group_values)))
                 scope = _scope_from_row(scope_level, row)
@@ -502,24 +541,205 @@ def validate_results(results: GraphResults) -> None:
         raise ValueError("A fonte DISC não possui participante com resposta Likert válida.")
 
 
+def _check_similar_entities(
+    names: set[str],
+    entity_type: str,
+    disc_df: pd.DataFrame,
+    doc_df: pd.DataFrame,
+    disc_label: str,
+    doc_label: str,
+    registered_names: set[str],
+) -> None:
+    import re
+    import difflib
+    from src.utils.logger import warn
+    from src.utils.normalizer import normalize_text, normalize_course
+    
+    def get_tokens(text: str) -> set[str]:
+        return set(w for w in re.findall(r'\w+', str(text).lower()) if len(w) > 2)
+        
+    registered_lower = {n.lower() for n in registered_names}
+    names_list = sorted(list(names))
+
+    # Pre-index course to campuses mapping to avoid dataframe rescanning
+    campus_by_course: dict[str, set[str]] = {}
+    if entity_type == "curso":
+        for df in [disc_df, doc_df]:
+            if df is not None and "CAMPUS" in df.columns and "CURSO" in df.columns:
+                for campus_val, course_val in zip(df["CAMPUS"], df["CURSO"]):
+                    c_norm = normalize_course(course_val)
+                    campus_by_course.setdefault(c_norm, set()).add(str(campus_val))
+
+    for i in range(len(names_list)):
+        for j in range(i + 1, len(names_list)):
+            n1, n2 = names_list[i], names_list[j]
+            
+            if n1.lower() in registered_lower and n2.lower() in registered_lower:
+                continue
+                
+            t1, t2 = get_tokens(n1), get_tokens(n2)
+            if not t1 or not t2:
+                continue
+            
+            matching_tokens = 0
+            for w1 in t1:
+                for w2 in t2:
+                    if w1 == w2 or difflib.SequenceMatcher(None, w1, w2).ratio() >= 0.88:
+                        matching_tokens += 1
+                        break
+            
+            union_size = len(t1) + len(t2) - matching_tokens
+            jaccard = matching_tokens / union_size if union_size > 0 else 0
+            
+            if jaccard >= 0.8:
+                if entity_type == "curso":
+                    campuses_n1 = campus_by_course.get(n1, set())
+                    campuses_n2 = campus_by_course.get(n2, set())
+                    common_campuses = campuses_n1.intersection(campuses_n2)
+                    if not common_campuses:
+                        continue
+                        
+                    for campus in sorted(list(common_campuses)):
+                        campus_norm = normalize_text(campus)
+                        n1_info = []
+                        n2_info = []
+                        for df, label in [(disc_df, disc_label), (doc_df, doc_label)]:
+                            if df is not None and "CAMPUS" in df.columns and "CURSO" in df.columns:
+                                mask_campus = df["CAMPUS"].map(normalize_text) == campus_norm
+                                
+                                mask_n1 = mask_campus & (df["CURSO"].map(normalize_course) == n1)
+                                if mask_n1.any():
+                                    count = len(df[mask_n1])
+                                    originals = sorted(df[mask_n1]["CURSO"].unique())
+                                    orig_str = ", ".join(f"'{o}'" for o in originals)
+                                    n1_info.append(f"{count}x em {label} ({orig_str})")
+                                    
+                                mask_n2 = mask_campus & (df["CURSO"].map(normalize_course) == n2)
+                                if mask_n2.any():
+                                    count = len(df[mask_n2])
+                                    originals = sorted(df[mask_n2]["CURSO"].unique())
+                                    orig_str = ", ".join(f"'{o}'" for o in originals)
+                                    n2_info.append(f"{count}x em {label} ({orig_str})")
+                                    
+                        n1_details = "; ".join(n1_info)
+                        n2_details = "; ".join(n2_info)
+                        
+                        warn(
+                            f"Aviso: Possível duplicidade ou divergência de nomes para curso no mesmo período:\n"
+                            f"  • Campus: {campus}\n"
+                            f"    - '{n1}': {n1_details}\n"
+                            f"    - '{n2}': {n2_details}\n"
+                            f"  A carga prosseguirá, mas verifique se a grafia está correta na planilha de origem."
+                        )
+                else:
+                    # entity_type == "campus"
+                    n1_info = []
+                    n2_info = []
+                    for df, label in [(disc_df, disc_label), (doc_df, doc_label)]:
+                        if df is not None and "CAMPUS" in df.columns:
+                            mask_n1 = df["CAMPUS"].map(normalize_text) == normalize_text(n1)
+                            if mask_n1.any():
+                                count = len(df[mask_n1])
+                                originals = sorted(df[mask_n1]["CAMPUS"].unique())
+                                orig_str = ", ".join(f"'{o}'" for o in originals)
+                                n1_info.append(f"{count}x em {label} ({orig_str})")
+                                
+                            mask_n2 = df["CAMPUS"].map(normalize_text) == normalize_text(n2)
+                            if mask_n2.any():
+                                count = len(df[mask_n2])
+                                originals = sorted(df[mask_n2]["CAMPUS"].unique())
+                                orig_str = ", ".join(f"'{o}'" for o in originals)
+                                n2_info.append(f"{count}x em {label} ({orig_str})")
+                                
+                    n1_details = "; ".join(n1_info)
+                    n2_details = "; ".join(n2_info)
+                    
+                    warn(
+                        f"Aviso: Possível duplicidade ou divergência de nomes para campus no mesmo período:\n"
+                        f"  - '{n1}': {n1_details}\n"
+                        f"  - '{n2}': {n2_details}\n"
+                        f"  A carga prosseguirá, mas verifique se a grafia está correta na planilha de origem."
+                    )
+
+
 def calculate_graphs(
     disc_source: pd.DataFrame,
     doc_source: pd.DataFrame,
     questionnaire: Questionnaire,
     entities: EntityCatalog,
+    disc_label: str = "DISC",
+    doc_label: str = "DOC",
 ) -> GraphResults:
-    disc = _prepare_source(disc_source, "DISC", questionnaire, entities)
-    doc = _prepare_source(doc_source, "DOC", questionnaire, entities)
+    try:
+        disc = _prepare_source(disc_source, "DISC", questionnaire, entities)
+    except ValueError as e:
+        raise ValueError(f"[{disc_label}] {e}") from e
+
+    try:
+        doc = _prepare_source(doc_source, "DOC", questionnaire, entities)
+    except ValueError as e:
+        raise ValueError(f"[{doc_label}] {e}") from e
+    
+    # Validação de similaridade entre entidades do mesmo período
+    _check_similar_entities(
+        set(disc["__curso_name"].unique()).union(doc["__curso_name"].unique()),
+        "curso",
+        disc,
+        doc,
+        disc_label,
+        doc_label,
+        set(entities.courses),
+    )
+    _check_similar_entities(
+        set(disc["__campus_name"].unique()).union(doc["__campus_name"].unique()),
+        "campus",
+        disc,
+        doc,
+        disc_label,
+        doc_label,
+        set(entities.campuses),
+    )
+
     results = GraphResults(rows_disc=len(disc), rows_doc=len(doc))
 
-    disc_long = _likert_long(disc, "DISC", questionnaire)
-    doc_long = _likert_long(doc, "DOC", questionnaire)
-    _append_likert_results(results, disc_long, "DISC")
-    _append_likert_results(results, doc_long, "DOC")
-    _append_activity_results(results, disc, "DISC", questionnaire)
-    _append_activity_results(results, doc, "DOC", questionnaire)
-    _append_summaries(results, disc_long)
-    _append_boxplots(results, _disc_media_long(disc, questionnaire), "DISC")
+    try:
+        disc_long = _likert_long(disc, "DISC", questionnaire)
+    except ValueError as e:
+        raise ValueError(f"[{disc_label}] {e}") from e
+
+    try:
+        doc_long = _likert_long(doc, "DOC", questionnaire)
+    except ValueError as e:
+        raise ValueError(f"[{doc_label}] {e}") from e
+
+    try:
+        _append_likert_results(results, disc_long, "DISC")
+    except ValueError as e:
+        raise ValueError(f"[{disc_label}] {e}") from e
+
+    try:
+        _append_likert_results(results, doc_long, "DOC")
+    except ValueError as e:
+        raise ValueError(f"[{doc_label}] {e}") from e
+
+    try:
+        _append_activity_results(results, disc, "DISC", questionnaire)
+    except ValueError as e:
+        raise ValueError(f"[{disc_label}] {e}") from e
+
+    try:
+        _append_activity_results(results, doc, "DOC", questionnaire)
+    except ValueError as e:
+        raise ValueError(f"[{doc_label}] {e}") from e
+
+    _append_summaries(results, disc, doc, disc_long)
+
+    try:
+        disc_media = _disc_media_long(disc, questionnaire)
+    except ValueError as e:
+        raise ValueError(f"[{disc_label}] {e}") from e
+
+    _append_boxplots(results, disc_media, "DISC")
     _append_boxplots(results, doc_long, "DOC")
     _append_rankings(results)
     validate_results(results)

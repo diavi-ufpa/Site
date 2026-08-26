@@ -188,6 +188,8 @@ async function getSummary(filters) {
       WITH alvo AS (${context.scopeSql})
       SELECT
         resumo.total_respondentes,
+        COALESCE(resumo.total_docentes, 0) AS total_docentes,
+        COALESCE(resumo.total_turmas, 0) AS total_turmas,
         melhor.nome AS melhor_campus,
         resumo.melhor_campus_media,
         pior.nome AS pior_campus,
@@ -200,8 +202,18 @@ async function getSummary(filters) {
     context.params
   );
   const row = rows[0] ?? {};
+  const totalRespondentes = Number(row.total_respondentes ?? 0);
+  const totalDocentes = Number(row.total_docentes ?? 0);
+  const totalTurmas = Number(row.total_turmas ?? 0);
+
   return {
-    total_respondentes: Number(row.total_respondentes ?? 0),
+    total_respondentes: totalRespondentes,
+    total_discentes: totalRespondentes,
+    total_docentes: totalDocentes,
+    total_turmas: totalTurmas,
+    n_discente: totalRespondentes,
+    n_docente: totalDocentes,
+    n_turmas: totalTurmas,
     campus_melhor_avaliado: row.melhor_campus
       ? [{ campus: row.melhor_campus, media: Number(row.melhor_campus_media) }]
       : [],

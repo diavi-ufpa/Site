@@ -32,7 +32,7 @@ from PySide6.QtWidgets import (
 )
 
 from cleanup_app.database import DatabaseWorker
-from cleanup_app.file_picker import FilePicker
+from cleanup_app.file_picker import FilePicker, extract_semester_from_filename
 from cleanup_app.paths import APP_ROOT, ETL_SCRIPT, SCHEMA_FILE, SITE_ROOT
 
 
@@ -88,6 +88,7 @@ class MainWindow(QMainWindow):
 
         self._build_ui()
         self._refresh_controls()
+        self._start_database_worker(initialize=False)
 
     def _build_ui(self) -> None:
         root = QWidget()
@@ -504,8 +505,26 @@ class MainWindow(QMainWindow):
         self.confirmation.setChecked(False)
         self.confirmation.setEnabled(False)
         self._set_status(self.execution_status, "Pendente", "neutral")
+        self._check_file_semester_hint()
         self._validate_input_contract(show_dialog=False)
         self._refresh_controls()
+
+    def _check_file_semester_hint(self) -> None:
+        """Detecta ano/período nos nomes dos arquivos e avisa se divergem da seleção."""
+        for picker in (self.disc_picker, self.doc_picker):
+            path = picker.path
+            if path is None or not path.is_file():
+                continue
+            detected = extract_semester_from_filename(path)
+            if detected is None:
+                continue
+            file_year, file_period = detected
+            if file_year != self.year_input.value() or str(file_period) != self.period_input.currentText():
+                self._append_log(
+                    f"[AVISO] O arquivo {path.name} sugere o semestre "
+                    f"{file_year}-{file_period}, mas a interface está "
+                    f"configurada para {self.semester}."
+                )
 
     def _current_signature(self) -> tuple | None:
         paths = (self.disc_picker.path, self.doc_picker.path)
@@ -521,8 +540,19 @@ class MainWindow(QMainWindow):
 
     def _validate_input_contract(self, *, show_dialog: bool) -> bool:
         errors: list[str] = []
+        warnings: list[str] = []
         year = self.year_input.value()
         period = self.period_input.currentText()
+
+        # --- Verificação de semestre já publicado (prioridade) ---
+        if self.semester in self.imported_periods:
+            message = f"O semestre {self.semester} já foi publicado e não pode ser substituído."
+            self.input_message.setText(message)
+            self.input_message.setStyleSheet("color: #b42318;")
+            if show_dialog:
+                QMessageBox.warning(self, "Semestre já publicado", message)
+            return False
+
         for instrument, picker in (("DISC", self.disc_picker), ("DOC", self.doc_picker)):
             path = picker.path
             if path is None:
@@ -533,11 +563,23 @@ class MainWindow(QMainWindow):
                 continue
             if path.suffix.lower() not in {".csv", ".xlsx"}:
                 errors.append(f"O arquivo {instrument} deve ser CSV ou XLSX.")
-            expected = f"{instrument}_{year}_{period}"
-            if not path.stem.upper().startswith(expected):
-                errors.append(f"O nome de {instrument} deve começar com {expected}.")
             if path.stem.upper().endswith("_SNTZD"):
                 errors.append(f"O arquivo {instrument} é derivado (_SNTZD); use a fonte bruta.")
+
+            # Nome do arquivo: aviso informativo, não bloqueia.
+            expected = f"{instrument}_{year}_{period}"
+            if not path.stem.upper().startswith(expected):
+                detected = extract_semester_from_filename(path)
+                if detected:
+                    det_year, det_period = detected
+                    warnings.append(
+                        f"{instrument}: arquivo sugere {det_year}-{det_period}, "
+                        f"mas a interface está configurada para {year}-{period}."
+                    )
+                else:
+                    warnings.append(
+                        f"O nome de {instrument} não segue o padrão {expected}."
+                    )
 
         if errors:
             self.input_message.setText(errors[0])
@@ -546,16 +588,14 @@ class MainWindow(QMainWindow):
                 QMessageBox.warning(self, "Revise os arquivos", "\n".join(errors))
             return False
 
-        if self.semester in self.imported_periods:
-            message = f"O semestre {self.semester} já foi publicado e não pode ser substituído."
-            self.input_message.setText(message)
-            self.input_message.setStyleSheet("color: #b42318;")
-            if show_dialog:
-                QMessageBox.warning(self, "Semestre já publicado", message)
-            return False
-
-        self.input_message.setText("Arquivos compatíveis com o semestre selecionado.")
-        self.input_message.setStyleSheet("color: #027a48;")
+        if warnings:
+            self.input_message.setText(
+                "⚠ " + warnings[0] + " Verifique se o semestre selecionado está correto."
+            )
+            self.input_message.setStyleSheet("color: #b45309;")
+        else:
+            self.input_message.setText("Arquivos compatíveis com o semestre selecionado.")
+            self.input_message.setStyleSheet("color: #027a48;")
         return True
 
     def _check_database(self) -> None:
@@ -583,14 +623,18 @@ class MainWindow(QMainWindow):
         layout.addWidget(btn_close, 0, Qt.AlignRight)
         dialog.exec()
 
-    def _start_database_worker(self, *, initialize: bool) -> None:
+    def _start_database_worker(self, *, initialize: bool = False) -> None:
         database_url = self.database_url.text().strip()
         if not database_url:
-            QMessageBox.warning(self, "Conexão ausente", "Informe a URL do banco primeiro.")
+            self._set_status(self.database_status, "Vazio", "neutral")
+            self.database_detail.setText("Configure a URL nas configurações para conectar.")
             return
+
         if self.database_worker and self.database_worker.isRunning():
             return
 
+        db_name = database_url.split("/")[-1].split("?")[0] if "/" in database_url else database_url
+        print(f"[DIAVI] Verificando o banco '{db_name}'...")
         self.database_ready = False
         self._set_status(self.database_status, "Verificando…", "warning")
         self.database_detail.setText(
@@ -614,6 +658,7 @@ class MainWindow(QMainWindow):
         self.database_ready = bool(result["schema_ready"])
         self.imported_periods = set(result["periods"])
         if self.database_ready:
+            print("[DIAVI] Conexão com o banco estabelecida e estrutura pronta.")
             self._set_status(self.database_status, "Pronto", "success")
             action = "Estrutura criada. " if result["initialized"] else ""
             self.database_detail.setText(
@@ -624,7 +669,32 @@ class MainWindow(QMainWindow):
                 self.status_db_label.setText(f"Semestres publicados: {periods}")
             else:
                 self.status_db_label.setText("Nenhum semestre foi publicado neste banco.")
+
+            # Exibe tamanho do banco
+            db_size = result.get("database_size", 0)
+            if db_size > 0:
+                if db_size < 1024 ** 2:
+                    size_text = f"{db_size / 1024:.1f} KB"
+                else:
+                    size_text = f"{db_size / 1024 ** 2:.1f} MB"
+                self.status_db_size.setText(f"Espaço consumido: {size_text}")
+            else:
+                self.status_db_size.setText("Espaço consumido: (indisponível)")
+
+            # Log de detalhes das cargas existentes
+            period_details = result.get("period_details", [])
+            if period_details:
+                self._append_log("\n--- Cargas existentes no banco ---")
+                for detail in period_details:
+                    self._append_log(
+                        f"  {detail['codigo']}  |  "
+                        f"DISC: {detail['arquivo_disc']} ({detail['linhas_disc']} linhas)  |  "
+                        f"DOC: {detail['arquivo_doc']} ({detail['linhas_doc']} linhas)  |  "
+                        f"Inserido em: {detail['inserido_em'][:19]}"
+                    )
+                self._append_log("-----------------------------------\n")
         else:
+            print("[DIAVI] Erro: Conexão bem-sucedida, mas estrutura de tabelas ausente no banco.")
             self._set_status(self.database_status, "Estrutura ausente", "warning")
             self.database_detail.setText(
                 "A conexão funciona, mas a estrutura de resultados ainda não existe."
@@ -640,6 +710,7 @@ class MainWindow(QMainWindow):
         self._set_status(self.database_status, "Falha", "error")
         self.database_detail.setText(f"Não foi possível verificar a conexão: {message}")
         self.status_db_label.setText("Semestres publicados: conexão com banco indisponível.")
+        print(f"[DIAVI] Falha na conexão com o banco: {message}")
 
     def _database_worker_finished(self) -> None:
         if self.database_worker:
@@ -648,7 +719,9 @@ class MainWindow(QMainWindow):
         self._refresh_controls()
 
     def _start_validation(self) -> None:
+        print(f"[DIAVI] Validando carga {self.semester}...")
         if not self._validate_input_contract(show_dialog=True):
+            print(f"[DIAVI] Erro de contrato de validação da carga {self.semester}.")
             return
             
         from cleanup_app.entity_resolver import check_and_resolve_entities
@@ -658,15 +731,19 @@ class MainWindow(QMainWindow):
             self.doc_picker.path
         )
         if not resolved:
+            print(f"[DIAVI] Validação da carga {self.semester} abortada na etapa de verificação.")
             return
             
         self._start_etl("validate")
 
     def _start_publication(self) -> None:
+        print(f"[DIAVI] Subindo carga {self.semester}...")
         if not self._validate_input_contract(show_dialog=True):
+            print(f"[DIAVI] Carga abortada: Contrato de entrada inválido.")
             return
         signature = self._current_signature()
         if signature is None or signature != self.validated_signature:
+            print(f"[DIAVI] Carga abortada: A assinatura dos arquivos mudou desde a última validação.")
             QMessageBox.warning(
                 self,
                 "Validação necessária",
@@ -674,6 +751,7 @@ class MainWindow(QMainWindow):
             )
             return
         if not self.database_ready:
+            print(f"[DIAVI] Carga abortada: Banco de dados não verificado ou com erro.")
             QMessageBox.warning(
                 self,
                 "Banco não verificado",
@@ -681,6 +759,7 @@ class MainWindow(QMainWindow):
             )
             return
         if not self.confirmation.isChecked():
+            print(f"[DIAVI] Carga abortada: Caixa de confirmação não está marcada.")
             return
 
         answer = QMessageBox.question(
@@ -694,7 +773,10 @@ class MainWindow(QMainWindow):
             QMessageBox.No,
         )
         if answer == QMessageBox.Yes:
+            print(f"[DIAVI] Publicando carga {self.semester}...")
             self._start_etl("publish")
+        else:
+            print(f"[DIAVI] Publicação cancelada pelo usuário.")
 
     def _start_etl(self, mode: str) -> None:
         if self.process.state() != QProcess.ProcessState.NotRunning:
@@ -756,12 +838,14 @@ class MainWindow(QMainWindow):
             self._append_log(f"\n[{datetime.now():%H:%M:%S}] Validação cancelada pelo usuário.\n")
             self._set_status(self.execution_status, "Cancelada", "neutral")
             self._set_status(self.overall_status, "Aguardando validação", "neutral")
+            print(f"[DIAVI] Processo de {mode} cancelado pelo usuário.")
         elif exit_code == 0 and mode == "validate":
             self.validated_signature = self._current_signature()
             self.confirmation.setEnabled(True)
             self._append_log(f"\n[{datetime.now():%H:%M:%S}] Validação concluída com sucesso.\n")
             self._set_status(self.execution_status, "Validado", "success")
             self._set_status(self.overall_status, "Pronto para publicar", "success")
+            print(f"[DIAVI] Carga {self.semester} validada com sucesso localmente.")
         elif exit_code == 0 and mode == "publish":
             published_semester = self.semester
             self.validated_signature = None
@@ -771,6 +855,7 @@ class MainWindow(QMainWindow):
             self._append_log(f"\n[{datetime.now():%H:%M:%S}] Publicação concluída com sucesso.\n")
             self._set_status(self.execution_status, "Publicado", "success")
             self._set_status(self.overall_status, f"{published_semester} publicado", "success")
+            print(f"[DIAVI] Carga {published_semester} publicada com sucesso.")
             QMessageBox.information(
                 self,
                 "Publicação concluída",
@@ -787,6 +872,7 @@ class MainWindow(QMainWindow):
             )
             self._set_status(self.execution_status, "Falha", "error")
             self._set_status(self.overall_status, f"Falha na {action}", "error")
+            print(f"[DIAVI] Falha no processo de {action} (código {exit_code}).")
             QMessageBox.critical(
                 self,
                 f"Falha na {action}",
@@ -874,6 +960,44 @@ class MainWindow(QMainWindow):
         self.btn_home.setEnabled(not running)
         self.btn_config.setEnabled(not running)
         self.btn_avalia.setEnabled(not running)
+
+        # Update overall status dynamically if not currently running a process
+        if not running:
+            exec_text = self.execution_status.text()
+            if exec_text == "Falha":
+                pass
+            elif exec_text == "Publicado":
+                pass
+            elif exec_text == "Cancelada":
+                self._set_status(self.overall_status, "Aguardando validação", "neutral")
+            else:
+                if not has_valid_inputs:
+                    self._set_status(self.overall_status, "Aguardando arquivos", "neutral")
+                elif not semester_available:
+                    self._set_status(self.overall_status, "Semestre já publicado", "error")
+                elif not validated:
+                    self._set_status(self.overall_status, "Aguardando validação", "neutral")
+                elif not self.database_ready:
+                    self._set_status(self.overall_status, "Banco não verificado", "warning")
+                elif not self.confirmation.isChecked():
+                    self._set_status(self.overall_status, "Aguardando confirmação", "warning")
+                else:
+                    self._set_status(self.overall_status, "Pronto para publicar", "success")
+
+        # Tooltips to clarify button disabled state
+        if self.publish_button.isEnabled():
+            self.publish_button.setToolTip("Publica os resultados da carga no banco de dados.")
+        else:
+            if running:
+                self.publish_button.setToolTip("Um processo já está em execução.")
+            elif not validated:
+                self.publish_button.setToolTip("Você precisa validar os arquivos com sucesso antes de publicar.")
+            elif not self.database_ready:
+                self.publish_button.setToolTip("A conexão com o banco de dados não foi verificada ou falhou. Acesse as Configurações.")
+            elif not semester_available:
+                self.publish_button.setToolTip("Este semestre já foi publicado anteriormente.")
+            elif not self.confirmation.isChecked():
+                self.publish_button.setToolTip("Você deve marcar a caixa de confirmação para poder publicar.")
 
     def closeEvent(self, event: QCloseEvent) -> None:
         if self.process.state() == QProcess.ProcessState.NotRunning:
