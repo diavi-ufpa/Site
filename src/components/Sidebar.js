@@ -89,13 +89,7 @@ const Sidebar = () => {
     (pathname.startsWith('/portal/minhaopiniao') &&
       reportEnabled.minhaOpiniao);
 
-  const activeReportBtnStyle = isReportPage
-    ? {
-        backgroundColor: '#ff8a1e',
-        color: '#fff',
-        borderColor: 'transparent',
-      }
-    : undefined;
+
 
   let reportHref = '/portal/ead/relatorioEAD';
   if (pathname.startsWith('/portal/minhaopiniao')) {
@@ -215,20 +209,45 @@ const Sidebar = () => {
                     {openMenus.avalia && (
                       <ul className={styles.nestedSubMenu}>
                         {featureFlags.presencialEnabled && (
-                          <li
-                            className={
-                              pathname.startsWith('/portal/avalia/presencial')
-                                ? styles.subMenuItemActive
-                                : styles.subMenuItem
-                            }
-                          >
-                            <Link
-                              href="/portal/avalia/presencial"
-                              onClick={() => setIsLoading(true)}
+                          <>
+                            <li
+                              className={
+                                pathname.startsWith('/portal/avalia/presencial')
+                                  ? styles.subMenuItemActive
+                                  : styles.subMenuItem
+                              }
                             >
-                              Presencial
-                            </Link>
-                          </li>
+                              <Link
+                                href="/portal/avalia/presencial"
+                                onClick={() => setIsLoading(true)}
+                              >
+                                Presencial
+                              </Link>
+                            </li>
+                            {pathname.startsWith('/portal/avalia/presencial') && reportEnabled.presencial && (
+                              <li
+                                className={
+                                  pathname.startsWith('/portal/avalia/presencial/relatorio')
+                                    ? styles.subMenuItemActive
+                                    : styles.subMenuItem
+                                }
+                                style={{ paddingLeft: '12px', marginTop: '2px' }}
+                              >
+                                <Link
+                                  href="/portal/avalia/presencial/relatorio"
+                                  onClick={() => setIsLoading(true)}
+                                  className={`${styles.generateReportBtn} ${
+                                    pathname.startsWith('/portal/avalia/presencial/relatorio')
+                                      ? styles.generateReportBtnActive
+                                      : ''
+                                  }`}
+                                >
+                                  <Download size={16} />
+                                  <span>Gerar relatório</span>
+                                </Link>
+                              </li>
+                            )}
+                          </>
                         )}
 
                         <li
@@ -245,6 +264,29 @@ const Sidebar = () => {
                             EAD
                           </Link>
                         </li>
+                        {pathname.startsWith('/portal/ead') && reportEnabled.ead && (
+                          <li
+                            className={
+                              pathname.startsWith('/portal/ead/relatorioEAD')
+                                ? styles.subMenuItemActive
+                                : styles.subMenuItem
+                            }
+                            style={{ paddingLeft: '12px', marginTop: '2px' }}
+                          >
+                            <Link
+                              href="/portal/ead/relatorioEAD"
+                              onClick={() => setIsLoading(true)}
+                              className={`${styles.generateReportBtn} ${
+                                pathname.startsWith('/portal/ead/relatorioEAD')
+                                  ? styles.generateReportBtnActive
+                                  : ''
+                              }`}
+                            >
+                              <Download size={16} />
+                              <span>Gerar relatório</span>
+                            </Link>
+                          </li>
+                        )}
                       </ul>
                     )}
                   </li>
@@ -378,23 +420,7 @@ const Sidebar = () => {
             </li>
           </ul>
 
-          {showGenerateButton && (
-            <>
-              <p className={styles.sectionLabel}>Relatórios</p>
-              <div className={styles.generateReportContainer}>
-                <Link
-                  href={reportHref}
-                  aria-label="Gerar relatório"
-                  className={styles.generateReportBtn}
-                  style={activeReportBtnStyle}
-                  onClick={() => setIsLoading(true)}
-                >
-                  <Download size={18} />
-                  <span>Gerar relatório</span>
-                </Link>
-              </div>
-            </>
-          )}
+
 
           {isAdmin && (
             <>

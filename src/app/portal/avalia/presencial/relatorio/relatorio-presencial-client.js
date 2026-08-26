@@ -1597,27 +1597,29 @@ export default function RelatorioPresencialClient({
         styles: { overflow: 'linebreak', cellWidth: 'wrap' },
       });
 
-      y = doc.lastAutoTable.finalY + 40;
-
-      y = drawSimpleBarChart(
-        doc,
-        y,
-        pageWidth,
-        'Figura 1 − Médias por dimensão (Discente)',
-        mediasData,
-        { valueField: 'media', labelField: 'dimensao' }
-      );
-
-      y = drawSimpleBarChart(
-        doc,
-        y,
-        pageWidth,
-        'Figura 2 − Médias por dimensão (Docente)',
-        docMediasData,
-        { valueField: 'media', labelField: 'dimensao' }
-      );
-
       const blocks = [
+        {
+          render: (d, yy, pw) =>
+            drawSimpleBarChart(
+              d,
+              yy,
+              pw,
+              'Figura 1 − Médias por dimensão (Discente)',
+              mediasData,
+              { valueField: 'media', labelField: 'dimensao' }
+            ),
+        },
+        {
+          render: (d, yy, pw) =>
+            drawSimpleBarChart(
+              d,
+              yy,
+              pw,
+              'Figura 2 − Médias por dimensão (Docente)',
+              docMediasData,
+              { valueField: 'media', labelField: 'dimensao' }
+            ),
+        },
         {
           render: (d, yy, pw) =>
             drawGroupedProportionChart(
