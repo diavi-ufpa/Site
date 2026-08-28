@@ -11,12 +11,13 @@ Equalizar a feature do Relatório Presencial (`Site`) com o Dashboard AVALIA UFP
 - [x] **Diagramação PDF:** Adicionadas páginas em modo `landscape` (paisagem) para gráficos amplos de proporção e participação em atividades.
 - [x] **Limpeza & Roteamento:** Removidas referências a arquivos EAD em `presencial-report-data.js` e validados fluxos de geração.
 - [x] **Cálculos de Boxplots e Tabelas Descritivas:** Corrigido `_disc_media_long` em `graph_calculator.py` para utilizar a base discente completa no cálculo das estatísticas descritivas dos boxplots, batendo 100% com as estatísticas de referência do Dashboard R (`relatorio_pdf.Rmd`).
+- [x] **Carga ETL Banco de Dados:** Executado o reprocessamento de todos os semestres (2024-2, 2024-4, 2025-2, 2025-4) com `load_graph_db.py` e otimização do limite de outliers, atualizando o banco com as estatísticas corrigidas.
 
 ## ⏳ Próximos Passos
-- [ ] Executar o reprocessamento dos scripts do ETL (`load_graph_db.py`) para atualizar o banco de dados/planilhas com as novas estatísticas de boxplots corrigidas.
 - [ ] Testar e validar a geração completa de relatórios PDF presenciais com dados reais do banco/ETL.
 
 ## ⚠️ Decisões & Observações Importantes
 - O Dashboard R (`Dashboard AVALIA UFPA`) é a verdade absoluta para construção, aparência e resultados.
 - Documento mantido de acordo com as diretrizes do `AGENTS.md` (curto e enxuto).
+
 

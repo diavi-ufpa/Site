@@ -451,7 +451,8 @@ def _append_boxplots(
                     "q3": round(q3, 4), "max": round(float(values.max()), 4),
                     "count": int(values.count()),
                 })
-                for sequence, value in enumerate(outlier_values, start=1):
+                # Limita a no máximo 25 outliers por boxplot (exatamente o limite renderizado no frontend)
+                for sequence, value in enumerate(outlier_values.iloc[:25], start=1):
                     results.outliers.append({
                         "scope": scope, "group": group_key,
                         "sequence": sequence, "value": round(float(value), 4),
