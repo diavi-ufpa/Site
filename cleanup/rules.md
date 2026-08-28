@@ -146,6 +146,17 @@ Dados brutos **nunca** devem ser versionados.
 - Todas as janelas (`QMainWindow`), diálogos (`QDialog`, `QMessageBox`), abas (`QTabWidget`, `QTabBar`) e containers principais devem ter seu fundo configurado explicitamente como **branco** (`#ffffff`) via QSS.
 - Essa especificação garante consistência de contraste e evita que componentes gráficos incorporem cores escuras nativas do sistema operacional (como Windows Dark Mode), o que prejudicaria a legibilidade de textos e painéis da interface.
 
+### 10.2 Regras de Diagramação e Gráficos do Relatório PDF (Presencial)
+- **Formato Único de Página**: Todas as páginas do relatório PDF são geradas exclusivamente no formato **A4 Portrait** (vertical: 595.28 pt x 841.89 pt). Nenhuma página deve utilizar orientação horizontal (*landscape*).
+- **Margens e Enquadramento Seguro**: Todos os gráficos (barras, proporções e boxplots) e tabelas (T1 a T8) devem respeitar margem lateral simétrica de 48 pt à esquerda e à direita (`chartX = 48`, `chartWidth = pageWidth - 96`).
+- **Linhas de Grade (Gridlines)**: Gráficos de barras, proporções e boxplots devem conter linhas horizontais de fundo suaves (`#E6E9EE`) desenhadas atrás das barras e caixas, alinhadas às marcas de escala do eixo Y:
+  - Escala Likert (0 a 4/5): marcas e linhas em `1, 2, 3, 4` (e `5`).
+  - Escala Percentual (0% a 100%): marcas e linhas em `0%, 25%, 50%, 75%, 100%`.
+- **Largura Dinâmica de Boxplots**: A largura individual das caixas dos boxplots é calculada dinamicamente proporcional ao espaço disponível do agrupador (`groupWidth * 0.45`, com limite de até 55 pt), garantindo caixas destacadas e legíveis quando há poucos itens e preservando 55% de folga proporcional como margem de segurança entre caixas adjacentes.
+- **Hastes e Outliers de Boxplots**: As hastes (whiskers) estendem-se até `1.5 * IQR` (Tukey boxplot). Preenchimento da caixa em `#288FB4`, linha da mediana destacada e outliers estilizados em cinza (`#B4B4B8`).
+- **Formato Transposto das Tabelas Descritivas (T2 a T8)**: As estatísticas descritivas são fixadas obrigatoriamente nas linhas (`Min`, `1º Q.`, `Mediana`, `Média`, `3º Q.`, `Max`), enquanto itens ou dimensões ocupam as colunas do cabeçalho.
+- **Contagem de Turmas (Tabela 1)**: O quantitativo de turmas deve ser a contagem distinta de disciplinas (`DISCIPLINA`) únicas, e não o identificador da oferta.
+
 ---
 
 ## 11. Tratamento de Erros e Mensagens de Validação
