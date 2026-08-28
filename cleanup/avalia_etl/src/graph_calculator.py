@@ -338,7 +338,8 @@ def _append_summaries(
                     key if isinstance(key, tuple) else (key,): int(value)
                     for key, value in docentes.items()
                 }
-            turmas = disc.groupby(scope_columns)["__oferta"].nunique()
+            turma_col = "DISCIPLINA" if "DISCIPLINA" in disc.columns else ("__disciplina" if "__disciplina" in disc.columns else "__oferta")
+            turmas = disc.groupby(scope_columns)[turma_col].nunique()
             turma_lookup = {
                 key if isinstance(key, tuple) else (key,): int(value)
                 for key, value in turmas.items()
@@ -346,7 +347,8 @@ def _append_summaries(
         else:
             participant_lookup[()] = int(disc_long["__matricula"].nunique())
             docente_lookup[()] = int(doc["DOCENTE"].nunique()) if "DOCENTE" in doc.columns else int(doc["__oferta"].nunique())
-            turma_lookup[()] = int(disc["__oferta"].nunique())
+            turma_col = "DISCIPLINA" if "DISCIPLINA" in disc.columns else ("__disciplina" if "__disciplina" in disc.columns else "__oferta")
+            turma_lookup[()] = int(disc[turma_col].nunique())
 
         campus_keys = list(scope_columns)
         if "__campus" not in campus_keys:

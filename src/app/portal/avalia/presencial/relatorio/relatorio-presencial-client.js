@@ -826,30 +826,42 @@ export default function RelatorioPresencialClient({
 
     points.forEach((point, index) => {
       const x = chartX + index * groupWidth + groupWidth / 2;
-      const yMin = mapY(point.min);
+      const iqr = point.q3 - point.q1;
+      const lowerFence = point.q1 - 1.5 * iqr;
+      const upperFence = point.q3 + 1.5 * iqr;
+      const whiskerMin = Math.max(point.min, lowerFence);
+      const whiskerMax = Math.min(point.max, upperFence);
+
+      const yWhiskerMin = mapY(whiskerMin);
       const yQ1 = mapY(point.q1);
       const yMedian = mapY(point.median);
       const yQ3 = mapY(point.q3);
-      const yMax = mapY(point.max);
+      const yWhiskerMax = mapY(whiskerMax);
 
+      // Hastes (whiskers) at 1.5 * IQR
       doc.setDrawColor(30, 30, 30);
       doc.setLineWidth(1);
-      doc.line(x, yMin, x, yMax);
-      doc.line(x - boxWidth / 4, yMin, x + boxWidth / 4, yMin);
-      doc.line(x - boxWidth / 4, yMax, x + boxWidth / 4, yMax);
+      doc.line(x, yWhiskerMin, x, yWhiskerMax);
+      doc.line(x - boxWidth / 4, yWhiskerMin, x + boxWidth / 4, yWhiskerMin);
+      doc.line(x - boxWidth / 4, yWhiskerMax, x + boxWidth / 4, yWhiskerMax);
 
-      doc.setDrawColor(40, 143, 180);
-      doc.setFillColor(160, 214, 232);
+      // Caixa com cor de preenchimento #288FB4
+      doc.setDrawColor(30, 30, 30);
+      doc.setFillColor(40, 143, 180); // #288FB4
       doc.rect(x - boxWidth / 2, yQ3, boxWidth, Math.max(1, yQ1 - yQ3), 'FD');
 
+      // Linha da mediana
       doc.setDrawColor(20, 20, 20);
+      doc.setLineWidth(1.5);
       doc.line(x - boxWidth / 2, yMedian, x + boxWidth / 2, yMedian);
 
+      // Outliers cinzas #B4B4B8
       const outliers = outliersByLabel.get(point.label) || outliersByLabel.get(Number(point.label)) || [];
       if (outliers.length) {
-        doc.setFillColor(31, 41, 55);
+        doc.setFillColor(180, 180, 184); // #B4B4B8
+        doc.setDrawColor(140, 140, 140);
         outliers.slice(0, 25).forEach((value) => {
-          doc.circle(x, mapY(value), 1.6, 'F');
+          doc.circle(x, mapY(value), 1.6, 'FD');
         });
       }
 
@@ -1621,6 +1633,7 @@ export default function RelatorioPresencialClient({
             ),
         },
         {
+          orientation: 'landscape',
           render: (d, yy, pw) =>
             drawGroupedProportionChart(
               d,
@@ -1632,6 +1645,7 @@ export default function RelatorioPresencialClient({
             ),
         },
         {
+          orientation: 'landscape',
           render: (d, yy, pw) =>
             drawGroupedProportionChart(
               d,
@@ -1685,6 +1699,7 @@ export default function RelatorioPresencialClient({
             ),
         },
         {
+          orientation: 'landscape',
           render: (d, yy, pw) =>
             drawGroupedProportionChart(
               d,
@@ -1696,6 +1711,7 @@ export default function RelatorioPresencialClient({
             ),
         },
         {
+          orientation: 'landscape',
           render: (d, yy, pw) =>
             drawGroupedProportionChart(
               d,
@@ -1749,6 +1765,7 @@ export default function RelatorioPresencialClient({
             ),
         },
         {
+          orientation: 'landscape',
           render: (d, yy, pw) =>
             drawGroupedProportionChart(
               d,
@@ -1760,6 +1777,7 @@ export default function RelatorioPresencialClient({
             ),
         },
         {
+          orientation: 'landscape',
           render: (d, yy, pw) =>
             drawGroupedProportionChart(
               d,
@@ -1813,6 +1831,7 @@ export default function RelatorioPresencialClient({
             ),
         },
         {
+          orientation: 'landscape',
           render: (d, yy, pw) =>
             drawGroupedProportionChart(
               d,
@@ -1824,6 +1843,7 @@ export default function RelatorioPresencialClient({
             ),
         },
         {
+          orientation: 'landscape',
           render: (d, yy, pw) =>
             drawGroupedProportionChart(
               d,
@@ -1877,6 +1897,7 @@ export default function RelatorioPresencialClient({
             ),
         },
         {
+          orientation: 'landscape',
           render: (d, yy, pw) =>
             drawGroupedProportionChart(
               d,
@@ -1888,6 +1909,7 @@ export default function RelatorioPresencialClient({
             ),
         },
         {
+          orientation: 'landscape',
           render: (d, yy, pw) =>
             drawGroupedProportionChart(
               d,
@@ -1941,6 +1963,7 @@ export default function RelatorioPresencialClient({
             ),
         },
         {
+          orientation: 'landscape',
           render: (d, yy, pw) =>
             drawGroupedProportionChart(
               d,
@@ -1952,6 +1975,7 @@ export default function RelatorioPresencialClient({
             ),
         },
         {
+          orientation: 'landscape',
           render: (d, yy, pw) =>
             drawGroupedProportionChart(
               d,
@@ -2005,6 +2029,7 @@ export default function RelatorioPresencialClient({
             ),
         },
         {
+          orientation: 'landscape',
           render: (d, yy, pw) =>
             drawGroupedProportionChart(
               d,
@@ -2016,6 +2041,7 @@ export default function RelatorioPresencialClient({
             ),
         },
         {
+          orientation: 'landscape',
           render: (d, yy, pw) =>
             drawGroupedProportionChart(
               d,
@@ -2047,6 +2073,7 @@ export default function RelatorioPresencialClient({
             ),
         },
         {
+          orientation: 'landscape',
           render: (d, yy, pw) =>
             drawSimpleBarChart(
               d,
@@ -2063,6 +2090,7 @@ export default function RelatorioPresencialClient({
             ),
         },
         {
+          orientation: 'landscape',
           render: (d, yy, pw) =>
             drawSimpleBarChart(
               d,
@@ -2081,7 +2109,8 @@ export default function RelatorioPresencialClient({
       ];
 
       const measureBlockHeight = async (block) => {
-        const tempDoc = new jsPDF({ unit: 'pt', format: 'a4' });
+        const orientation = block.orientation || 'portrait';
+        const tempDoc = new jsPDF({ unit: 'pt', format: 'a4', orientation });
         const tempPageWidth = tempDoc.internal.pageSize.getWidth();
         const startY = 60;
         const endY = await block.render(tempDoc, startY, tempPageWidth);
@@ -2092,19 +2121,21 @@ export default function RelatorioPresencialClient({
         const first = blocks[i];
         const second = blocks[i + 1] || null;
 
+        const orientation = first.orientation || second?.orientation || 'portrait';
         const h1 = await measureBlockHeight(first);
         const h2 = second ? await measureBlockHeight(second) : 0;
         const between = h1 > 0 && h2 > 0 ? 24 : 0;
         const total = h1 + h2 + between;
 
-        doc.addPage();
-        const pageHeight = doc.internal.pageSize.getHeight();
-        let yPair = Math.max(60, (pageHeight - total) / 2);
+        doc.addPage('a4', orientation);
+        const currentWidth = doc.internal.pageSize.getWidth();
+        const currentHeight = doc.internal.pageSize.getHeight();
+        let yPair = Math.max(50, (currentHeight - total) / 2);
 
-        yPair = await first.render(doc, yPair, pageWidth);
+        yPair = await first.render(doc, yPair, currentWidth);
         if (second) {
           if (between) yPair += 24;
-          yPair = await second.render(doc, yPair, pageWidth);
+          yPair = await second.render(doc, yPair, currentWidth);
         }
       }
 
