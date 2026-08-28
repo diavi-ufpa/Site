@@ -405,7 +405,7 @@ def _disc_media_long(
     conflicts = long.groupby(keys)["__value"].nunique()
     if (conflicts > 1).any():
         raise ValueError("Uma oferta DISC possui médias divergentes para o mesmo item.")
-    return long.drop_duplicates(keys)
+    return long
 
 
 def _append_boxplots(
