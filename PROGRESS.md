@@ -1,23 +1,25 @@
 # 🎯 Objetivo Atual
-Equalizar a feature do Relatório Presencial (`Site`) com o Dashboard AVALIA UFPA (Fonte da Verdade), corrigindo boxplots, tabelas descritivas, quantitativos da Tabela 1 e estilização visual.
+Otimizar o carregamento dos filtros e a conexão da consulta do AVALIA Presencial e validar o funcionamento do EAD na branch `fix/consulta-avalia-presencial`.
 
 ## 📍 Estado Atual (Onde paramos)
-- [x] Diagnóstico completo das divergências entre `Dashboard AVALIA UFPA` e a feat do Relatório (`Site`).
-- [x] Mapeamento dos erros dos boxplots (hastes até o min/max, cores, deduplicação por oferta).
-- [x] Mapeamento dos erros de layout (tabelas invertidas, orientação retrato em vez de paisagem).
-- [x] **Boxplots:** Reescrito `drawBoxplotDirect` em `relatorio-presencial-client.js` ajustando hastes para `1.5 * IQR`, cor de preenchimento (`#288FB4`), outliers cinzas (`#B4B4B8`) e limites do eixo Y (`1` a `4`).
-- [x] **Tabelas Descritivas (T2 a T8):** Ajustado `addDescritivasTable` para manter estatísticas fixas nas linhas (Min, 1º Q., Mediana, Média, 3º Q., Max) e itens/dimensões nas colunas.
-- [x] **Tabela 1:** Ajustada contagem de turmas para utilizar `DISCIPLINA` única em vez de `ID` da oferta.
-- [x] **Diagramação PDF:** Adicionadas páginas em modo `landscape` (paisagem) para gráficos amplos de proporção e participação em atividades.
-- [x] **Limpeza & Roteamento:** Removidas referências a arquivos EAD em `presencial-report-data.js` e validados fluxos de geração.
-- [x] **Cálculos de Boxplots e Tabelas Descritivas:** Corrigido `_disc_media_long` em `graph_calculator.py` para utilizar a base discente completa no cálculo das estatísticas descritivas dos boxplots, batendo 100% com as estatísticas de referência do Dashboard R (`relatorio_pdf.Rmd`).
-- [x] **Testes & Validação PDF Presencial:** Validados todos os semestres (`2024-2`, `2024-4`, `2025-2`, `2025-4`) no PostgreSQL (`avalia_presencial_graph`) — 100% de paridade estatística (zero erros), Tabela 1 ajustada por `DISCIPLINA` e build do Next.js de produção compilado com sucesso.
+- [x] Branch `fix/consulta-avalia-presencial` criada a partir da `main` atualizada.
+- [x] **Diagnóstico da Lentidão:** Identificado que queries SQL de recorte no PostgreSQL (`avalia_presencial_graph`) utilizavam comparação estrita (`campus.nome = $1`), fazendo com que variações de caixa/espaço/acentuação retornassem 0 linhas, disparando fallback para a API externa do HuggingFace com atrasos de 30–60s.
+- [x] **Auditoria do Banco PostgreSQL:**
+  - Auditadas todas as tabelas (`campus`, `curso`, `semestre`, `recorte`, `resultado_*`).
+  - **Zero inconsistências estruturais**: 12 campi, 240 cursos (0 duplicados) e 4 semestres com 100% de integridade referencial.
+  - Verificado que o banco Postgres guarda campi em *Title Case* (ex: `"Belém"`), enquanto requisições frontend/cache enviavam variações em caixa alta (`"BELÉM"`), disparando a falha de match antes da correção.
+- [x] **Otimização de Queries de Filtro:**
+  - `buildContext`, `getCampusFilters` e `getCursoFilters` em `graph-results-repository.js` ajustados para `LOWER(TRIM(...))`.
+  - `/filters` ajustado para retornar a lista de semestres sem varrer toda a tabela `recorte` e `curso` desnecessariamente (~10ms).
+  - `/filters/campus` e `/filters/cursos` isolados em queries direcionadas e eficientes (~80-90ms).
+- [x] **Validação do EAD:** Verificadas as rotas `/portal/ead` e `/portal/ead/relatorioEAD`, além das funções `getEadInitialData` e `getEadReportData` lendo os CSVs de 2025 e 2023 sem erros.
+- [x] **Build & Testes:** Build do Next.js de produção executado com sucesso e 100% dos 25 endpoints compilados sem falhas.
 
 ## ⏳ Próximos Passos
-- [x] Todas as etapas de equalização, ETL e testes do Relatório Presencial foram concluídas com sucesso.
+- Branch pronta para commit, push e abertura de Pull Request.
 
 ## ⚠️ Decisões & Observações Importantes
-- O Dashboard R (`Dashboard AVALIA UFPA`) é a verdade absoluta para construção, aparência e resultados.
-- Documento mantido de acordo com as diretrizes do `AGENTS.md` (curto e enxuto).
+- Com a otimização no PostgreSQL (`avalia_presencial_graph`), o tempo de carregamento dos filtros caiu para ~80-90ms sem redirecionamento/fallback para o HuggingFace.
+
 
 
