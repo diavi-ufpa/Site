@@ -11,31 +11,34 @@ export async function getPresencialReportData() {
   const filtersByYear = {};
   const anos = new Set();
 
-  // Tenta carregar CSVs conhecidos
-  const candidates = [
-    'AUTOAVALIAÇÃO DOS CURSOS DE GRADUAÇÃO A DISTÂNCIA - 2025-2.csv',
-    'AUTOAVALIAÇÃO DOS CURSOS DE GRADUAÇÃO A DISTÂNCIA - 2023-4 .csv'
-  ];
-
-  for (const file of candidates) {
+  // Busca arquivos CSV ou XLSX da avaliação presencial
+  if (fs.existsSync(baseDir)) {
     try {
-      const p = path.join(baseDir, file);
-      if (!fs.existsSync(p)) continue;
-      const csv = fs.readFileSync(p, 'utf8');
-      const parsed = Papa.parse(csv, { header: true, skipEmptyLines: true });
-      const data = parsed.data || [];
-      if (!data.length) continue;
-      const anoMatch = (file.match(/(\d{4})/) || [])[0] || file;
-      const cursos = uniqSorted(data.map(r => r['Qual é o seu Curso?'] || r['Curso'] || r['curso']));
-      const polos = uniqSorted(data.map(r => r['Qual o seu Polo de Vinculação?'] || r['Polo'] || r['polo']));
-      filtersByYear[anoMatch] = { hasPolos: polos.length > 0, polos, cursos };
-      anos.add(anoMatch);
-    } catch (e) {
-      console.warn('Falha ao ler', file, e?.message);
+      const files = fs.readdirSync(baseDir).filter((f) => f.endsWith('.csv') && !f.toUpperCase().includes('EAD') && !f.toUpperCase().includes('DISTÂNCIA'));
+
+      for (const file of files) {
+        try {
+          const p = path.join(baseDir, file);
+          const csv = fs.readFileSync(p, 'utf8');
+          const parsed = Papa.parse(csv, { header: true, skipEmptyLines: true });
+          const data = parsed.data || [];
+          if (!data.length) continue;
+          const anoMatch = (file.match(/(\d{4})/) || [])[0] || file;
+          const cursos = uniqSorted(data.map((r) => r['Curso'] || r['curso'] || r['CURSO']));
+          const campi = uniqSorted(data.map((r) => r['Campus'] || r['campus'] || r['CAMPUS']));
+          filtersByYear[anoMatch] = { campi, cursos };
+          anos.add(anoMatch);
+        } catch (e) {
+          console.warn('Falha ao ler', file, e?.message);
+        }
+      }
+    } catch (err) {
+      console.warn('Falha ao listar diretório de dados presencial:', err?.message);
     }
   }
 
   const anosDisponiveis = [...anos].sort((a, b) => Number(b) - Number(a));
   return { filtersByYear, anosDisponiveis };
 }
+
 

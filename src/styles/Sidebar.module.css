@@ -249,15 +249,28 @@
 }
 
 .generateReportBtn {
-  border: 1px solid rgba(255, 142, 41, 0.28);
-  background-color: rgba(255, 142, 41, 0.08);
-  color: var(--primary-color);
-  font-weight: 700;
+  border: 1px solid transparent;
+  background-color: transparent;
+  color: var(--text-light);
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
 }
 
 .generateReportBtn:hover {
-  background-color: rgba(255, 142, 41, 0.14);
+  background-color: rgba(255, 142, 41, 0.06);
   color: var(--primary-color);
+}
+
+.generateReportBtnActive {
+  border: 1px solid rgba(255, 142, 41, 0.28) !important;
+  background-color: rgba(255, 142, 41, 0.08) !important;
+  color: var(--primary-color) !important;
+  font-weight: 700 !important;
+}
+
+.generateReportBtnActive:hover {
+  background-color: rgba(255, 142, 41, 0.14) !important;
+  color: var(--primary-color) !important;
 }
 
 @keyframes fadeIn {

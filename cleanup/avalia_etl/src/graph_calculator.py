@@ -338,7 +338,8 @@ def _append_summaries(
                     key if isinstance(key, tuple) else (key,): int(value)
                     for key, value in docentes.items()
                 }
-            turmas = disc.groupby(scope_columns)["__oferta"].nunique()
+            turma_col = "DISCIPLINA" if "DISCIPLINA" in disc.columns else ("__disciplina" if "__disciplina" in disc.columns else "__oferta")
+            turmas = disc.groupby(scope_columns)[turma_col].nunique()
             turma_lookup = {
                 key if isinstance(key, tuple) else (key,): int(value)
                 for key, value in turmas.items()
@@ -346,7 +347,8 @@ def _append_summaries(
         else:
             participant_lookup[()] = int(disc_long["__matricula"].nunique())
             docente_lookup[()] = int(doc["DOCENTE"].nunique()) if "DOCENTE" in doc.columns else int(doc["__oferta"].nunique())
-            turma_lookup[()] = int(disc["__oferta"].nunique())
+            turma_col = "DISCIPLINA" if "DISCIPLINA" in disc.columns else ("__disciplina" if "__disciplina" in disc.columns else "__oferta")
+            turma_lookup[()] = int(disc[turma_col].nunique())
 
         campus_keys = list(scope_columns)
         if "__campus" not in campus_keys:
@@ -403,7 +405,7 @@ def _disc_media_long(
     conflicts = long.groupby(keys)["__value"].nunique()
     if (conflicts > 1).any():
         raise ValueError("Uma oferta DISC possui médias divergentes para o mesmo item.")
-    return long.drop_duplicates(keys)
+    return long
 
 
 def _append_boxplots(
@@ -449,7 +451,8 @@ def _append_boxplots(
                     "q3": round(q3, 4), "max": round(float(values.max()), 4),
                     "count": int(values.count()),
                 })
-                for sequence, value in enumerate(outlier_values, start=1):
+                # Limita a no máximo 25 outliers por boxplot (exatamente o limite renderizado no frontend)
+                for sequence, value in enumerate(outlier_values.iloc[:25], start=1):
                     results.outliers.append({
                         "scope": scope, "group": group_key,
                         "sequence": sequence, "value": round(float(value), 4),

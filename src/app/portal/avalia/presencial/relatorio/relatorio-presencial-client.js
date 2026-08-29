@@ -209,17 +209,17 @@ function drawSimpleBarChart(
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
-  const titleLines = doc.splitTextToSize(normalizedTitle, pageWidth - 100);
+  const titleLines = doc.splitTextToSize(normalizedTitle, pageWidth - 96);
   doc.text(titleLines, pageWidth / 2, y, { align: 'center' });
-  y += Math.max(35, titleLines.length * 12 + 12);
+  y += Math.max(30, titleLines.length * 12 + 10);
 
-  const chartX = showPercentAxis ? 75 : 40;
-  const chartWidth = showPercentAxis ? pageWidth - 115 : pageWidth - 80;
-  const maxBarHeight = 160;
+  const chartX = 48;
+  const chartWidth = pageWidth - 96;
+  const maxBarHeight = 150;
   const chartBottomY = y + maxBarHeight;
   const numItems = rows.length;
   const columnWidth = chartWidth / numItems;
-  const barWidth = Math.min(columnWidth * 0.6, 50);
+  const barWidth = Math.max(12, Math.min(45, columnWidth * 0.5));
 
   const maxValue = Math.max(...numericValues);
   const scaleMax =
@@ -232,28 +232,33 @@ function drawSimpleBarChart(
           ? 10
           : Math.ceil(maxValue));
 
-  doc.setDrawColor(180, 180, 180);
-  doc.setLineWidth(1);
+  // Gridlines atrás das barras para guiar visualização dos valores
+  const ticks = (showPercentAxis || valueField === 'percentual' || scaleMax === 100)
+    ? [0, 25, 50, 75, 100]
+    : scaleMax <= 5
+      ? [1, 2, 3, 4, 5]
+      : [0, 2, 4, 6, 8, 10];
+
+  doc.setDrawColor(230, 233, 238);
+  doc.setLineWidth(0.5);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(110, 110, 110);
+
+  ticks.forEach((tick) => {
+    const yTick = chartBottomY - (tick / scaleMax) * maxBarHeight;
+    doc.line(chartX, yTick, chartX + chartWidth, yTick);
+    const tickLabel = (showPercentAxis || valueField === 'percentual') ? `${tick}%` : String(tick);
+    doc.text(tickLabel, chartX - 6, yTick + 3, { align: 'right' });
+  });
+
+  // Linhas do eixo
+  doc.setDrawColor(160, 160, 160);
+  doc.setLineWidth(0.8);
   doc.line(chartX, chartBottomY, chartX + chartWidth, chartBottomY);
-
-  if (showPercentAxis) {
-    doc.setDrawColor(160, 160, 160);
-    doc.line(chartX, chartBottomY - maxBarHeight, chartX, chartBottomY);
-
-    const ticks = [0, 25, 50, 75, 100];
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(80, 80, 80);
-
-    ticks.forEach((tick) => {
-      const yTick = chartBottomY - (tick / 100) * maxBarHeight;
-      doc.line(chartX - 4, yTick, chartX, yTick);
-      doc.text(`${tick}%`, chartX - 8, yTick + 3, { align: 'right' });
-    });
-  }
+  doc.line(chartX, chartBottomY - maxBarHeight, chartX, chartBottomY);
 
   let maxLabelLines = 1;
-  doc.setFontSize(8);
 
   rows.forEach((item, index) => {
     let val = safeNum(item?.[valueField]);
@@ -269,19 +274,24 @@ function drawSimpleBarChart(
 
     doc.setTextColor(0, 0, 0);
     doc.setFont('helvetica', 'bold');
-    doc.text(val.toFixed(2).replace('.', ','), xCenter, yBar - 6, { align: 'center' });
+    doc.setFontSize(8);
+    const valText = (showPercentAxis || valueField === 'percentual')
+      ? `${val.toFixed(2).replace('.', ',')}%`
+      : val.toFixed(2).replace('.', ',');
+    doc.text(valText, xCenter, yBar - 5, { align: 'center' });
 
     doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
     doc.setTextColor(50, 50, 50);
 
     const label = getRowLabel(item, labelField);
-    const splitLabel = doc.splitTextToSize(label, columnWidth - 10);
+    const splitLabel = doc.splitTextToSize(label, columnWidth - 6);
 
     if (splitLabel.length > maxLabelLines) maxLabelLines = splitLabel.length;
-    doc.text(splitLabel, xCenter, chartBottomY + 14, { align: 'center' });
+    doc.text(splitLabel, xCenter, chartBottomY + 12, { align: 'center' });
   });
 
-  return chartBottomY + maxLabelLines * 10 + 40;
+  return chartBottomY + maxLabelLines * 9 + 25;
 }
 
 function estimateSimpleBarChartHeight(doc, pageWidth, title, data, { labelField = 'dimensao' } = {}) {
@@ -293,22 +303,22 @@ function estimateSimpleBarChartHeight(doc, pageWidth, title, data, { labelField 
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
-  const titleLines = doc.splitTextToSize(normalizedTitle, pageWidth - 100);
-  const titleHeight = Math.max(35, titleLines.length * 12 + 12);
+  const titleLines = doc.splitTextToSize(normalizedTitle, pageWidth - 96);
+  const titleHeight = Math.max(30, titleLines.length * 12 + 10);
 
-  const chartWidth = pageWidth - 80;
+  const chartWidth = pageWidth - 96;
   const numItems = rows.length;
   const columnWidth = chartWidth / numItems;
 
   let maxLabelLines = 1;
   rows.forEach((item) => {
     const label = getRowLabel(item, labelField);
-    const splitLabel = doc.splitTextToSize(label, columnWidth - 10);
+    const splitLabel = doc.splitTextToSize(label, columnWidth - 6);
     if (splitLabel.length > maxLabelLines) maxLabelLines = splitLabel.length;
   });
 
-  const chartAreaHeight = 160;
-  const labelsAndBottom = maxLabelLines * 10 + 40;
+  const chartAreaHeight = 150;
+  const labelsAndBottom = maxLabelLines * 9 + 25;
   return titleHeight + chartAreaHeight + labelsAndBottom;
 }
 
@@ -317,35 +327,13 @@ function drawGroupedProportionChart(doc, y, pageWidth, title, data, dimensionFie
 
   const normalizedTitle = normalizeFigureTitle(title);
 
-  // Detectar se é uma figura de "por Dimensão" para aplicar formatação especial
-  const isDimensaoChart = normalizedTitle.includes('por Dimensão');
+  y = ensurePageSpace(doc, y, 310);
 
-  let titleSpacing = 20;
-
-  // Preparar a altura do título com quebra de linhas se necessário
-  let titleLines = [normalizedTitle];
-  if (isDimensaoChart) {
-    doc.setFont('Arial', 'bold');
-    doc.setFontSize(12);
-    titleLines = doc.splitTextToSize(normalizedTitle, pageWidth - 120);
-    titleSpacing = titleLines.length * 14 + 6;
-  }
-
-  y = ensurePageSpace(doc, y, 310 + titleSpacing);
-
-  // Renderizar o título
-  if (isDimensaoChart) {
-    doc.setFont('Arial', 'bold');
-    doc.setFontSize(12);
-    doc.text(titleLines, pageWidth / 2, y, { align: 'center' });
-    y += titleSpacing;
-  } else {
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    const genericTitleLines = doc.splitTextToSize(normalizedTitle, pageWidth - 100);
-    doc.text(genericTitleLines, pageWidth / 2, y, { align: 'center' });
-    y += 20;
-  }
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  const titleLines = doc.splitTextToSize(normalizedTitle, pageWidth - 96);
+  doc.text(titleLines, pageWidth / 2, y, { align: 'center' });
+  y += Math.max(25, titleLines.length * 12 + 6);
 
   const categorias = ['Excelente', 'Bom', 'Regular', 'Insuficiente'];
   const cores = {
@@ -355,21 +343,21 @@ function drawGroupedProportionChart(doc, y, pageWidth, title, data, dimensionFie
     Insuficiente: [250, 54, 10],
   };
 
-  // Legenda posicionada no canto superior direito (empilhada verticalmente)
-  const legendX = pageWidth - 130;
-  let legendY = y;
-  doc.setFontSize(9);
+  // Legenda horizontal centralizada
+  const legendY = y;
+  doc.setFontSize(8.5);
   doc.setFont('helvetica', 'normal');
 
+  let legendStartX = (pageWidth - 360) / 2;
   categorias.forEach((c) => {
     doc.setFillColor(...cores[c]);
-    doc.rect(legendX, legendY, 10, 10, 'F');
+    doc.rect(legendStartX, legendY, 9, 9, 'F');
     doc.setTextColor(50, 50, 50);
-    doc.text(c, legendX + 15, legendY + 7);
-    legendY += 10;
+    doc.text(c, legendStartX + 13, legendY + 7);
+    legendStartX += 90;
   });
 
-  y += 35;
+  y += 22;
 
   const rawLabels = [...new Set(data.map((d) => d?.[dimensionField]).filter(Boolean))];
 
@@ -381,20 +369,36 @@ function drawGroupedProportionChart(doc, y, pageWidth, title, data, dimensionFie
     rawLabels.sort((a, b) => String(a).localeCompare(String(b), 'pt-BR'));
   }
 
-  const chartX = 40;
-  const chartWidth = pageWidth - 80;
+  const chartX = 48;
+  const chartWidth = pageWidth - 96;
   const maxBarHeight = 140;
   const chartBottomY = y + maxBarHeight;
   const numGroups = rawLabels.length;
   const groupWidth = chartWidth / numGroups;
   const numBarsPerGroup = categorias.length;
-  const maxTotalBarsWidth = groupWidth * 0.8;
-  const barWidth = Math.min(maxTotalBarsWidth / numBarsPerGroup, 25);
+  const maxTotalBarsWidth = groupWidth * 0.78;
+  const barWidth = Math.max(6, Math.min(maxTotalBarsWidth / numBarsPerGroup, 22));
   const totalBarsWidth = barWidth * numBarsPerGroup;
 
-  doc.setDrawColor(180, 180, 180);
-  doc.setLineWidth(1);
+  // Gridlines atrás das barras (0%, 25%, 50%, 75%, 100%)
+  const ticks = [0, 25, 50, 75, 100];
+  doc.setDrawColor(230, 233, 238);
+  doc.setLineWidth(0.5);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(110, 110, 110);
+
+  ticks.forEach((tick) => {
+    const yTick = chartBottomY - (tick / 100) * maxBarHeight;
+    doc.line(chartX, yTick, chartX + chartWidth, yTick);
+    doc.text(`${tick}%`, chartX - 6, yTick + 3, { align: 'right' });
+  });
+
+  // Linhas do eixo
+  doc.setDrawColor(160, 160, 160);
+  doc.setLineWidth(0.8);
   doc.line(chartX, chartBottomY, chartX + chartWidth, chartBottomY);
+  doc.line(chartX, chartBottomY - maxBarHeight, chartX, chartBottomY);
 
   let maxLabelLines = 1;
 
@@ -403,7 +407,7 @@ function drawGroupedProportionChart(doc, y, pageWidth, title, data, dimensionFie
     const startXGroup = groupCenterX - totalBarsWidth / 2;
 
     doc.setTextColor(50, 50, 50);
-    doc.setFontSize(8);
+    doc.setFontSize(7.5);
     doc.setFont('helvetica', 'normal');
 
     const displayLabel =
@@ -411,9 +415,9 @@ function drawGroupedProportionChart(doc, y, pageWidth, title, data, dimensionFie
         ? formatItemCodeLabel(String(labelBase || ''))
         : String(labelBase || '');
 
-    const splitLabel = doc.splitTextToSize(displayLabel, groupWidth - 10);
+    const splitLabel = doc.splitTextToSize(displayLabel, groupWidth - 6);
     if (splitLabel.length > maxLabelLines) maxLabelLines = splitLabel.length;
-    doc.text(splitLabel, groupCenterX, chartBottomY + 14, { align: 'center' });
+    doc.text(splitLabel, groupCenterX, chartBottomY + 12, { align: 'center' });
 
     categorias.forEach((conc, j) => {
       const item = data.find((d) => d?.[dimensionField] === labelBase && d?.conceito === conc);
@@ -430,15 +434,15 @@ function drawGroupedProportionChart(doc, y, pageWidth, title, data, dimensionFie
 
         doc.setTextColor(0, 0, 0);
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7);
-        doc.text(val.toFixed(2).replace('.', ','), xBar + barWidth / 2, yBar - 4, {
+        doc.setFontSize(6.5);
+        doc.text(val.toFixed(1).replace('.', ','), xBar + barWidth / 2, yBar - 3, {
           align: 'center',
         });
       }
     });
   });
 
-  return chartBottomY + maxLabelLines * 10 + 40;
+  return chartBottomY + maxLabelLines * 9 + 25;
 }
 
 function addSectionTableTitle(doc, y, pageWidth, title) {
@@ -780,17 +784,17 @@ export default function RelatorioPresencialClient({
     if (!points.length) return y;
 
     const normalizedTitle = normalizeFigureTitle(title);
-    y = ensurePageSpace(doc, y, 330);
+    y = ensurePageSpace(doc, y, 320);
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
-    const titleLines = doc.splitTextToSize(normalizedTitle, pageWidth - 100);
+    const titleLines = doc.splitTextToSize(normalizedTitle, pageWidth - 96);
     doc.text(titleLines, pageWidth / 2, y, { align: 'center' });
-    y += Math.max(20, titleLines.length * 12 + 8);
+    y += Math.max(25, titleLines.length * 12 + 6);
 
     const chartX = 48;
     const chartWidth = pageWidth - 96;
-    const chartHeight = 170;
+    const chartHeight = 160;
     const bottomY = y + chartHeight;
     const minScale = 1;
     const maxScale = 4;
@@ -799,22 +803,31 @@ export default function RelatorioPresencialClient({
       return bottomY - ((clamped - minScale) / (maxScale - minScale)) * chartHeight;
     };
 
-    doc.setDrawColor(175, 175, 175);
+    // Gridlines horizontais atrás do boxplot
+    doc.setDrawColor(230, 233, 238);
+    doc.setLineWidth(0.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(110, 110, 110);
+
+    [1, 2, 3, 4].forEach((tick) => {
+      const yTick = mapY(tick);
+      doc.line(chartX, yTick, chartX + chartWidth, yTick);
+      doc.text(String(tick), chartX - 6, yTick + 3, { align: 'right' });
+    });
+
+    // Eixos do gráfico
+    doc.setDrawColor(160, 160, 160);
     doc.setLineWidth(0.8);
     doc.line(chartX, bottomY, chartX + chartWidth, bottomY);
     doc.line(chartX, bottomY - chartHeight, chartX, bottomY);
 
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(90, 90, 90);
-    [1, 2, 3, 4].forEach((tick) => {
-      const yTick = mapY(tick);
-      doc.line(chartX - 3, yTick, chartX, yTick);
-      doc.text(String(tick), chartX - 8, yTick + 3, { align: 'right' });
-    });
-
     const groupWidth = chartWidth / points.length;
-    const boxWidth = Math.min(18, groupWidth * 0.55);
+    // Largura dinâmica do boxplot com espaçamento de segurança proporcional
+    const maxBoxWidth = 55;
+    const minBoxWidth = 14;
+    const boxWidth = Math.max(minBoxWidth, Math.min(maxBoxWidth, groupWidth * 0.45));
+
     const outliersByLabel = new Map();
     normalizeBoxplotOutliers(boxplotData).forEach((point) => {
       const key = point.label;
@@ -826,30 +839,42 @@ export default function RelatorioPresencialClient({
 
     points.forEach((point, index) => {
       const x = chartX + index * groupWidth + groupWidth / 2;
-      const yMin = mapY(point.min);
+      const iqr = point.q3 - point.q1;
+      const lowerFence = point.q1 - 1.5 * iqr;
+      const upperFence = point.q3 + 1.5 * iqr;
+      const whiskerMin = Math.max(point.min, lowerFence);
+      const whiskerMax = Math.min(point.max, upperFence);
+
+      const yWhiskerMin = mapY(whiskerMin);
       const yQ1 = mapY(point.q1);
       const yMedian = mapY(point.median);
       const yQ3 = mapY(point.q3);
-      const yMax = mapY(point.max);
+      const yWhiskerMax = mapY(whiskerMax);
 
+      // Hastes (whiskers) em 1.5 * IQR
       doc.setDrawColor(30, 30, 30);
       doc.setLineWidth(1);
-      doc.line(x, yMin, x, yMax);
-      doc.line(x - boxWidth / 4, yMin, x + boxWidth / 4, yMin);
-      doc.line(x - boxWidth / 4, yMax, x + boxWidth / 4, yMax);
+      doc.line(x, yWhiskerMin, x, yWhiskerMax);
+      doc.line(x - boxWidth / 4, yWhiskerMin, x + boxWidth / 4, yWhiskerMin);
+      doc.line(x - boxWidth / 4, yWhiskerMax, x + boxWidth / 4, yWhiskerMax);
 
-      doc.setDrawColor(40, 143, 180);
-      doc.setFillColor(160, 214, 232);
+      // Caixa do Boxplot com preenchimento #288FB4
+      doc.setDrawColor(30, 30, 30);
+      doc.setFillColor(40, 143, 180); // #288FB4
       doc.rect(x - boxWidth / 2, yQ3, boxWidth, Math.max(1, yQ1 - yQ3), 'FD');
 
+      // Linha da mediana
       doc.setDrawColor(20, 20, 20);
+      doc.setLineWidth(1.5);
       doc.line(x - boxWidth / 2, yMedian, x + boxWidth / 2, yMedian);
 
+      // Outliers cinzas #B4B4B8
       const outliers = outliersByLabel.get(point.label) || outliersByLabel.get(Number(point.label)) || [];
       if (outliers.length) {
-        doc.setFillColor(31, 41, 55);
+        doc.setFillColor(180, 180, 184); // #B4B4B8
+        doc.setDrawColor(140, 140, 140);
         outliers.slice(0, 25).forEach((value) => {
-          doc.circle(x, mapY(value), 1.6, 'F');
+          doc.circle(x, mapY(value), 1.8, 'FD');
         });
       }
 
@@ -859,11 +884,11 @@ export default function RelatorioPresencialClient({
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(7.5);
       doc.setTextColor(50, 50, 50);
-      doc.text(split, x, bottomY + 11, { align: 'center' });
+      doc.text(split, x, bottomY + 12, { align: 'center' });
     });
 
     doc.setTextColor(0, 0, 0);
-    return bottomY + maxLabelLines * 9 + 28;
+    return bottomY + maxLabelLines * 9 + 25;
   }
 
   function addBoxplotFigure(doc, y, pageWidth, figureTitle, boxplotData) {
@@ -968,7 +993,7 @@ export default function RelatorioPresencialClient({
         body,
         theme: 'striped',
         headStyles: { fillColor: [40, 143, 180] },
-        margin: { left: 40, right: 40 },
+        margin: { left: 48, right: 48 },
         styles: { fontSize: 8, cellPadding: 4, overflow: 'linebreak', cellWidth: 'wrap' },
         columnStyles: { 0: { cellWidth: 70, fontStyle: 'bold' } },
         horizontalPageBreak: true,
@@ -1597,27 +1622,29 @@ export default function RelatorioPresencialClient({
         styles: { overflow: 'linebreak', cellWidth: 'wrap' },
       });
 
-      y = doc.lastAutoTable.finalY + 40;
-
-      y = drawSimpleBarChart(
-        doc,
-        y,
-        pageWidth,
-        'Figura 1 − Médias por dimensão (Discente)',
-        mediasData,
-        { valueField: 'media', labelField: 'dimensao' }
-      );
-
-      y = drawSimpleBarChart(
-        doc,
-        y,
-        pageWidth,
-        'Figura 2 − Médias por dimensão (Docente)',
-        docMediasData,
-        { valueField: 'media', labelField: 'dimensao' }
-      );
-
       const blocks = [
+        {
+          render: (d, yy, pw) =>
+            drawSimpleBarChart(
+              d,
+              yy,
+              pw,
+              'Figura 1 − Médias por dimensão (Discente)',
+              mediasData,
+              { valueField: 'media', labelField: 'dimensao' }
+            ),
+        },
+        {
+          render: (d, yy, pw) =>
+            drawSimpleBarChart(
+              d,
+              yy,
+              pw,
+              'Figura 2 − Médias por dimensão (Docente)',
+              docMediasData,
+              { valueField: 'media', labelField: 'dimensao' }
+            ),
+        },
         {
           render: (d, yy, pw) =>
             drawGroupedProportionChart(
@@ -2079,7 +2106,7 @@ export default function RelatorioPresencialClient({
       ];
 
       const measureBlockHeight = async (block) => {
-        const tempDoc = new jsPDF({ unit: 'pt', format: 'a4' });
+        const tempDoc = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'portrait' });
         const tempPageWidth = tempDoc.internal.pageSize.getWidth();
         const startY = 60;
         const endY = await block.render(tempDoc, startY, tempPageWidth);
@@ -2095,14 +2122,15 @@ export default function RelatorioPresencialClient({
         const between = h1 > 0 && h2 > 0 ? 24 : 0;
         const total = h1 + h2 + between;
 
-        doc.addPage();
-        const pageHeight = doc.internal.pageSize.getHeight();
-        let yPair = Math.max(60, (pageHeight - total) / 2);
+        doc.addPage('a4', 'portrait');
+        const currentWidth = doc.internal.pageSize.getWidth();
+        const currentHeight = doc.internal.pageSize.getHeight();
+        let yPair = Math.max(50, (currentHeight - total) / 2);
 
-        yPair = await first.render(doc, yPair, pageWidth);
+        yPair = await first.render(doc, yPair, currentWidth);
         if (second) {
           if (between) yPair += 24;
-          yPair = await second.render(doc, yPair, pageWidth);
+          yPair = await second.render(doc, yPair, currentWidth);
         }
       }
 
