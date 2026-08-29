@@ -104,8 +104,8 @@ function buildContext(filters = {}, options = {}) {
   else if (course) scopeLevel = 'CURSO';
 
   scopeWhere.push(`r.nivel = ${add(scopeLevel)}::text`);
-  if (campus) scopeWhere.push(`campus.nome = ${add(campus)}::text`);
-  if (course) scopeWhere.push(`curso.nome = ${add(course)}::text`);
+  if (campus) scopeWhere.push(`LOWER(TRIM(campus.nome)) = LOWER(TRIM(${add(campus)}::text))`);
+  if (course) scopeWhere.push(`LOWER(TRIM(curso.nome)) = LOWER(TRIM(${add(course)}::text))`);
 
   const groupWhere = [];
   if (options.instrument) groupWhere.push(`a.instrumento = ${add(options.instrument)}::text`);
@@ -139,46 +139,86 @@ function groupLabel(row, outputKey) {
   return outputKey === 'item' ? row.codigo : row.rotulo;
 }
 
-async function getFilterPayload(filters = {}) {
-  const { year, period } = parseSemester(filters.ano);
-  const campus = normalizeFilter(filters.campus);
-  const course = normalizeFilter(filters.curso);
-
-  const { rows: semesterRows } = await queryAvaliaGraph(`
+async function getSemestres() {
+  const { rows } = await queryAvaliaGraph(`
     SELECT codigo
     FROM ${SCHEMA}.semestre
     ORDER BY ano, periodo
   `);
+  return uniqueSorted(rows.map((row) => row.codigo));
+}
+
+async function getCampusFilters(ano) {
+  const { year, period } = parseSemester(ano);
+  if (!year) {
+    const { rows } = await queryAvaliaGraph(`
+      SELECT DISTINCT campus.nome AS campus
+      FROM ${SCHEMA}.recorte r
+      JOIN ${SCHEMA}.campus campus ON campus.campus_id = r.campus_id
+      WHERE r.nivel IN ('CAMPUS', 'CAMPUS_CURSO')
+      ORDER BY campus.nome
+    `);
+    return uniqueSorted(rows.map((row) => row.campus));
+  }
 
   const params = [];
-  const where = [`r.nivel = 'CAMPUS_CURSO'`];
-  const add = (value) => {
-    params.push(value);
+  const add = (v) => {
+    params.push(v);
     return `$${params.length}`;
   };
+  const where = [`r.nivel IN ('CAMPUS', 'CAMPUS_CURSO')`];
   if (year) where.push(`s.ano = ${add(year)}::smallint`);
   if (period) where.push(`s.periodo = ${add(period)}::smallint`);
-  if (campus) where.push(`campus.nome = ${add(campus)}::text`);
-  if (course) where.push(`curso.nome = ${add(course)}::text`);
 
   const { rows } = await queryAvaliaGraph(
     `
-      SELECT DISTINCT campus.nome AS campus, curso.nome AS curso
+      SELECT DISTINCT campus.nome AS campus
+      FROM ${SCHEMA}.recorte r
+      JOIN ${SCHEMA}.semestre s ON s.semestre_id = r.semestre_id
+      JOIN ${SCHEMA}.campus campus ON campus.campus_id = r.campus_id
+      WHERE ${where.join('\n        AND ')}
+      ORDER BY campus.nome
+    `,
+    params
+  );
+  return uniqueSorted(rows.map((row) => row.campus));
+}
+
+async function getCursoFilters(ano, campus) {
+  const { year, period } = parseSemester(ano);
+  const campusNorm = normalizeFilter(campus);
+
+  const params = [];
+  const add = (v) => {
+    params.push(v);
+    return `$${params.length}`;
+  };
+  const where = [`r.nivel = 'CAMPUS_CURSO'`];
+  if (year) where.push(`s.ano = ${add(year)}::smallint`);
+  if (period) where.push(`s.periodo = ${add(period)}::smallint`);
+  if (campusNorm) where.push(`LOWER(TRIM(campus.nome)) = LOWER(TRIM(${add(campusNorm)}::text))`);
+
+  const { rows } = await queryAvaliaGraph(
+    `
+      SELECT DISTINCT curso.nome AS curso
       FROM ${SCHEMA}.recorte r
       JOIN ${SCHEMA}.semestre s ON s.semestre_id = r.semestre_id
       JOIN ${SCHEMA}.campus campus ON campus.campus_id = r.campus_id
       JOIN ${SCHEMA}.curso curso ON curso.curso_id = r.curso_id
       WHERE ${where.join('\n        AND ')}
-      ORDER BY campus.nome, curso.nome
+      ORDER BY curso.nome
     `,
     params
   );
+  return uniqueSorted(rows.map((row) => row.curso));
+}
 
-  return {
-    anos: uniqueSorted(semesterRows.map((row) => row.codigo)),
-    campus: uniqueSorted(rows.map((row) => row.campus)),
-    cursos: uniqueSorted(rows.map((row) => row.curso)),
-  };
+async function getFilterPayload(filters = {}) {
+  const anos = await getSemestres();
+  const campus = filters.ano ? await getCampusFilters(filters.ano) : [];
+  const cursos = filters.ano && filters.campus ? await getCursoFilters(filters.ano, filters.campus) : [];
+
+  return { anos, campus, cursos };
 }
 
 async function getSummary(filters) {
@@ -501,12 +541,13 @@ export async function queryAvaliaGraphEndpoint(endpoint, filters = {}) {
   }
   if (endpoint === '/filters') return getFilterPayload(filters);
   if (endpoint === '/filters/campus') {
-    const payload = await getFilterPayload({ ano: filters.ano });
-    return { anos: payload.anos, campus: payload.campus };
+    const anos = await getSemestres();
+    const campus = await getCampusFilters(filters.ano);
+    return { anos, campus };
   }
   if (endpoint === '/filters/cursos') {
-    const payload = await getFilterPayload({ ano: filters.ano, campus: filters.campus });
-    return { cursos: payload.cursos };
+    const cursos = await getCursoFilters(filters.ano, filters.campus);
+    return { cursos };
   }
   if (endpoint === '/resumo' || endpoint === '/discente/geral/summary') {
     return getSummary(filters);
