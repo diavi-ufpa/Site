@@ -11,14 +11,16 @@ Reestruturar a interface gráfica e a UX das buscas e carregamento no AVALIA Pre
   - `LoadingOverlay.js` atualizado para padrão de escopo por container (`isFullScreen = false`).
   - Criado o componente `DashboardSkeleton.js` com animação de shimmer para cards de estatística, abas e área de gráficos.
   - Aplicado `DashboardSkeleton` nas páginas do Avalia Presencial e Avalia EAD, mantendo a Sidebar 100% visível.
-- [x] **Padronização de Card Branco nos Filtros (`DiscenteFilterAvalia.js` & `EadFilters.js`):**
-  - Corrigida a classe `filtersContainer` no Presencial para aplicar o card branco idêntico ao EAD (`background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 16px; box-shadow: 0 4px 14px rgba(0,0,0,0.04)`).
-  - Registrado o padrão oficial em `PRODUCT.md` sob a seção **UI & UX Search Standard**.
-- [x] **Validação e Build:**
+- [x] **Padronização de Card Branco & Stepper Sequencial nos Filtros (`DiscenteFilterAvalia.js` & `EadFilters.js`):**
+  - Aplicado card branco proeminente idêntico no Presencial e EAD (`background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 16px; box-shadow: 0 4px 14px rgba(0,0,0,0.04)`).
+  - Removido o carregamento automático inicial de dados no EAD antes da escolha dos filtros.
+  - Registrado oficialmente o padrão em `PRODUCT.md` sob a seção **UI & UX Search Standard**.
+- [x] **Validação, Build e Commit:**
   - Executado `npm run build` com sucesso.
+  - Commits semânticos sem coautor realizados na branch `fix/ui-consulta`.
 
 ## ⏳ Próximos Passos
-- Commit semântico das alterações sem coautor.
+- Branch pronta para revisão, push ou expansão para outros módulos do portal.
 
 ## ⚠️ Decisões & Observações Importantes
 - O menu lateral (`Sidebar`) permanece 100% visível, clicável e responsivo em qualquer estado de carregamento do conteúdo.
