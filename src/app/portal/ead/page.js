@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import EadDashboardClient from './EadDashboardClient';
 import styles from '../../../styles/dados.module.css';
 import { useAuth } from '@/contexts/AuthContext';
+import DashboardSkeleton from '@/components/ui/DashboardSkeleton';
 
 export default function EadPage() {
   const { authorizedFetch } = useAuth();
@@ -32,11 +33,16 @@ export default function EadPage() {
   }, [authorizedFetch]);
 
   if (error) {
-    return <div className={styles.mainContent}><h1 className={styles.title}>Avalia EAD</h1><p className={styles.errorMessage}>{error}</p></div>;
+    return <div className={styles.mainContent}><h1 className={styles.title}>Avaliação EAD</h1><p className={styles.errorMessage}>{error}</p></div>;
   }
 
   if (!data) {
-    return <div className={styles.mainContent}><p className={styles.loading}>Carregando dashboard...</p></div>;
+    return (
+      <div className={styles.mainContent}>
+        <h1 className={styles.title} style={{ marginBottom: '1.5rem' }}>Avaliação EAD</h1>
+        <DashboardSkeleton />
+      </div>
+    );
   }
 
   const {
@@ -54,8 +60,8 @@ export default function EadPage() {
 
   return (
     <div className={styles.mainContent}>
-      <h1 className={styles.title}>Avaliação EAD</h1>
-      <Suspense fallback={<p className={styles.loading}>Carregando dashboard...</p>}>
+      <h1 className={styles.title} style={{ marginBottom: '1rem' }}>Avaliação EAD</h1>
+      <Suspense fallback={<DashboardSkeleton />}>
         <EadDashboardClient
           initialData={{
             summary: summaryData,
