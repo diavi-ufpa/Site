@@ -18,9 +18,13 @@ export default function EadFilters({
     return visibleFields.includes(key);
   };
 
+  const hasYearSelected = Boolean(selectedFilters?.ano);
   const is2023 = selectedFilters?.ano === '2023';
   const hasPolos = Array.isArray(filters?.polos) && filters.polos.length > 0;
   const shouldShowPolo = !is2023 && hasPolos;
+
+  const hasPoloSelected = !shouldShowPolo || Boolean(selectedFilters?.polo);
+  const hasCourseSelected = Boolean(selectedFilters?.curso);
 
   const polos = hasPolos ? filters.polos : [];
   const cursos = Array.isArray(filters?.cursos) ? filters.cursos : [];
@@ -32,19 +36,17 @@ export default function EadFilters({
   const cursoValue = selectedFilters?.curso || '';
   const disciplinaValue = selectedFilters?.disciplina || '';
   const dimensaoValue = selectedFilters?.dimensao || '';
-  const anoValue = selectedFilters?.ano || (anos[0] ?? '');
+  const anoValue = selectedFilters?.ano || '';
 
   const isAnyFilterActive =
-    (poloValue && poloValue !== 'todos' && poloValue !== allPolosLabel) ||
-    (cursoValue && cursoValue !== 'todos') ||
+    hasYearSelected ||
+    (poloValue && poloValue !== '') ||
+    (cursoValue && cursoValue !== '') ||
     (disciplinaValue && disciplinaValue !== 'todos') ||
     (dimensaoValue && dimensaoValue !== 'todos');
 
   const handleClearFilters = () => {
-    onFilterChange({ target: { name: 'polo', value: 'todos' } });
-    onFilterChange({ target: { name: 'curso', value: 'todos' } });
-    onFilterChange({ target: { name: 'disciplina', value: 'todos' } });
-    onFilterChange({ target: { name: 'dimensao', value: 'todos' } });
+    onFilterChange({ target: { name: 'ano', value: '' } });
   };
 
   // Calcular contadores dos passos numéricos
@@ -122,6 +124,11 @@ export default function EadFilters({
           border-radius: 50%;
           font-size: 0.75rem;
           font-weight: 700;
+          background-color: #f3f4f6;
+          color: #4b5563;
+        }
+
+        .stepBadgeActive {
           background-color: #FF8E29;
           color: #ffffff;
         }
@@ -161,6 +168,19 @@ export default function EadFilters({
           background-color: #ffffff;
         }
 
+        .lockedStepPlaceholder {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0.65rem 0.85rem;
+          background-color: #f9fafb;
+          border: 1.5px dashed #e5e7eb;
+          border-radius: 10px;
+          font-size: 0.85rem;
+          color: #9ca3af;
+          user-select: none;
+        }
+
         .clearButton {
           display: inline-flex;
           align-items: center;
@@ -194,7 +214,7 @@ export default function EadFilters({
             type="button"
             className="clearButton"
             onClick={handleClearFilters}
-            title="Limpar filtros específicos"
+            title="Limpar todos os filtros selecionados"
           >
             <RotateCcw size={14} />
             Limpar filtros
@@ -204,11 +224,13 @@ export default function EadFilters({
 
       {/* Grid de Passos */}
       <div className="stepGrid">
-        {/* ANO */}
+        {/* PASSO 1: ANO */}
         {show('ano') && (
           <div className="stepCard">
             <label className="stepLabel">
-              <span className="stepBadge">{stepMap.ano || '1'}</span>
+              <span className={`stepBadge ${hasYearSelected ? 'stepBadgeCompleted' : 'stepBadgeActive'}`}>
+                {hasYearSelected ? '✓' : stepMap.ano || '1'}
+              </span>
               Ano da Avaliação
             </label>
             <select
@@ -218,6 +240,9 @@ export default function EadFilters({
               className="customSelect"
               aria-label="Ano"
             >
+              <option value="" disabled hidden>
+                Selecione o ano
+              </option>
               {anos.map((ano) => (
                 <option key={ano} value={ano}>
                   {ano}
@@ -227,89 +252,116 @@ export default function EadFilters({
           </div>
         )}
 
-        {/* POLO (Se aplicável) */}
+        {/* PASSO 2: POLO (Se aplicável no ano) */}
         {show('polo') && shouldShowPolo && (
           <div className="stepCard">
             <label className="stepLabel">
-              <span className={`stepBadge ${poloValue && poloValue !== 'todos' ? 'stepBadgeCompleted' : ''}`}>
-                {poloValue && poloValue !== 'todos' ? '✓' : stepMap.polo || '2'}
+              <span className={`stepBadge ${!hasYearSelected ? '' : poloValue ? 'stepBadgeCompleted' : 'stepBadgeActive'}`}>
+                {poloValue ? '✓' : stepMap.polo || '2'}
               </span>
               Polo de Vinculação
             </label>
-            <select
-              name="polo"
-              value={poloValue}
-              onChange={onFilterChange}
-              className="customSelect"
-              aria-label="Polo"
-            >
-              {disablePlaceholderOption && (
+
+            {!hasYearSelected ? (
+              <div className="lockedStepPlaceholder">
+                <span>Aguardando seleção do ano</span>
+                <ChevronRight size={16} />
+              </div>
+            ) : (
+              <select
+                name="polo"
+                value={poloValue}
+                onChange={onFilterChange}
+                className="customSelect"
+                aria-label="Polo"
+              >
                 <option value="" disabled hidden>
                   {poloPlaceholder}
                 </option>
-              )}
-              {showAllPolosOption && <option value="todos">{allPolosLabel}</option>}
-              {polos.map((polo) => (
-                <option key={polo} value={polo}>
-                  {polo}
-                </option>
-              ))}
-            </select>
+                {showAllPolosOption && <option value="todos">{allPolosLabel}</option>}
+                {polos.map((polo) => (
+                  <option key={polo} value={polo}>
+                    {polo}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
         )}
 
-        {/* CURSO */}
+        {/* PASSO 3: CURSO */}
         {show('curso') && (
           <div className="stepCard">
             <label className="stepLabel">
-              <span className={`stepBadge ${cursoValue && cursoValue !== 'todos' ? 'stepBadgeCompleted' : ''}`}>
-                {cursoValue && cursoValue !== 'todos' ? '✓' : stepMap.curso || '3'}
+              <span className={`stepBadge ${!hasPoloSelected ? '' : cursoValue ? 'stepBadgeCompleted' : 'stepBadgeActive'}`}>
+                {cursoValue ? '✓' : stepMap.curso || '3'}
               </span>
               Curso
             </label>
-            <select
-              name="curso"
-              value={cursoValue}
-              onChange={onFilterChange}
-              className="customSelect"
-              aria-label="Curso"
-            >
-              <option value="" disabled hidden>
-                Selecione o curso
-              </option>
-              <option value="todos">Todos os Cursos</option>
-              {cursos.map((curso) => (
-                <option key={curso} value={curso}>
-                  {curso}
+
+            {!hasYearSelected ? (
+              <div className="lockedStepPlaceholder">
+                <span>Aguardando seleção do ano</span>
+                <ChevronRight size={16} />
+              </div>
+            ) : shouldShowPolo && !selectedFilters?.polo ? (
+              <div className="lockedStepPlaceholder">
+                <span>Aguardando seleção do polo</span>
+                <ChevronRight size={16} />
+              </div>
+            ) : (
+              <select
+                name="curso"
+                value={cursoValue}
+                onChange={onFilterChange}
+                className="customSelect"
+                aria-label="Curso"
+              >
+                <option value="" disabled hidden>
+                  Selecione o curso
                 </option>
-              ))}
-            </select>
+                <option value="todos">Todos os Cursos</option>
+                {cursos.map((curso) => (
+                  <option key={curso} value={curso}>
+                    {curso}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
         )}
 
-        {/* DISCIPLINA */}
+        {/* PASSO 4: DISCIPLINA */}
         {show('disciplina') && (
           <div className="stepCard">
             <label className="stepLabel">
-              <span className={`stepBadge ${disciplinaValue && disciplinaValue !== 'todos' ? 'stepBadgeCompleted' : ''}`}>
+              <span className={`stepBadge ${!hasCourseSelected ? '' : disciplinaValue && disciplinaValue !== 'todos' ? 'stepBadgeCompleted' : 'stepBadgeActive'}`}>
                 {disciplinaValue && disciplinaValue !== 'todos' ? '✓' : stepMap.disciplina || '4'}
               </span>
               Disciplina
             </label>
-            <select
-              name="disciplina"
-              value={disciplinaValue}
-              onChange={onFilterChange}
-              className="customSelect"
-              aria-label="Disciplina"
-            >
-              <option value="todos">Todas as Disciplinas</option>
-              {disciplinas.map((disciplina) => (
-                <option key={disciplina} value={disciplina}>
-                  {disciplina}
-                </option>
-              ))}
-            </select>
+
+            {!hasCourseSelected ? (
+              <div className="lockedStepPlaceholder">
+                <span>Aguardando seleção do curso</span>
+                <ChevronRight size={16} />
+              </div>
+            ) : (
+              <select
+                name="disciplina"
+                value={disciplinaValue}
+                onChange={onFilterChange}
+                className="customSelect"
+                aria-label="Disciplina"
+              >
+                <option value="todos">Todas as Disciplinas</option>
+                {disciplinas.map((disciplina) => (
+                  <option key={disciplina} value={disciplina}>
+                    {disciplina}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
         )}
 
