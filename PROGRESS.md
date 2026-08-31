@@ -1,25 +1,30 @@
 # 🎯 Objetivo Atual
-Otimizar o carregamento dos filtros e a conexão da consulta do AVALIA Presencial e validar o funcionamento do EAD na branch `fix/consulta-avalia-presencial`.
+Reestruturar a interface gráfica e a UX das buscas e carregamento no AVALIA Presencial na nova branch `fix/ui-consulta`:
+1. Eliminar o carregamento em tela cheia (fullscreen overlay) que cobria a barra lateral/menu.
+2. Substituir o padrão antigo de filtros por um fluxo de **Disclosure Progressivo com Stepper Visual** (Ano -> Campus -> Curso), removendo opções desabilitadas confusas e adicionando ação de limpar filtros.
+3. Adicionar componente **DashboardSkeleton** para carregamento fluido em conteúdo (preservando o menu lateral intacto).
+4. Criar um **Empty State** receptivo orientando a seleção dos filtros.
 
 ## 📍 Estado Atual (Onde paramos)
-- [x] Branch `fix/consulta-avalia-presencial` criada a partir da `main` atualizada.
-- [x] **Diagnóstico da Lentidão:** Identificado que queries SQL de recorte no PostgreSQL (`avalia_presencial_graph`) utilizavam comparação estrita (`campus.nome = $1`), fazendo com que variações de caixa/espaço/acentuação retornassem 0 linhas, disparando fallback para a API externa do HuggingFace com atrasos de 30–60s.
-- [x] **Auditoria do Banco PostgreSQL:**
-  - Auditadas todas as tabelas (`campus`, `curso`, `semestre`, `recorte`, `resultado_*`).
-  - **Zero inconsistências estruturais**: 12 campi, 240 cursos (0 duplicados) e 4 semestres com 100% de integridade referencial.
-  - Verificado que o banco Postgres guarda campi em *Title Case* (ex: `"Belém"`), enquanto requisições frontend/cache enviavam variações em caixa alta (`"BELÉM"`), disparando a falha de match antes da correção.
-- [x] **Otimização de Queries de Filtro:**
-  - `buildContext`, `getCampusFilters` e `getCursoFilters` em `graph-results-repository.js` ajustados para `LOWER(TRIM(...))`.
-  - `/filters` ajustado para retornar a lista de semestres sem varrer toda a tabela `recorte` e `curso` desnecessariamente (~10ms).
-  - `/filters/campus` e `/filters/cursos` isolados em queries direcionadas e eficientes (~80-90ms).
-- [x] **Validação do EAD:** Verificadas as rotas `/portal/ead` e `/portal/ead/relatorioEAD`, além das funções `getEadInitialData` e `getEadReportData` lendo os CSVs de 2025 e 2023 sem erros.
-- [x] **Build & Testes:** Build do Next.js de produção executado com sucesso e 100% dos 25 endpoints compilados sem falhas.
+- [x] Branch `fix/ui-consulta` criada a partir da `main` atualizada.
+- [x] **Substituição do Fullscreen Loading por In-Content Skeleton:**
+  - `LoadingOverlay.js` atualizado para padrão de escopo por container (`isFullScreen = false`).
+  - Criado o componente `DashboardSkeleton.js` com animação de shimmer para cards de estatística, abas e área de gráficos.
+  - `DiscenteDashboardClient.js` ajustado para manter o menu lateral e o cabeçalho 100% visíveis e funcionais durante qualquer carregamento.
+- [x] **Redesenho do Componente de Filtros (`DiscenteFilterAvalia.js`):**
+  - Removido o botão colapsável que escondia os filtros necessários.
+  - Implementado fluxo em passos numéricos (`1. Ano` -> `2. Campus` -> `3. Curso` -> `Dimensão opcional`).
+  - Passos bloqueados mostram placeholders claros ("Aguardando seleção do ano/campus") em vez de selects desabilitados com texto de erro estático.
+  - Adicionado botão **"Limpar filtros"** com 1 clique e indicadores visuais de progresso (badges de status `✓`).
+- [x] **Novo Empty State Informativo:**
+  - Substituído a mensagem de erro vermelha no quadro de gráficos por um card de boas-vindas receptivo orientando o usuário.
+- [x] **Validação e Build:**
+  - Executado `npm run build` com sucesso (100% das 25 páginas estáticas e rotas dinâmicas compiladas sem erros).
 
 ## ⏳ Próximos Passos
-- Branch pronta para commit, push e abertura de Pull Request.
+- Apresentar a nova UX e UI do Avalia Presencial ao usuário.
+- Caso aprovado, expandir o novo padrão de UI/UX de busca e carregamento para os demais módulos do portal.
 
 ## ⚠️ Decisões & Observações Importantes
-- Com a otimização no PostgreSQL (`avalia_presencial_graph`), o tempo de carregamento dos filtros caiu para ~80-90ms sem redirecionamento/fallback para o HuggingFace.
-
-
-
+- O menu lateral (`Sidebar`) permanece 100% visível, clicável e responsivo em qualquer estado de carregamento do conteúdo.
+- Toda a reestruturação foi focada estritamente no AVALIA Presencial nesta primeira fase conforme solicitado.

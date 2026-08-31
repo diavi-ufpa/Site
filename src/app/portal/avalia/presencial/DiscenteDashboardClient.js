@@ -9,8 +9,9 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import StatCard from '@/components/ui/StatCard';
 import LoadingOverlay from '@/components/ui/LoadingOverlay';
+import DashboardSkeleton from '@/components/ui/DashboardSkeleton';
 import styles from '../../../../styles/dados.module.css';
-import { Users, TrendingUp, TrendingDown } from 'lucide-react';
+import { Users, TrendingUp, TrendingDown, Search, Filter } from 'lucide-react';
 
 // ✅ Abas modularizadas
 import DimensoesGeraisTab from './dimensoes_gerais/DimensoesGeraisTab';
@@ -2241,26 +2242,95 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
   ) || currentRankingLoading;
 
   return (
-    <>
-      {isGlobalLoading && <LoadingOverlay isFullScreen />}
+    <div style={{ position: 'relative', width: '100%' }}>
+      {error && <p className={styles.errorMessage}>{error}</p>}
+      {partialWarning && !error && (
+        <p className={styles.warningMessage} role={'status'}>
+          {partialWarning}
+        </p>
+      )}
 
-      <div
-        style={{
-          opacity: isGlobalLoading ? 0.35 : 1,
-          pointerEvents: isGlobalLoading ? 'none' : 'auto',
-          position: 'relative',
-        }}
-      >
-        {error && <p className={styles.errorMessage}>{error}</p>}
-        {partialWarning && !error && (
-          <p className={styles.warningMessage} role={'status'}>
-            {partialWarning}
-          </p>
-        )}
+      {!error && (
+        <>
+          {/* Painel de Filtros sempre visível no topo da área de conteúdo */}
+          <div style={{ marginTop: '0.5rem', marginBottom: '1rem' }}>
+            <DiscenteFilters
+              filters={dynamicFilters}
+              selectedFilters={selectedFilters}
+              onFilterChange={handleFilterChange}
+              consultarBanco={consultarBanco}
+              onToggleConsultarBanco={handleToggleConsultarBanco}
+              usarBancoGrafico={usarBancoGrafico}
+              onToggleUsarBancoGrafico={handleToggleUsarBancoGrafico}
+              showGraphDatabaseToggle
+              showRanking={showRanking}
+              onToggleRanking={() => setShowRanking((prev) => !prev)}
+              showRankingToggle={hasRequiredFilters}
+              loadingCampus={filtersLoading.campus}
+              loadingCurso={filtersLoading.curso}
+            />
+          </div>
 
-        {!error && (
-          <>
-            {hasRequiredFilters && (
+          {/* Carregamento Interno da Área de Conteúdo (Skeleton UI) */}
+          {isGlobalLoading ? (
+            <DashboardSkeleton />
+          ) : !hasRequiredFilters ? (
+            /* Estado Inicial Informativo (Empty State) */
+            <div
+              className={styles.chartDisplayArea}
+              style={{
+                minHeight: '340px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center',
+                padding: '3rem 2rem',
+                backgroundColor: '#ffffff',
+                borderRadius: '16px',
+                border: '1px dashed #E5E7EB',
+                boxShadow: '0 4px 14px rgba(0,0,0,0.03)',
+              }}
+            >
+              <div
+                style={{
+                  width: '64px',
+                  height: '64px',
+                  borderRadius: '50%',
+                  backgroundColor: '#FFF7ED',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '1.25rem',
+                }}
+              >
+                <Search size={30} color="#FF8E29" />
+              </div>
+              <h3
+                style={{
+                  fontSize: '1.25rem',
+                  fontWeight: '700',
+                  color: '#1F2937',
+                  marginBottom: '0.5rem',
+                }}
+              >
+                Consulte o Avalia Presencial
+              </h3>
+              <p
+                style={{
+                  fontSize: '0.95rem',
+                  color: '#6B7280',
+                  maxWidth: '480px',
+                  margin: 0,
+                  lineHeight: 1.5,
+                }}
+              >
+                {missingFiltersMessage}
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Cards de Estatísticas */}
               <div className={styles.statsGrid}>
                 <StatCard
                   title="Total de Discentes que responderam"
@@ -2298,43 +2368,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
                   icon={<TrendingDown />}
                 />
               </div>
-            )}
 
-            <div style={{ marginTop: '1rem', marginBottom: '0.75rem' }}>
-              <DiscenteFilters
-                filters={dynamicFilters}
-                selectedFilters={selectedFilters}
-                onFilterChange={handleFilterChange}
-                consultarBanco={consultarBanco}
-                onToggleConsultarBanco={handleToggleConsultarBanco}
-                usarBancoGrafico={usarBancoGrafico}
-                onToggleUsarBancoGrafico={handleToggleUsarBancoGrafico}
-                showGraphDatabaseToggle
-                showRanking={showRanking}
-                onToggleRanking={() => setShowRanking((prev) => !prev)}
-                showRankingToggle={hasRequiredFilters}
-                loadingCampus={filtersLoading.campus}
-                loadingCurso={filtersLoading.curso}
-              />
-            </div>
-
-            {!hasRequiredFilters ? (
-              <div
-                className={styles.chartDisplayArea}
-                style={{
-                  minHeight: '300px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  textAlign: 'center',
-                  padding: '2rem',
-                }}
-              >
-                <p style={{ fontSize: '1.2rem', color: '#FA360A', fontWeight: 'bold' }}>
-                  {missingFiltersMessage}
-                </p>
-              </div>
-            ) : (
               <div>
                 {!isDimensionMode && (
                   <div className={styles.tabsContainer}>
@@ -2605,11 +2639,11 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
                   )}
                 </div>
               </div>
-            )}
-          </>
-        )}
-      </div>
-    </>
+            </>
+          )}
+        </>
+      )}
+    </div>
   );
 }
 
