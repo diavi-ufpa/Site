@@ -3,13 +3,16 @@
 import { useState, useEffect } from 'react';
 import AvaliacaoInLocoFilters from '@/features/avaliacaoInLoco/components/AvaliacaoInLocoFilters';
 import { useAuth } from '@/contexts/AuthContext';
+import Header from '@/components/ui/Header';
+import StatCard from '@/components/ui/StatCard';
+import DashboardSkeleton from '@/components/ui/DashboardSkeleton';
 import LoadingOverlay from '@/components/ui/LoadingOverlay';
 import MediaDimensoesChart from '@/components/charts/MediaDimensoesChart';
 import GraficoEvolucaoLineChart from '@/components/charts/GraficoEvolucaoLineChart';
 import GraficoEvolucaoD123LineChart from '@/components/charts/GraficoEvolucaoD123LineChart';
 import QuantidadeCursosAvaliadosChart from '@/components/charts/QuantidadeCursosAvaliadosChart';
 import MediaDimensaoAnualChart from '@/components/charts/MediaDimensaoAnualChart';
-import { Filter, ChevronDown, ChevronUp } from 'lucide-react';
+import { Filter, BarChart3, TrendingUp, BookOpen, Building, GraduationCap, RotateCcw, HelpCircle } from 'lucide-react';
 import styles from '../../../../styles/dados.module.css';
 
 function buildFiltersUrl(filters = {}) {
@@ -57,8 +60,8 @@ export default function AvaliacaoInLocoDadosPage() {
   const { authorizedFetch } = useAuth();
   const [activeSubmenu, setActiveSubmenu] = useState('media');
   const tabs = [
-    { key: 'media', label: 'Média' },
-    { key: 'grafico-evolucao', label: 'Gráfico-Evolução' },
+    { key: 'media', label: 'Média das Dimensões', icon: BarChart3 },
+    { key: 'grafico-evolucao', label: 'Evolução Histórica', icon: TrendingUp },
   ];
 
   const [selectedFilters, setSelectedFilters] = useState({
@@ -77,7 +80,7 @@ export default function AvaliacaoInLocoDadosPage() {
     cursos: [],
   });
 
-  const [isLoading, setIsLoading] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [loadingCampus, setLoadingCampus] = useState(false);
   const [loadingCurso, setLoadingCurso] = useState(false);
   const [mediaDimensoes, setMediaDimensoes] = useState({
@@ -103,7 +106,6 @@ export default function AvaliacaoInLocoDadosPage() {
     cursos: [],
   });
   const [loadingEvolucaoCursos, setLoadingEvolucaoCursos] = useState(false);
-  const [isEvolucaoFilterOpen, setIsEvolucaoFilterOpen] = useState(false);
 
   const allFiltersSelected =
     Boolean(selectedFilters.ano) &&
@@ -116,7 +118,7 @@ export default function AvaliacaoInLocoDadosPage() {
   useEffect(() => {
     const loadInitialFilters = async () => {
       try {
-        setIsLoading(true);
+        setIsInitialLoading(true);
         const response = await authorizedFetch('/api/avaliacao-in-loco/filters');
         const data = await response.json();
         setFiltersOptions({
@@ -129,7 +131,7 @@ export default function AvaliacaoInLocoDadosPage() {
       } catch (error) {
         console.error('Erro ao carregar filtros iniciais:', error);
       } finally {
-        setIsLoading(false);
+        setIsInitialLoading(false);
       }
     };
 
@@ -439,79 +441,296 @@ export default function AvaliacaoInLocoDadosPage() {
     }
   };
 
+  const isEvolucaoFilterActive = Boolean(
+    selectedEvolucaoFilters.undAcad || selectedEvolucaoFilters.curso
+  );
+
+  const handleClearEvolucaoFilters = () => {
+    setSelectedEvolucaoFilters({ undAcad: '', curso: '' });
+  };
+
   const labelOrTodos = (value, fallback) => (value && value !== 'todos' ? value : fallback);
 
-  const mediaChartTitle = `Média das dimensões no ano ${labelOrTodos(
+  const mediaChartTitle = `Média das Dimensões no Ano ${labelOrTodos(
     selectedFilters.ano,
-    'Todos os anos'
-  )}, unidade acadêmica ${labelOrTodos(
-    selectedFilters.undAcad,
-    'Todas as unidades'
-  )}, modalidade ${labelOrTodos(
-    selectedFilters.modalidade,
-    'Todas as modalidades'
-  )}, campi ${labelOrTodos(selectedFilters.campus, 'Todos os campi')}, e curso ${labelOrTodos(
-    selectedFilters.curso,
-    'Todos os cursos'
-  )}`;
+    'Todos'
+  )} — ${labelOrTodos(selectedFilters.curso, selectedFilters.undAcad || 'Recorte Selecionado')}`;
+
+  const totalHistoricoCursos = (graficoEvolucaoData?.quantidadeCursosAvaliados?.valores || []).reduce(
+    (a, b) => a + Number(b || 0),
+    0
+  );
+
+  if (isInitialLoading) {
+    return (
+      <div className={styles.mainContent}>
+        <Header
+          title="Avaliação In Loco"
+          subtitle="Média das Dimensões e Série Histórica (INEP / SINAES)"
+        />
+        <DashboardSkeleton />
+      </div>
+    );
+  }
 
   return (
-    <>
-      {isLoading && (
-        <LoadingOverlay isFullScreen={true} message="Carregando dados..." />
+    <div className={styles.mainContent}>
+      <Header
+        title="Avaliação In Loco"
+        subtitle="Média das Dimensões e Série Histórica (INEP / SINAES)"
+      />
+
+      {/* KPI Stat Cards */}
+      <div className={styles.statsGrid}>
+        {activeSubmenu === 'media' ? (
+          <>
+            <StatCard
+              title="Ano Selecionado"
+              value={selectedFilters.ano || 'Não selecionado'}
+              icon={<BookOpen size={24} color="#FF8E29" />}
+            />
+            <StatCard
+              title="Unidade Acadêmica"
+              value={selectedFilters.undAcad || 'Todas as unidades'}
+              icon={<Building size={24} color="#1D556F" />}
+            />
+            <StatCard
+              title="Curso Selecionado"
+              value={selectedFilters.curso || 'Todos os cursos'}
+              icon={<GraduationCap size={24} color="#288FB4" />}
+            />
+          </>
+        ) : (
+          <>
+            <StatCard
+              title="Período Analisado"
+              value={
+                graficoEvolucaoData.anos?.length
+                  ? `${graficoEvolucaoData.anos[0]} — ${
+                      graficoEvolucaoData.anos[graficoEvolucaoData.anos.length - 1]
+                    }`
+                  : 'Série Histórica'
+              }
+              icon={<TrendingUp size={24} color="#FF8E29" />}
+            />
+            <StatCard
+              title="Total de Cursos Avaliados"
+              value={totalHistoricoCursos > 0 ? totalHistoricoCursos.toLocaleString('pt-BR') : 'Consolidado'}
+              icon={<GraduationCap size={24} color="#1D556F" />}
+            />
+            <StatCard
+              title="Unidade em Análise"
+              value={selectedEvolucaoFilters.undAcad || 'Geral (UFPA)'}
+              icon={<Building size={24} color="#288FB4" />}
+            />
+          </>
+        )}
+      </div>
+
+      {/* Filtros da aba Média */}
+      {activeSubmenu === 'media' && (
+        <AvaliacaoInLocoFilters
+          title="Filtros de Seleção • Recorte Anual"
+          filters={filtersOptions}
+          selectedFilters={selectedFilters}
+          onFilterChange={handleFilterChange}
+          loadingCampus={loadingCampus}
+          loadingCurso={loadingCurso}
+        />
       )}
 
-      <div className={styles.mainContent}>
-        {activeSubmenu === 'media' && (
-          <AvaliacaoInLocoFilters
-            filters={filtersOptions}
-            selectedFilters={selectedFilters}
-            onFilterChange={handleFilterChange}
-            loadingCampus={loadingCampus}
-            loadingCurso={loadingCurso}
-          />
-        )}
+      {/* Filtros da aba Evolução */}
+      {activeSubmenu === 'grafico-evolucao' && (
+        <div className="filtersContainer">
+          <style jsx>{`
+            .filtersContainer {
+              background-color: #ffffff;
+              border: 1px solid #e5e7eb;
+              border-radius: 16px;
+              padding: 1.25rem;
+              box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+              margin-bottom: 1.5rem;
+              transition: all 0.2s ease;
+            }
+            .filterHeader {
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              margin-bottom: 1rem;
+              padding-bottom: 0.75rem;
+              border-bottom: 1px solid #f3f4f6;
+              flex-wrap: wrap;
+              gap: 0.75rem;
+            }
+            .filterHeaderTitle {
+              display: flex;
+              align-items: center;
+              gap: 0.5rem;
+              font-weight: 700;
+              font-size: 1rem;
+              color: #1f2937;
+            }
+            .clearBtn {
+              display: inline-flex;
+              align-items: center;
+              gap: 0.35rem;
+              font-size: 0.8rem;
+              font-weight: 600;
+              color: #ef4444;
+              background: #fef2f2;
+              border: 1px solid #fee2e2;
+              padding: 0.35rem 0.75rem;
+              border-radius: 8px;
+              cursor: pointer;
+              transition: all 0.2s ease;
+            }
+            .clearBtn:hover {
+              background: #fee2e2;
+            }
+            .stepGrid {
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+              gap: 1rem;
+              align-items: flex-end;
+            }
+            .stepCard {
+              display: flex;
+              flex-direction: column;
+              gap: 0.4rem;
+              position: relative;
+            }
+            .stepLabel {
+              font-size: 0.8rem;
+              font-weight: 600;
+              text-transform: uppercase;
+              letter-spacing: 0.04em;
+              color: #6b7280;
+              display: flex;
+              align-items: center;
+              gap: 0.4rem;
+            }
+            .stepBadge {
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
+              width: 20px;
+              height: 20px;
+              border-radius: 50%;
+              font-size: 0.75rem;
+              font-weight: 700;
+              background-color: #f3f4f6;
+              color: #4b5563;
+            }
+            .stepBadgeActive {
+              background-color: #FF8E29;
+              color: #ffffff;
+            }
+            .customSelect {
+              width: 100%;
+              padding: 0.65rem 2.2rem 0.65rem 0.85rem;
+              font-size: 0.9rem;
+              font-weight: 500;
+              color: #1f2937;
+              background-color: #f9fafb;
+              border: 1.5px solid #e5e7eb;
+              border-radius: 10px;
+              cursor: pointer;
+              transition: all 0.2s ease;
+              appearance: none;
+              background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+              background-position: right 0.75rem center;
+              background-repeat: no-repeat;
+              background-size: 1.2em 1.2em;
+            }
+            .customSelect:hover:not(:disabled) {
+              border-color: #FF8E29;
+              background-color: #ffffff;
+            }
+            .customSelect:focus {
+              outline: none;
+              border-color: #FF8E29;
+              box-shadow: 0 0 0 3px rgba(255, 142, 41, 0.15);
+              background-color: #ffffff;
+            }
+            .customSelect:disabled {
+              background-color: #f3f4f6;
+              color: #9ca3af;
+              cursor: not-allowed;
+              border-color: #e5e7eb;
+            }
+          `}</style>
 
-        {activeSubmenu === 'grafico-evolucao' && (
-          <div className={styles.filtersWrapper}>
-            <button
-              type="button"
-              className={styles.filterToggleButton}
-              onClick={() => setIsEvolucaoFilterOpen((prev) => !prev)}
-            >
-              <Filter size={20} />
-              <span>Filtros</span>
-              {isEvolucaoFilterOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-            </button>
+          <div className="filterHeader">
+            <div className="filterHeaderTitle">
+              <Filter size={18} color="#FF8E29" />
+              <span>Filtros da Série Histórica</span>
+            </div>
 
-            <div className={`${styles.filtersContent} ${isEvolucaoFilterOpen ? styles.open : ''}`}>
+            {isEvolucaoFilterActive && (
+              <button
+                type="button"
+                onClick={handleClearEvolucaoFilters}
+                className="clearBtn"
+              >
+                <RotateCcw size={14} />
+                Limpar filtros
+              </button>
+            )}
+          </div>
+
+          <div className="stepGrid">
+            <div className="stepCard">
+              <label className="stepLabel" htmlFor="evolucao-undAcad">
+                <span
+                  className={`stepBadge ${
+                    selectedEvolucaoFilters.undAcad ? 'stepBadgeActive' : ''
+                  }`}
+                >
+                  1
+                </span>
+                Unidade Acadêmica
+              </label>
               <select
+                id="evolucao-undAcad"
                 name="undAcad"
                 value={selectedEvolucaoFilters.undAcad}
                 onChange={handleEvolucaoFilterChange}
-                className={styles.filterSelect}
+                className="customSelect"
               >
-                <option value="">Todas as unidades acadêmicas</option>
+                <option value="">Todas as Unidades Acadêmicas</option>
                 {(evolucaoFilterOptions.undAcad ?? []).map((unidade, index) => (
                   <option key={`evolucao-und-${unidade}-${index}`} value={unidade}>
                     {unidade}
                   </option>
                 ))}
               </select>
+            </div>
 
+            <div className="stepCard">
+              <label className="stepLabel" htmlFor="evolucao-curso">
+                <span
+                  className={`stepBadge ${
+                    selectedEvolucaoFilters.curso ? 'stepBadgeActive' : ''
+                  }`}
+                >
+                  2
+                </span>
+                Curso
+              </label>
               <select
+                id="evolucao-curso"
                 name="curso"
                 value={selectedEvolucaoFilters.curso}
                 onChange={handleEvolucaoFilterChange}
                 disabled={!selectedEvolucaoFilters.undAcad || loadingEvolucaoCursos}
-                className={styles.filterSelect}
+                className="customSelect"
               >
                 <option value="">
                   {!selectedEvolucaoFilters.undAcad
-                    ? 'Todos os cursos'
+                    ? 'Selecione uma unidade acadêmica primeiro'
                     : loadingEvolucaoCursos
-                      ? 'Carregando cursos...'
-                      : 'Todos os cursos'}
+                    ? 'Carregando cursos...'
+                    : 'Todos os Cursos'}
                 </option>
                 {!loadingEvolucaoCursos &&
                   (evolucaoFilterOptions.cursos ?? []).map((curso, index) => (
@@ -522,76 +741,113 @@ export default function AvaliacaoInLocoDadosPage() {
               </select>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        <div className={styles.tabsContainer}>
-          {tabs.map((tab) => (
+      {/* Tabs */}
+      <div className={styles.tabsContainer}>
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          return (
             <button
               key={tab.key}
               className={activeSubmenu === tab.key ? styles.activeTab : styles.tab}
               onClick={() => setActiveSubmenu(tab.key)}
             >
-              {tab.label}
+              <Icon size={16} />
+              <span>{tab.label}</span>
             </button>
-          ))}
-        </div>
-
-        <div className={styles.chartDisplayArea}>
-          {activeSubmenu === 'media' && (
-            <section className="inloco-chart-section">
-              {!allFiltersSelected ? (
-                <p className="inloco-status-message">
-                  Selecione todos os filtros para visualizar o gráfico de média das dimensões.
-                </p>
-              ) : loadingMedia ? (
-                <p className="inloco-status-message">
-                  Carregando média das dimensões...
-                </p>
-              ) : !mediaDimensoes.labels.length ? (
-                <p className="inloco-status-message">
-                  Não há dados para os filtros selecionados.
-                </p>
-              ) : (
-                <MediaDimensoesChart data={mediaDimensoes} title={mediaChartTitle} />
-              )}
-            </section>
-          )}
-
-          {activeSubmenu === 'grafico-evolucao' && (
-            <>
-              <section className="inloco-chart-section">
-                {loadingEvolucao ? (
-                  <p className="inloco-status-message">
-                    Carregando gráfico de evolução...
-                  </p>
-                ) : !graficoEvolucaoData.anos?.length ? (
-                  <p className="inloco-status-message">
-                    Não há dados para o gráfico de evolução.
-                  </p>
-                ) : (
-                  <>
-                    <GraficoEvolucaoLineChart data={graficoEvolucaoData} />
-                    <div className="inloco-chart-spacing">
-                      <GraficoEvolucaoD123LineChart data={graficoEvolucaoData} />
-                    </div>
-                    <div className="inloco-chart-spacing">
-                      <QuantidadeCursosAvaliadosChart
-                        data={graficoEvolucaoData?.quantidadeCursosAvaliados}
-                      />
-                    </div>
-                    <div className="inloco-chart-spacing">
-                      <MediaDimensaoAnualChart
-                        data={graficoEvolucaoData?.mediaDimensaoAnual}
-                      />
-                    </div>
-                  </>
-                )}
-              </section>
-            </>
-          )}
-        </div>
+          );
+        })}
       </div>
-    </>
+
+      {/* Área de Visualização dos Gráficos */}
+      <div className={styles.chartDisplayArea}>
+        {activeSubmenu === 'media' && (
+          <div className={styles.chartsMainContainer} style={{ marginTop: 0 }}>
+            {!allFiltersSelected ? (
+              <div
+                className={styles.chartContainerCard}
+                style={{ textAlign: 'center', padding: '3.5rem 1.5rem' }}
+              >
+                <Filter size={44} color="#FF8E29" style={{ margin: '0 auto 1.25rem' }} />
+                <h3 style={{ fontSize: '1.2rem', fontWeight: '700', color: '#1F2937', marginBottom: '0.5rem' }}>
+                  Selecione os Filtros
+                </h3>
+                <p style={{ color: '#6B7280', fontSize: '0.95rem', maxWidth: '500px', margin: '0 auto' }}>
+                  Para visualizar a média das dimensões D1, D2 e D3, selecione todos os passos dos filtros acima (Ano, Unidade, Modalidade, Campus e Curso).
+                </p>
+              </div>
+            ) : loadingMedia ? (
+              <div
+                className={styles.chartContainerCard}
+                style={{ minHeight: '380px', position: 'relative' }}
+              >
+                <LoadingOverlay message="Carregando médias das dimensões..." />
+              </div>
+            ) : !mediaDimensoes.labels.length ? (
+              <div
+                className={styles.chartContainerCard}
+                style={{ textAlign: 'center', padding: '3rem 1rem' }}
+              >
+                <HelpCircle size={40} color="#9ca3af" style={{ margin: '0 auto 1rem' }} />
+                <p style={{ color: '#6b7280', fontSize: '1rem', margin: 0 }}>
+                  Não há dados disponíveis para os filtros selecionados.
+                </p>
+              </div>
+            ) : (
+              <div className={styles.chartContainerCard}>
+                <MediaDimensoesChart data={mediaDimensoes} title={mediaChartTitle} />
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeSubmenu === 'grafico-evolucao' && (
+          <div className={styles.chartsMainContainer} style={{ marginTop: 0 }}>
+            {loadingEvolucao ? (
+              <div
+                className={styles.chartContainerCard}
+                style={{ minHeight: '380px', position: 'relative' }}
+              >
+                <LoadingOverlay message="Carregando série histórica..." />
+              </div>
+            ) : !graficoEvolucaoData.anos?.length ? (
+              <div
+                className={styles.chartContainerCard}
+                style={{ textAlign: 'center', padding: '3rem 1rem' }}
+              >
+                <HelpCircle size={40} color="#9ca3af" style={{ margin: '0 auto 1rem' }} />
+                <p style={{ color: '#6b7280', fontSize: '1rem', margin: 0 }}>
+                  Não há dados para o gráfico de evolução histórica.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className={styles.chartContainerCard}>
+                  <GraficoEvolucaoLineChart data={graficoEvolucaoData} />
+                </div>
+
+                <div className={styles.chartContainerCard}>
+                  <GraficoEvolucaoD123LineChart data={graficoEvolucaoData} />
+                </div>
+
+                <div className={styles.chartContainerCard}>
+                  <QuantidadeCursosAvaliadosChart
+                    data={graficoEvolucaoData?.quantidadeCursosAvaliados}
+                  />
+                </div>
+
+                <div className={styles.chartContainerCard}>
+                  <MediaDimensaoAnualChart
+                    data={graficoEvolucaoData?.mediaDimensaoAnual}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
-
