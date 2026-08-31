@@ -30,7 +30,7 @@ export default function DiscenteFilters({
   const isAnyFilterActive = hasYearSelected || hasCampusSelected || hasCourseSelected;
 
   return (
-    <div className={styles.filtersContainer}>
+    <div className="filtersContainer">
       <style jsx>{`
         .filtersContainer {
           background-color: #ffffff;
