@@ -14,7 +14,7 @@ import {
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import styles from '@/styles/dados.module.css';
 
-// 2. Registrar o plugin
+// 2. Registrar componentes do Chart.js
 ChartJS.register(
   CategoryScale, 
   LinearScale, 
@@ -24,6 +24,12 @@ ChartJS.register(
   Legend,
   ChartDataLabels
 );
+
+// Garantir que datalabels fique desabilitado globalmente por padrão
+// para que apenas gráficos que declarem explicitamente display ativem o plugin
+if (ChartJS.defaults?.plugins?.datalabels) {
+  ChartJS.defaults.plugins.datalabels.display = false;
+}
 
 /* ======================================================
    Helpers de Tooltip
@@ -152,12 +158,19 @@ export default function QuestionChart({
       },
 
       datalabels: {
+        display: (ctx) => {
+          const val = ctx.dataset?.data?.[ctx.dataIndex];
+          return val !== null && val !== undefined && Number.isFinite(Number(val));
+        },
         anchor: 'end', 
         align: 'top',  
         offset: 5,     
         color: '#444',
         font: { weight: 'bold', size: 12 },
-        formatter: (value) => value.toFixed(2),
+        formatter: (value) => {
+          const num = Number(value);
+          return Number.isFinite(num) ? num.toFixed(2) : '';
+        },
       },
 
       tooltip: {
@@ -211,7 +224,7 @@ export default function QuestionChart({
 
   return (
     <div className={styles.chartContainer} onMouseLeave={() => hideTooltip(document.getElementById(TOOLTIP_ID))}>
-      <Bar data={chartData} options={options} />
+      <Bar data={chartData} options={options} plugins={[ChartDataLabels]} />
     </div>
   );
 }

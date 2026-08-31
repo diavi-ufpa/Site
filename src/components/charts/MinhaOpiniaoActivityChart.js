@@ -15,6 +15,9 @@ const ActivityChart = ({ chartData, title }) => {
       legend: {
         position: 'bottom',
       },
+      datalabels: {
+        display: false,
+      },
     },
     scales: {
         y: {

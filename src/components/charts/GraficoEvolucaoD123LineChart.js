@@ -81,7 +81,9 @@ export default function GraficoEvolucaoD123LineChart({ data }) {
         position: 'bottom',
       },
       verticalValueLabels: false,
-      datalabels: false,
+      datalabels: {
+        display: false,
+      },
       tooltip: {
         callbacks: {
           label: (context) => {

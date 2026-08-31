@@ -28,6 +28,10 @@ ChartJS.register(
   ChartDataLabels
 );
 
+if (ChartJS.defaults?.plugins?.datalabels) {
+  ChartJS.defaults.plugins.datalabels.display = false;
+}
+
 const tabs = [
   { key: 'razao', label: 'Razao do Percentual' },
   { key: 'percentual', label: 'Percentual de Acerto' },
@@ -72,7 +76,7 @@ function makeUrl(endpoint, params = {}) {
   return `/api/microdados-db?${search.toString()}`;
 }
 
-function chartOptions({ horizontal = false, max = undefined, xTitle = '' } = {}) {
+function chartOptions({ horizontal = false, max = undefined, xTitle = '', enableDataLabels = true } = {}) {
   return {
     indexAxis: horizontal ? 'y' : 'x',
     responsive: true,
@@ -80,7 +84,10 @@ function chartOptions({ horizontal = false, max = undefined, xTitle = '' } = {})
     plugins: {
       legend: { position: 'bottom' },
       datalabels: {
-        display: true,
+        display: enableDataLabels ? (ctx) => {
+          const val = ctx.dataset?.data?.[ctx.dataIndex];
+          return val !== null && val !== undefined && Number.isFinite(Number(val));
+        } : false,
         anchor: 'end',
         align: 'end',
         formatter: (value) => number(value),
@@ -381,7 +388,7 @@ export default function MicrodadosClient() {
           <section className={styles.chartContainerCard}>
             <h3 className={styles.chartTitle}>Razao de Acertos: {dashboard?.curso?.nome_curso}</h3>
             <div className={styles.chartContainer} style={{ height: Math.max(420, razaoRows.length * 34) }}>
-              <Bar data={razaoData} options={chartOptions({ horizontal: true, xTitle: 'Razao do percentual de acerto (UFPA / Brasil)' })} />
+              <Bar data={razaoData} options={chartOptions({ horizontal: true, xTitle: 'Razao do percentual de acerto (UFPA / Brasil)' })} plugins={[ChartDataLabels]} />
             </div>
           </section>
         ) : <EmptyState>Sem dados de Componente Especifico para este curso.</EmptyState>
@@ -392,7 +399,7 @@ export default function MicrodadosClient() {
           <section className={styles.chartContainerCard}>
             <h3 className={styles.chartTitle}>Percentual de Acertos por Tema: {dashboard?.curso?.nome_curso}</h3>
             <div className={styles.chartContainer} style={{ height: Math.max(420, percentualRows.length * 38) }}>
-              <Bar data={percentualData} options={chartOptions({ horizontal: true, max: 100, xTitle: 'Percentual de acerto (%)' })} />
+              <Bar data={percentualData} options={chartOptions({ horizontal: true, max: 100, xTitle: 'Percentual de acerto (%)' })} plugins={[ChartDataLabels]} />
             </div>
           </section>
         ) : <EmptyState>Sem dados de Componente Especifico para este curso.</EmptyState>
@@ -461,14 +468,14 @@ export default function MicrodadosClient() {
               <div className={styles.chartContainerCard}>
                 <h3 className={styles.chartTitle}>Grafico de Medias</h3>
                 <div className={styles.chartContainer}>
-                  <Bar data={qeMediaData} options={chartOptions({ max: 6, xTitle: 'Questao' })} />
+                  <Bar data={qeMediaData} options={chartOptions({ max: 6, xTitle: 'Questao' })} plugins={[ChartDataLabels]} />
                 </div>
               </div>
 
               <div className={styles.chartContainerCard}>
                 <h3 className={styles.chartTitle}>Grafico de Contagem</h3>
                 <div className={styles.chartContainer}>
-                  <Line data={qeCountData} options={chartOptions()} />
+                  <Line data={qeCountData} options={chartOptions({ enableDataLabels: false })} />
                 </div>
               </div>
             </div>

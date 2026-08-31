@@ -55,8 +55,7 @@ ChartJS.register(
   BarElement,
   Title,
   Tooltip,
-  Legend,
-  verticalTopValuesPlugin
+  Legend
 );
 
 export default function MediaDimensaoAnualChart({ data }) {
@@ -102,7 +101,7 @@ export default function MediaDimensaoAnualChart({ data }) {
     plugins: {
       verticalTopValuesPlugin: true,
       legend: { display: true, position: 'bottom' },
-      datalabels: false,
+      datalabels: { display: false },
       verticalValueLabels: false,
       topLabelsPlugin: false,
       tooltip: {
@@ -137,7 +136,7 @@ export default function MediaDimensaoAnualChart({ data }) {
     <>
       <h3 className={styles.chartTitle}>Média por Dimensão Anual</h3>
       <div className={styles.chartContainer}>
-        <Bar data={chartData} options={options} />
+        <Bar data={chartData} options={options} plugins={[verticalTopValuesPlugin]} />
       </div>
     </>
   );

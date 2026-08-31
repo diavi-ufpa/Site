@@ -14,6 +14,10 @@ import styles from '@/styles/dados.module.css';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartDataLabels);
 
+if (ChartJS.defaults?.plugins?.datalabels) {
+  ChartJS.defaults.plugins.datalabels.display = false;
+}
+
 const ActivityChart = ({
   chartData,
   title,
@@ -33,12 +37,21 @@ const ActivityChart = ({
       legend: { display: false }, // usamos legenda customizada ao lado
       datalabels: {
         display: (ctx) => {
+          const val = ctx.dataset?.data?.[ctx.dataIndex];
+          if (val === null || val === undefined || Number(val) <= 0 || !Number.isFinite(Number(val))) {
+            return false;
+          }
           if (isPercentual) return true;
           return ctx.datasetIndex === 0;
         },
         anchor: 'end',
         align: 'end',
-        formatter: (value) => Math.round(value * 100) / 100,
+        offset: 4,
+        formatter: (value) => {
+          const num = Number(value);
+          if (!Number.isFinite(num) || num <= 0) return '';
+          return isPercentual ? `${Math.round(num * 100) / 100}` : `${num.toFixed(2)}`;
+        },
         font: { size: 10 },
         color: '#444'
       },
@@ -103,7 +116,7 @@ const ActivityChart = ({
             minHeight: 0
           }}
         >
-          <Bar options={finalOptions} data={chartData} />
+          <Bar options={finalOptions} data={chartData} plugins={[ChartDataLabels]} />
         </div>
 
         {/* Legenda ao lado, nunca por cima do gráfico */}

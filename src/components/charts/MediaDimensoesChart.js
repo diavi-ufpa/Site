@@ -72,9 +72,7 @@ ChartJS.register(
   BarElement,
   Title,
   Tooltip,
-  Legend,
-  barShadow3dPlugin,
-  verticalValueLabelsPlugin
+  Legend
 );
 
 export default function MediaDimensoesChart({ data, title }) {
@@ -174,7 +172,7 @@ export default function MediaDimensoesChart({ data, title }) {
     <>
       <h3 className={styles.chartTitle}>{title}</h3>
       <div className={styles.chartContainer}>
-        <Bar data={chartData} options={options} />
+        <Bar data={chartData} options={options} plugins={[barShadow3dPlugin, verticalValueLabelsPlugin]} />
       </div>
     </>
   );

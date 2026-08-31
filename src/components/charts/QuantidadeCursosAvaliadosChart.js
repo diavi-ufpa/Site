@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { Bar } from 'react-chartjs-2';
 import {
@@ -46,8 +46,7 @@ ChartJS.register(
   BarElement,
   Title,
   Tooltip,
-  Legend,
-  topLabelsPlugin
+  Legend
 );
 
 export default function QuantidadeCursosAvaliadosChart({ data }) {
@@ -77,7 +76,7 @@ export default function QuantidadeCursosAvaliadosChart({ data }) {
     plugins: {
       topLabelsPlugin: true,
       legend: { display: false },
-      datalabels: false,
+      datalabels: { display: false },
       verticalValueLabels: false,
       verticalTopValuesPlugin: false,
       tooltip: {
@@ -110,7 +109,7 @@ export default function QuantidadeCursosAvaliadosChart({ data }) {
     <>
       <h3 className={styles.chartTitle}>Quant. Cursos Avaliados</h3>
       <div className={styles.chartContainer}>
-        <Bar data={chartData} options={options} />
+        <Bar data={chartData} options={options} plugins={[topLabelsPlugin]} />
       </div>
     </>
   );
