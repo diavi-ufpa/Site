@@ -972,6 +972,7 @@ function RankingDimensaoSection({ title, description, groups = [] }) {
 export default function DiscenteDashboardClient({ initialData, filtersOptions }) {
   const { authorizedFetch } = useAuth();
   const [activeTab, setActiveTab] = useState('dimensoes');
+
   const [selectedFilters, setSelectedFilters] = useState({
     dimensao: '',
     ano: '',
@@ -1069,6 +1070,7 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
         }
 
         const data = await res.json();
+        const fetchedAnos = data?.anos ?? [];
 
         setDynamicFilters((prev) => ({
           dimensoes: prev?.dimensoes ?? [
@@ -1077,14 +1079,15 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
             { value: '3', label: 'Dimensão 3' },
             { value: '4', label: 'Dimensão 4' },
           ],
-          anos: data?.anos ?? [],
-          campus: [],
-          cursos: [],
+          anos: fetchedAnos,
+          campus: prev?.campus ?? [],
+          cursos: prev?.cursos ?? [],
         }));
+
         avaliaTimingLog('filters.initial', timingStartedAt, {
           ...avaliaTimingContext({ consultarBanco, usarBancoGrafico }),
           outcome: 'success',
-          resultCount: data?.anos?.length ?? 0,
+          resultCount: fetchedAnos.length,
         });
       } catch (err) {
         if (err?.name === 'AbortError') {
@@ -1220,6 +1223,12 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
           ...prev,
           cursos: data?.cursos ?? [],
         }));
+
+        setSelectedFilters((prev) => ({
+          ...prev,
+          curso: '',
+        }));
+
         avaliaTimingLog('filters.courses', timingStartedAt, {
           ...avaliaTimingContext(selectedFilters),
           outcome: 'success',
