@@ -14,10 +14,32 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 30px;
+  margin-bottom: 26px;
+  flex-wrap: wrap;
+  gap: 14px;
 }
-.headerTitle { font-size: 2rem; font-weight: 700; color: var(--text-dark); }
-.headerSubtitle { font-size: 1rem; color: var(--text-light); }
+.headerTextGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.headerTitle { font-size: 1.85rem; font-weight: 700; color: var(--text-dark); margin: 0; }
+.headerSubtitle { font-size: 0.95rem; color: var(--text-light); margin: 0; }
+.headerDateBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  padding: 7px 14px;
+  border-radius: 9999px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #4b5563;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  white-space: nowrap;
+}
 .headerActions { display: flex; gap: 10px; }
 .iconButton {
   background: var(--surface-color);

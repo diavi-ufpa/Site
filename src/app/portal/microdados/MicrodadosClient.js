@@ -14,6 +14,7 @@ import {
 } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { useAuth } from '@/contexts/AuthContext';
+import Header from '@/components/ui/Header';
 import StatCard from '@/components/ui/StatCard';
 import DashboardSkeleton from '@/components/ui/DashboardSkeleton';
 import LoadingOverlay from '@/components/ui/LoadingOverlay';
@@ -413,12 +414,24 @@ export default function MicrodadosClient() {
   };
 
   if (isInitialLoading) {
-    return <DashboardSkeleton />;
+    return (
+      <div className={styles.mainContent}>
+        <Header
+          title="Microdados Enade"
+          subtitle="Consulta e análise dos microdados do Enade (INEP / MEC)"
+        />
+        <DashboardSkeleton />
+      </div>
+    );
   }
 
   if (error) {
     return (
       <div className={styles.mainContent}>
+        <Header
+          title="Microdados Enade"
+          subtitle="Consulta e análise dos microdados do Enade (INEP / MEC)"
+        />
         <div className={styles.errorMessage}>{error}</div>
       </div>
     );
@@ -431,7 +444,10 @@ export default function MicrodadosClient() {
 
   return (
     <div className={styles.mainContent}>
-      {loading && <LoadingOverlay isFullScreen={true} message="Carregando microdados do Enade..." />}
+      <Header
+        title="Microdados Enade"
+        subtitle="Consulta e análise dos microdados do Enade (INEP / MEC)"
+      />
 
       {/* KPI Stat Cards */}
       <div className={styles.statsGrid}>
@@ -484,18 +500,20 @@ export default function MicrodadosClient() {
           }
           .stepGrid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: 180px 240px 1fr;
             gap: 1rem;
             align-items: flex-end;
+          }
+          @media (max-width: 900px) {
+            .stepGrid {
+              grid-template-columns: 1fr;
+            }
           }
           .stepCard {
             display: flex;
             flex-direction: column;
             gap: 0.4rem;
             position: relative;
-          }
-          .stepCardWide {
-            grid-column: 1 / -1;
           }
           .stepLabel {
             font-size: 0.8rem;
@@ -602,7 +620,7 @@ export default function MicrodadosClient() {
             </select>
           </div>
 
-          <div className="stepCard stepCardWide">
+          <div className="stepCard">
             <label className="stepLabel" htmlFor="microdados-curso">
               <span className="stepBadge stepBadgeActive">3</span>
               Curso de Graduação
@@ -643,7 +661,8 @@ export default function MicrodadosClient() {
       </div>
 
       {/* Conteúdo das Abas */}
-      <div className={styles.chartDisplayArea}>
+      <div className={styles.chartDisplayArea} style={{ position: 'relative', minHeight: '380px' }}>
+        {loading && <LoadingOverlay message="Carregando microdados do Enade..." />}
         {activeTab === 'razao' &&
           (razaoRows.length ? (
             <section className={styles.chartContainerCard}>

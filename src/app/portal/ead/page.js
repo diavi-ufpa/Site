@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import EadDashboardClient from './EadDashboardClient';
 import styles from '../../../styles/dados.module.css';
 import { useAuth } from '@/contexts/AuthContext';
+import Header from '@/components/ui/Header';
 import DashboardSkeleton from '@/components/ui/DashboardSkeleton';
 
 export default function EadPage() {
@@ -33,13 +34,24 @@ export default function EadPage() {
   }, [authorizedFetch]);
 
   if (error) {
-    return <div className={styles.mainContent}><h1 className={styles.title}>Avaliação EAD</h1><p className={styles.errorMessage}>{error}</p></div>;
+    return (
+      <div className={styles.mainContent}>
+        <Header
+          title="Avaliação EAD"
+          subtitle="Questionário de autoavaliação dos cursos de graduação a distância da UFPA"
+        />
+        <p className={styles.errorMessage}>{error}</p>
+      </div>
+    );
   }
 
   if (!data) {
     return (
       <div className={styles.mainContent}>
-        <h1 className={styles.title} style={{ marginBottom: '1.5rem' }}>Avaliação EAD</h1>
+        <Header
+          title="Avaliação EAD"
+          subtitle="Questionário de autoavaliação dos cursos de graduação a distância da UFPA"
+        />
         <DashboardSkeleton />
       </div>
     );
@@ -60,7 +72,10 @@ export default function EadPage() {
 
   return (
     <div className={styles.mainContent}>
-      <h1 className={styles.title} style={{ marginBottom: '1rem' }}>Avaliação EAD</h1>
+      <Header
+        title="Avaliação EAD"
+        subtitle="Questionário de autoavaliação dos cursos de graduação a distância da UFPA"
+      />
       <Suspense fallback={<DashboardSkeleton />}>
         <EadDashboardClient
           initialData={{

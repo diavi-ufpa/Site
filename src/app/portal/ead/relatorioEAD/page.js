@@ -5,6 +5,8 @@ import { useSearchParams } from 'next/navigation';
 import styles from '../../../../styles/dados.module.css';
 import RelatorioEadClient from './relatorio-eadead-client';
 import { useAuth } from '@/contexts/AuthContext';
+import Header from '@/components/ui/Header';
+import DashboardSkeleton from '@/components/ui/DashboardSkeleton';
 
 function ReportPageContent() {
   const searchParams = useSearchParams();
@@ -33,12 +35,36 @@ function ReportPageContent() {
     return () => controller.abort();
   }, [authorizedFetch]);
 
-  if (error) return <div className={styles.mainContent}><p className={styles.errorMessage}>{error}</p></div>;
-  if (!data) return <div className={styles.mainContent}><p className={styles.loadingMessage}>Carregando interface do relatório...</p></div>;
+  if (error) {
+    return (
+      <div className={styles.mainContent}>
+        <Header
+          title="Gerar Relatório — AVALIA EAD"
+          subtitle="Configuração e exportação de relatórios da autoavaliação EAD"
+        />
+        <p className={styles.errorMessage}>{error}</p>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className={styles.mainContent}>
+        <Header
+          title="Gerar Relatório — AVALIA EAD"
+          subtitle="Configuração e exportação de relatórios da autoavaliação EAD"
+        />
+        <DashboardSkeleton />
+      </div>
+    );
+  }
 
   return (
     <div className={styles.mainContent}>
-      <h1 className={styles.title}>Gerar Relatório — AVALIA EAD</h1>
+      <Header
+        title="Gerar Relatório — AVALIA EAD"
+        subtitle="Configuração e exportação de relatórios da autoavaliação EAD"
+      />
       <RelatorioEadClient
         filtersByYear={data.filtersByYear}
         reportDataByYear={data.reportDataByYear}
@@ -55,7 +81,17 @@ function ReportPageContent() {
 
 export default function Page() {
   return (
-    <Suspense fallback={<div className={styles.mainContent}><p className={styles.loadingMessage}>Carregando interface do relatório...</p></div>}>
+    <Suspense
+      fallback={
+        <div className={styles.mainContent}>
+          <Header
+            title="Gerar Relatório — AVALIA EAD"
+            subtitle="Configuração e exportação de relatórios da autoavaliação EAD"
+          />
+          <DashboardSkeleton />
+        </div>
+      }
+    >
       <ReportPageContent />
     </Suspense>
   );

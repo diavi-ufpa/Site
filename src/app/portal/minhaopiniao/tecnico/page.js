@@ -188,7 +188,7 @@ export default function TecnicoPage() {
   }
 
   return (
-    <div className={styles.container}>
+    <div className={styles.mainContent}>
       <Header
         title="Minha Opinião • Técnicos"
         subtitle="Análise das respostas do questionário institucional dos técnico-administrativos"
