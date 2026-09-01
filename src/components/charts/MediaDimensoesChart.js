@@ -10,61 +10,8 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 import styles from '@/styles/dados.module.css';
-
-const barShadow3dPlugin = {
-  id: 'barShadow3d',
-  beforeDatasetsDraw(chart) {
-    const { ctx } = chart;
-    ctx.save();
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
-    ctx.shadowBlur = 8;
-    ctx.shadowOffsetX = 3;
-    ctx.shadowOffsetY = 3;
-  },
-  afterDatasetsDraw(chart) {
-    chart.ctx.restore();
-  },
-};
-
-const verticalValueLabelsPlugin = {
-  id: 'verticalValueLabels',
-  afterDatasetsDraw(chart) {
-    if (chart?.config?.type !== 'bar') return;
-    if (chart?.options?.plugins?.verticalValueLabels !== true) return;
-
-    const { ctx } = chart;
-    ctx.save();
-    ctx.fillStyle = '#111827';
-    ctx.font = '600 10px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-
-    chart.data.datasets.forEach((dataset, datasetIndex) => {
-      const meta = chart.getDatasetMeta(datasetIndex);
-      if (!meta || meta.hidden) return;
-
-      meta.data.forEach((bar, index) => {
-        const rawValue = dataset.data?.[index];
-        if (rawValue === null || rawValue === undefined || Number.isNaN(Number(rawValue))) {
-          return;
-        }
-
-        const text = `- ${Number(rawValue).toFixed(2).replace('.', ',')}`;
-        const x = bar.x;
-        const y = bar.y - 10;
-
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.rotate(-Math.PI / 2);
-        ctx.fillText(text, 0, 0);
-        ctx.restore();
-      });
-    });
-
-    ctx.restore();
-  },
-};
 
 ChartJS.register(
   CategoryScale,
@@ -73,11 +20,10 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  barShadow3dPlugin,
-  verticalValueLabelsPlugin
+  ChartDataLabels
 );
 
-export default function MediaDimensoesChart({ data, title }) {
+export default function MediaDimensoesChart({ data, title, height = 400 }) {
   const dimensionDescriptions = {
     D1: 'ORGANIZAÇÃO DIDÁTICO-PEDAGÓGICA',
     D2: 'CORPO DOCENTE E TUTORIAL',
@@ -88,40 +34,40 @@ export default function MediaDimensoesChart({ data, title }) {
     labels: data?.labels ?? [],
     datasets: [
       {
-        label: 'D1',
+        label: 'D1 — Didático-Pedagógica',
         data: data?.d1 ?? [],
-        backgroundColor: 'rgba(54, 162, 235, 0.8)',
-        borderColor: 'rgba(54, 162, 235, 1)',
-        borderWidth: 1.5,
-        borderRadius: 4,
+        backgroundColor: '#1D556F',
+        borderColor: '#1D556F',
+        borderWidth: 1,
+        borderRadius: 6,
         borderSkipped: false,
-        barPercentage: 0.7,
-        categoryPercentage: 0.62,
-        maxBarThickness: 24,
+        barPercentage: 0.65,
+        categoryPercentage: 0.6,
+        maxBarThickness: 36,
       },
       {
-        label: 'D2',
+        label: 'D2 — Docente e Tutorial',
         data: data?.d2 ?? [],
-        backgroundColor: 'rgba(255, 142, 41, 0.8)',
-        borderColor: 'rgba(255, 142, 41, 1)',
-        borderWidth: 1.5,
-        borderRadius: 4,
+        backgroundColor: '#FF8E29',
+        borderColor: '#FF8E29',
+        borderWidth: 1,
+        borderRadius: 6,
         borderSkipped: false,
-        barPercentage: 0.7,
-        categoryPercentage: 0.62,
-        maxBarThickness: 24,
+        barPercentage: 0.65,
+        categoryPercentage: 0.6,
+        maxBarThickness: 36,
       },
       {
-        label: 'D3',
+        label: 'D3 — Infraestrutura',
         data: data?.d3 ?? [],
-        backgroundColor: 'rgba(107, 114, 128, 0.8)',
-        borderColor: 'rgba(107, 114, 128, 1)',
-        borderWidth: 1.5,
-        borderRadius: 4,
+        backgroundColor: '#288FB4',
+        borderColor: '#288FB4',
+        borderWidth: 1,
+        borderRadius: 6,
         borderSkipped: false,
-        barPercentage: 0.7,
-        categoryPercentage: 0.62,
-        maxBarThickness: 24,
+        barPercentage: 0.65,
+        categoryPercentage: 0.6,
+        maxBarThickness: 36,
       },
     ],
   };
@@ -130,53 +76,85 @@ export default function MediaDimensoesChart({ data, title }) {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      verticalValueLabels: true,
-      legend: { display: true, position: 'bottom' },
-      title: { display: false },
+      legend: {
+        display: true,
+        position: 'bottom',
+        labels: {
+          usePointStyle: true,
+          pointStyle: 'rectRounded',
+          font: { size: 12, weight: '600' },
+          padding: 16,
+          color: '#374151',
+        },
+      },
       datalabels: {
-        display: false,
+        display: (ctx) => {
+          const val = ctx.dataset?.data?.[ctx.dataIndex];
+          return val !== null && val !== undefined && Number.isFinite(Number(val));
+        },
+        anchor: 'end',
+        align: 'top',
+        offset: 4,
+        color: '#1F2937',
+        font: { size: 11, weight: '700' },
+        formatter: (value) => (Number.isFinite(Number(value)) ? Number(value).toFixed(2).replace('.', ',') : ''),
       },
       tooltip: {
+        backgroundColor: '#0F172A',
+        titleFont: { size: 12, weight: '700' },
+        bodyFont: { size: 12 },
+        padding: 10,
+        cornerRadius: 8,
         callbacks: {
           label: (context) => {
-            const dimension = context.dataset.label;
-            const description = dimensionDescriptions[dimension] ?? '';
-            const value = Number(context.raw ?? 0).toFixed(2);
-            return `${dimension} - ${description}: ${value}`;
+            const rawLabel = context.dataset.label || '';
+            const dimCode = rawLabel.split(' ')[0];
+            const description = dimensionDescriptions[dimCode] ?? '';
+            const value = Number(context.raw ?? 0).toFixed(2).replace('.', ',');
+            return `${dimCode} (${description}): ${value}`;
           },
         },
       },
     },
     scales: {
       x: {
-        stacked: false,
         grid: { display: false },
         ticks: {
           maxRotation: 0,
           minRotation: 0,
           autoSkip: false,
-          font: { size: 10 },
+          font: { size: 11, weight: '600' },
+          color: '#374151',
         },
       },
       y: {
-        stacked: false,
         beginAtZero: true,
-        max: 5,
+        max: 5.2,
+        ticks: {
+          stepSize: 1,
+          font: { size: 11 },
+          color: '#6B7280',
+          callback: (value) => `${Number(value).toFixed(1).replace('.', ',')}`,
+        },
+        grid: {
+          color: '#F3F4F6',
+        },
         title: {
           display: true,
-          text: 'Média',
+          text: 'Média (0 a 5)',
+          font: { size: 12, weight: '600' },
+          color: '#6B7280',
         },
       },
     },
   };
 
   return (
-    <>
-      <h3 className={styles.chartTitle}>{title}</h3>
-      <div className={styles.chartContainer}>
-        <Bar data={chartData} options={options} />
+    <div className={styles.chartWrapper}>
+      {title && <h3 className={styles.chartTitle}>{title}</h3>}
+      <div className={styles.chartContainer} style={{ height }}>
+        <Bar data={chartData} options={options} plugins={[ChartDataLabels]} />
       </div>
-    </>
+    </div>
   );
 }
-

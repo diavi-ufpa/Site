@@ -8,7 +8,7 @@ import ActivityChart from '@/components/charts/ActivityChart';
 import styles from '../../../styles/dados.module.css';
 import { questionMapEad } from '@/lib/questionMappingEad';
 import StatCard from '@/components/ui/StatCard';
-import { Users, TrendingUp, TrendingDown } from 'lucide-react';
+import { Users, TrendingUp, TrendingDown, Search } from 'lucide-react';
 import BoxplotChart from '@/components/charts/BoxplotChart';
 
 // ---------------- Utils ----------------
@@ -730,39 +730,49 @@ function computeBestWorstGroup(year, yearObj) {
   }
 }
 
-/* ===== Helpers: dependência de filtros (curso -> disciplinas; polo -> disciplinas em 2025) ===== */
+/* ===== Helpers: dependência de filtros (ano -> polo -> curso -> disciplinas) ===== */
 function buildFilterOptionsDependent(initialDataByYear, filtersOptions, selectedFilters) {
   const year = selectedFilters.ano;
+  const anos = sanitizeList(filtersOptions.anos);
+  const dimensoes = sanitizeList(filtersOptions.dimensoes);
+
+  if (!year) {
+    return {
+      anos,
+      dimensoes,
+      polos: [],
+      cursos: [],
+      disciplinas: [],
+    };
+  }
+
   const yearObj = initialDataByYear?.[year] || {};
   const rows = yearObj.rows || [];
 
-  const anos = sanitizeList(filtersOptions.anos);
-  const dimensoes = sanitizeList(filtersOptions.dimensoes);
   const courseKey2025 = 'Qual é o seu Curso?';
   const poloKey2025 = 'Qual o seu Polo de Vinculação?';
   const courseKey2023 = rows[0]?.['Qual é o seu Curso?'] !== undefined ? 'Qual é o seu Curso?' : 'curso';
   const disciplinaKeys2023 = Object.keys(rows[0] || {}).filter(k => k.startsWith('Selecione para qual disciplina'));
 
+  const allPolos = year === '2025' ? uniqueSorted(rows.map(r => r?.[poloKey2025])) : [];
+
+  let rowsForCursos = rows;
+  if (year === '2025' && selectedFilters.polo && selectedFilters.polo !== 'todos') {
+    rowsForCursos = rowsForCursos.filter(r => r?.[poloKey2025] === selectedFilters.polo);
+  }
+
   const allCursos =
     year === '2025'
-      ? uniqueSorted(rows.map(r => r?.[courseKey2025]))
+      ? uniqueSorted(rowsForCursos.map(r => r?.[courseKey2025]))
       : uniqueSorted(rows.map(r => r?.[courseKey2023]));
 
-  const allPolos =
-    year === '2025'
-      ? uniqueSorted(rows.map(r => r?.[poloKey2025]))
-      : [];
-
-  let rowsForDisc = rows;
+  let rowsForDisc = rowsForCursos;
   if (year === '2025') {
-    if (selectedFilters.curso !== 'todos') {
+    if (selectedFilters.curso && selectedFilters.curso !== 'todos') {
       rowsForDisc = rowsForDisc.filter(r => r?.[courseKey2025] === selectedFilters.curso);
     }
-    if (selectedFilters.polo !== 'todos') {
-      rowsForDisc = rowsForDisc.filter(r => r?.[poloKey2025] === selectedFilters.polo);
-    }
   } else {
-    if (selectedFilters.curso !== 'todos') {
+    if (selectedFilters.curso && selectedFilters.curso !== 'todos') {
       rowsForDisc = rowsForDisc.filter(r => r?.[courseKey2023] === selectedFilters.curso);
     }
   }
@@ -800,11 +810,11 @@ export default function EadDashboardClient({
 }) {
   const [activeTab, setActiveTab] = useState('dimensoes');
   const [selectedFilters, setSelectedFilters] = useState({
-    ano: defaultYear,
-    dimensao: 'todos',
-    polo: 'todos',
-    curso: 'todos',
-    disciplina: 'todos'
+    ano: '',
+    polo: '',
+    curso: '',
+    disciplina: 'todos',
+    dimensao: 'todos'
   });
 
   const [isWideViewport, setIsWideViewport] = useState(false);
@@ -822,46 +832,67 @@ export default function EadDashboardClient({
   const getDataForYear = (year) =>
     (initialDataByYear && initialDataByYear[year]) ? initialDataByYear[year] : initialData;
 
-  const [dashboardData, setDashboardData] = useState(getDataForYear(selectedFilters.ano));
+  const [dashboardData, setDashboardData] = useState(null);
 
   useEffect(() => {
     const year = selectedFilters.ano;
+    if (!year) return;
     const yearData = getDataForYear(year);
     setDashboardData(yearData);
-
-    const foYear = initialDataByYear?.[year]?.filtersOptionsYear || {};
-    const polos = year === '2023' ? [] : sanitizeList(foYear.polos || filtersOptions.polos);
-    const cursos = sanitizeList(foYear.cursos || filtersOptions.cursos);
-    const disciplinas = sanitizeList(foYear.disciplinas || filtersOptions.disciplinas);
-
-    setSelectedFilters(prev => ({
-      ...prev,
-      polo: (year === '2023' || !polos.includes(prev.polo)) ? 'todos' : prev.polo,
-      curso: (!cursos.includes(prev.curso)) ? 'todos' : prev.curso,
-      disciplina: (!disciplinas.includes(prev.disciplina)) ? 'todos' : prev.disciplina
-    }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedFilters.ano]);
 
   const handleFilterChange = (event) => {
     const { name, value } = event.target;
-    setSelectedFilters(prev => ({ ...prev, [name]: value }));
+    setSelectedFilters(prev => {
+      if (name === 'ano') {
+        return {
+          ...prev,
+          ano: value,
+          polo: '',
+          curso: '',
+          disciplina: 'todos',
+          dimensao: 'todos',
+        };
+      }
+      if (name === 'polo') {
+        return {
+          ...prev,
+          polo: value,
+          curso: '',
+          disciplina: 'todos',
+        };
+      }
+      if (name === 'curso') {
+        return {
+          ...prev,
+          curso: value,
+          disciplina: 'todos',
+        };
+      }
+      return { ...prev, [name]: value };
+    });
   };
 
+  const hasSelectedYear = Boolean(selectedFilters.ano);
+  const is2023 = selectedFilters.ano === '2023';
+  const yearObj = initialDataByYear?.[selectedFilters.ano];
+  const foYear = yearObj?.filtersOptionsYear || {};
+  const polosList = selectedFilters.ano === '2023' ? [] : sanitizeList(foYear.polos || filtersOptions?.polos);
+  const hasPolos = polosList.length > 0;
+  const shouldShowPolo = !is2023 && hasPolos;
+
+  const hasSelectedPolo = !shouldShowPolo || Boolean(selectedFilters.polo);
+  const hasSelectedCourse = Boolean(selectedFilters.curso);
+  const hasRequiredFilters = hasSelectedYear && hasSelectedPolo && hasSelectedCourse;
+
+  const missingFiltersMessage = !hasSelectedYear
+    ? 'Selecione o ano para mostrar os gráficos e estatísticas.'
+    : shouldShowPolo && !hasSelectedPolo
+      ? 'Selecione o polo para mostrar os gráficos e estatísticas.'
+      : 'Selecione o curso para mostrar os gráficos e estatísticas.';
+
   const filtersForUi = useMemo(() => {
-    const f = buildFilterOptionsDependent(initialDataByYear, filtersOptions, selectedFilters);
-
-    if (selectedFilters.disciplina !== 'todos' && !f.disciplinas.includes(selectedFilters.disciplina)) {
-      setSelectedFilters(prev => ({ ...prev, disciplina: 'todos' }));
-    }
-    if (selectedFilters.polo !== 'todos' && !f.polos.includes(selectedFilters.polo)) {
-      setSelectedFilters(prev => ({ ...prev, polo: 'todos' }));
-    }
-    if (selectedFilters.curso !== 'todos' && !f.cursos.includes(selectedFilters.curso)) {
-      setSelectedFilters(prev => ({ ...prev, curso: 'todos' }));
-    }
-
-    return f;
+    return buildFilterOptionsDependent(initialDataByYear, filtersOptions, selectedFilters);
   }, [initialDataByYear, filtersOptions, selectedFilters]);
 
   const recalculated = useMemo(() => {
@@ -1213,273 +1244,348 @@ export default function EadDashboardClient({
   };
 
   return (
-    <>
-      <div className={styles.statsGrid}>
-        <StatCard title="Total de Respondentes" value={recalculated?.totalRespondentes ?? '...'} icon={<Users />} />
-        <StatCard title={`${bestWorst.labelType} mais bem avaliado`} value={truncateText(bestWorst.best) ?? '—'} icon={<TrendingUp />} />
-        <StatCard title={`${bestWorst.labelType} menos bem avaliado`} value={truncateText(bestWorst.worst) ?? '—'} icon={<TrendingDown />} />
+    <div style={{ position: 'relative', width: '100%' }}>
+      {/* Painel de Filtros sempre no topo */}
+      <div style={{ marginTop: '0.5rem', marginBottom: '1rem' }}>
+        <EadFilters
+          filters={filtersForUi}
+          selectedFilters={selectedFilters}
+          onFilterChange={handleFilterChange}
+        />
       </div>
 
-      <div style={{ marginTop: '1rem', marginBottom: '0.75rem' }}>
-        <EadFilters filters={filtersForUi} selectedFilters={selectedFilters} onFilterChange={handleFilterChange} />
-      </div>
-
-      <div>
-        <div className={styles.tabsContainer}>
-          {tabs.map(tab => (
-            <button
-              key={tab.key}
-              className={activeTab === tab.key ? styles.activeTab : styles.tab}
-              onClick={() => setActiveTab(tab.key)}
-            >
-              {tab.label}
-            </button>
-          ))}
+      {!hasRequiredFilters ? (
+        /* Estado Inicial Informativo (Empty State) */
+        <div
+          className={styles.chartDisplayArea}
+          style={{
+            minHeight: '340px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            textAlign: 'center',
+            padding: '3rem 2rem',
+            backgroundColor: '#ffffff',
+            borderRadius: '16px',
+            border: '1px dashed #E5E7EB',
+            boxShadow: '0 4px 14px rgba(0,0,0,0.03)',
+          }}
+        >
+          <div
+            style={{
+              width: '64px',
+              height: '64px',
+              borderRadius: '50%',
+              backgroundColor: '#FFF7ED',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: '1.25rem',
+            }}
+          >
+            <Search size={30} color="#FF8E29" />
+          </div>
+          <h3
+            style={{
+              fontSize: '1.25rem',
+              fontWeight: '700',
+              color: '#1F2937',
+              marginBottom: '0.5rem',
+            }}
+          >
+            Consulte a Avaliação EAD
+          </h3>
+          <p
+            style={{
+              fontSize: '0.95rem',
+              color: '#6B7280',
+              maxWidth: '480px',
+              margin: 0,
+              lineHeight: 1.5,
+            }}
+          >
+            {missingFiltersMessage}
+          </p>
         </div>
+      ) : (
+        <>
+          <div className={styles.statsGrid}>
+            <StatCard
+              title="Total de Respondentes"
+              value={recalculated?.totalRespondentes ?? '...'}
+              icon={<Users />}
+            />
+            <StatCard
+              title={`${bestWorst.labelType} mais bem avaliado`}
+              value={truncateText(bestWorst.best) ?? '—'}
+              icon={<TrendingUp />}
+            />
+            <StatCard
+              title={`${bestWorst.labelType} menos bem avaliado`}
+              value={truncateText(bestWorst.worst) ?? '—'}
+              icon={<TrendingDown />}
+            />
+          </div>
 
-        <div className={styles.chartDisplayArea}>
-          {(embedForPdf || activeTab === 'dimensoes') && (
-            <div style={gridDimensoes}>
-              <div id="chart-dimensoes" className={styles.chartContainer} style={leftBig}>
-                <ActivityChart
-                  chartData={chartData.dimensoes}
-                  title={`Proporções de Respostas por Dimensão (${selectedFilters.ano})`}
-                  customOptions={dimensoesOptions}
-                />
-              </div>
-
-              <div id="chart-medias-dimensoes" className={styles.chartContainer} style={rightTop}>
-                <ActivityChart
-                  chartData={chartData.mediasDimensoes}
-                  title={`Médias por Dimensão (${selectedFilters.ano})`}
-                  customOptions={mediasOptions}
-                />
-              </div>
-
-              <div
-                id="chart-boxplot-dimensoes"
-                className={styles.chartContainer}
-                style={{ ...rightBottom, ...boxplotCardStyle }}
-              >
-                <div style={boxplotDimPlotAreaStyle}>
-                  <BoxplotChart
-                    apiData={chartData.boxplotDimApex}
-                    title={`Boxplot das Médias por Dimensão (${selectedFilters.ano})`}
-                    customOptions={boxplotPdfOptions}
-                  />
-                </div>
-
-                <StatsTableInline
-                  id="table-stats-dimensoes"
-                  title="Estatísticas — Dimensões"
-                  rows={recalculated.boxplotDimStats}
-                  labelHeader="Dimensão"
-                />
-              </div>
+          <div>
+            <div className={styles.tabsContainer}>
+              {tabs.map(tab => (
+                <button
+                  key={tab.key}
+                  className={activeTab === tab.key ? styles.activeTab : styles.tab}
+                  onClick={() => setActiveTab(tab.key)}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
-          )}
 
-          {(embedForPdf || activeTab === 'autoavaliacao') && (
-            <div style={gridThreeRows}>
-              <div id="chart-proporcoes-autoav" className={styles.chartContainer} style={row1}>
-                <ActivityChart
-                  chartData={chartData.autoavaliacao}
-                  title={`Proporções de Respostas por Item - Autoavaliação Discente (${selectedFilters.ano})`}
-                  customOptions={proporcoesItensOptions}
-                />
-              </div>
+            <div className={styles.chartDisplayArea}>
+              {(embedForPdf || activeTab === 'dimensoes') && (
+                <div style={gridDimensoes}>
+                  <div id="chart-dimensoes" className={styles.chartContainer} style={leftBig}>
+                    <ActivityChart
+                      chartData={chartData.dimensoes}
+                      title={`Proporções de Respostas por Dimensão (${selectedFilters.ano})`}
+                      customOptions={dimensoesOptions}
+                    />
+                  </div>
 
-              <div
-                id="chart-boxplot-autoav"
-                className={styles.chartContainer}
-                style={{ ...row2, ...boxplotCardStyle }}
-              >
-                <div style={boxplotItemPlotAreaStyle}>
-                  <BoxplotChart
-                    apiData={chartData.boxplotAutoApex}
-                    title="Boxplot das Médias por Item (Autoavaliação)"
-                    customOptions={boxplotPdfOptions}
-                  />
+                  <div id="chart-medias-dimensoes" className={styles.chartContainer} style={rightTop}>
+                    <ActivityChart
+                      chartData={chartData.mediasDimensoes}
+                      title={`Médias por Dimensão (${selectedFilters.ano})`}
+                      customOptions={mediasOptions}
+                    />
+                  </div>
+
+                  <div
+                    id="chart-boxplot-dimensoes"
+                    className={styles.chartContainer}
+                    style={{ ...rightBottom, ...boxplotCardStyle }}
+                  >
+                    <div style={boxplotDimPlotAreaStyle}>
+                      <BoxplotChart
+                        apiData={chartData.boxplotDimApex}
+                        title={`Boxplot das Médias por Dimensão (${selectedFilters.ano})`}
+                        customOptions={boxplotPdfOptions}
+                      />
+                    </div>
+
+                    <StatsTableInline
+                      id="table-stats-dimensoes"
+                      title="Estatísticas — Dimensões"
+                      rows={recalculated.boxplotDimStats}
+                      labelHeader="Dimensão"
+                    />
+                  </div>
                 </div>
+              )}
 
-                <StatsTableInline
-                  id="table-stats-autoav"
-                  title="Estatísticas — Autoavaliação"
-                  rows={recalculated.boxplotAutoStats}
-                />
-              </div>
+              {(embedForPdf || activeTab === 'autoavaliacao') && (
+                <div style={gridThreeRows}>
+                  <div id="chart-proporcoes-autoav" className={styles.chartContainer} style={row1}>
+                    <ActivityChart
+                      chartData={chartData.autoavaliacao}
+                      title={`Proporções de Respostas por Item - Autoavaliação Discente (${selectedFilters.ano})`}
+                      customOptions={proporcoesItensOptions}
+                    />
+                  </div>
 
-              <div id="chart-medias-itens-autoav" className={styles.chartContainer} style={row3}>
-                <ActivityChart
-                  chartData={chartData.mediasItensAuto}
-                  title={`Médias dos Itens relacionados à Autoavaliação Discente (${selectedFilters.ano})`}
-                  customOptions={mediasItensOptions}
-                />
-              </div>
-            </div>
-          )}
+                  <div
+                    id="chart-boxplot-autoav"
+                    className={styles.chartContainer}
+                    style={{ ...row2, ...boxplotCardStyle }}
+                  >
+                    <div style={boxplotItemPlotAreaStyle}>
+                      <BoxplotChart
+                        apiData={chartData.boxplotAutoApex}
+                        title="Boxplot das Médias por Item (Autoavaliação)"
+                        customOptions={boxplotPdfOptions}
+                      />
+                    </div>
 
-          {(embedForPdf || activeTab === 'atitude') && (
-            <div style={gridThreeRows}>
-              <div id="chart-proporcoes-atitude" className={styles.chartContainer} style={row1}>
-                <ActivityChart
-                  chartData={chartData.acaoDocenteAtitude}
-                  title={`Proporções de Respostas por Item - Atitude Profissional (${selectedFilters.ano})`}
-                  customOptions={proporcoesItensOptions}
-                />
-              </div>
+                    <StatsTableInline
+                      id="table-stats-autoav"
+                      title="Estatísticas — Autoavaliação"
+                      rows={recalculated.boxplotAutoStats}
+                    />
+                  </div>
 
-              <div
-                id="chart-boxplot-atitude"
-                className={styles.chartContainer}
-                style={{ ...row2, ...boxplotCardStyle }}
-              >
-                <div style={boxplotItemPlotAreaStyle}>
-                  <BoxplotChart
-                    apiData={chartData.boxplotAtitudeApex}
-                    title="Boxplot das Médias por Item (Atitude Profissional)"
-                    customOptions={boxplotPdfOptions}
-                  />
+                  <div id="chart-medias-itens-autoav" className={styles.chartContainer} style={row3}>
+                    <ActivityChart
+                      chartData={chartData.mediasItensAuto}
+                      title={`Médias dos Itens relacionados à Autoavaliação Discente (${selectedFilters.ano})`}
+                      customOptions={mediasItensOptions}
+                    />
+                  </div>
                 </div>
+              )}
 
-                <StatsTableInline
-                  id="table-stats-atitude"
-                  title="Estatísticas — Atitude Profissional"
-                  rows={recalculated.boxplotAtitudeStats}
-                />
-              </div>
+              {(embedForPdf || activeTab === 'atitude') && (
+                <div style={gridThreeRows}>
+                  <div id="chart-proporcoes-atitude" className={styles.chartContainer} style={row1}>
+                    <ActivityChart
+                      chartData={chartData.acaoDocenteAtitude}
+                      title={`Proporções de Respostas por Item - Atitude Profissional (${selectedFilters.ano})`}
+                      customOptions={proporcoesItensOptions}
+                    />
+                  </div>
 
-              <div id="chart-medias-atitude" className={styles.chartContainer} style={row3}>
-                <ActivityChart
-                  chartData={chartData.mediasItensAtitude}
-                  title="Médias dos Itens relacionados à Atitude Profissional (Discente)"
-                  customOptions={mediasItensOptions}
-                />
-              </div>
-            </div>
-          )}
+                  <div
+                    id="chart-boxplot-atitude"
+                    className={styles.chartContainer}
+                    style={{ ...row2, ...boxplotCardStyle }}
+                  >
+                    <div style={boxplotItemPlotAreaStyle}>
+                      <BoxplotChart
+                        apiData={chartData.boxplotAtitudeApex}
+                        title="Boxplot das Médias por Item (Atitude Profissional)"
+                        customOptions={boxplotPdfOptions}
+                      />
+                    </div>
 
-          {(embedForPdf || activeTab === 'gestao') && (
-            <div style={gridThreeRows}>
-              <div id="chart-proporcoes-gestao" className={styles.chartContainer} style={row1}>
-                <ActivityChart
-                  chartData={chartData.acaoDocenteGestao}
-                  title={`Proporções de Respostas por Item - Gestão Didática (${selectedFilters.ano})`}
-                  customOptions={proporcoesItensOptions}
-                />
-              </div>
+                    <StatsTableInline
+                      id="table-stats-atitude"
+                      title="Estatísticas — Atitude Profissional"
+                      rows={recalculated.boxplotAtitudeStats}
+                    />
+                  </div>
 
-              <div
-                id="chart-boxplot-gestao"
-                className={styles.chartContainer}
-                style={{ ...row2, ...boxplotCardStyle }}
-              >
-                <div style={boxplotItemPlotAreaStyle}>
-                  <BoxplotChart
-                    apiData={chartData.boxplotGestaoApex}
-                    title="Boxplot das Médias por Item (Gestão Didática)"
-                    customOptions={boxplotPdfOptions}
-                  />
+                  <div id="chart-medias-atitude" className={styles.chartContainer} style={row3}>
+                    <ActivityChart
+                      chartData={chartData.mediasItensAtitude}
+                      title="Médias dos Itens relacionados à Atitude Profissional (Discente)"
+                      customOptions={mediasItensOptions}
+                    />
+                  </div>
                 </div>
+              )}
 
-                <StatsTableInline
-                  id="table-stats-gestao"
-                  title="Estatísticas — Gestão Didática"
-                  rows={recalculated.boxplotGestaoStats}
-                />
-              </div>
+              {(embedForPdf || activeTab === 'gestao') && (
+                <div style={gridThreeRows}>
+                  <div id="chart-proporcoes-gestao" className={styles.chartContainer} style={row1}>
+                    <ActivityChart
+                      chartData={chartData.acaoDocenteGestao}
+                      title={`Proporções de Respostas por Item - Gestão Didática (${selectedFilters.ano})`}
+                      customOptions={proporcoesItensOptions}
+                    />
+                  </div>
 
-              <div id="chart-medias-gestao" className={styles.chartContainer} style={row3}>
-                <ActivityChart
-                  chartData={chartData.mediasItensGestao}
-                  title="Médias dos Itens relacionados à Gestão Didática (Discente)"
-                  customOptions={mediasItensOptions}
-                />
-              </div>
-            </div>
-          )}
+                  <div
+                    id="chart-boxplot-gestao"
+                    className={styles.chartContainer}
+                    style={{ ...row2, ...boxplotCardStyle }}
+                  >
+                    <div style={boxplotItemPlotAreaStyle}>
+                      <BoxplotChart
+                        apiData={chartData.boxplotGestaoApex}
+                        title="Boxplot das Médias por Item (Gestão Didática)"
+                        customOptions={boxplotPdfOptions}
+                      />
+                    </div>
 
-          {(embedForPdf || activeTab === 'processo') && (
-            <div style={gridThreeRows}>
-              <div id="chart-proporcoes-processo" className={styles.chartContainer} style={row1}>
-                <ActivityChart
-                  chartData={chartData.acaoDocenteProcesso}
-                  title={`Proporções de Respostas por Item - Processo Avaliativo (${selectedFilters.ano})`}
-                  customOptions={proporcoesItensOptions}
-                />
-              </div>
+                    <StatsTableInline
+                      id="table-stats-gestao"
+                      title="Estatísticas — Gestão Didática"
+                      rows={recalculated.boxplotGestaoStats}
+                    />
+                  </div>
 
-              <div
-                id="chart-boxplot-processo"
-                className={styles.chartContainer}
-                style={{ ...row2, ...boxplotCardStyle }}
-              >
-                <div style={boxplotItemPlotAreaStyle}>
-                  <BoxplotChart
-                    apiData={chartData.boxplotProcessoApex}
-                    title="Boxplot das Médias por Item (Processo Avaliativo)"
-                    customOptions={boxplotPdfOptions}
-                  />
+                  <div id="chart-medias-gestao" className={styles.chartContainer} style={row3}>
+                    <ActivityChart
+                      chartData={chartData.mediasItensGestao}
+                      title="Médias dos Itens relacionados à Gestão Didática (Discente)"
+                      customOptions={mediasItensOptions}
+                    />
+                  </div>
                 </div>
+              )}
 
-                <StatsTableInline
-                  id="table-stats-processo"
-                  title="Estatísticas — Processo Avaliativo"
-                  rows={recalculated.boxplotProcessoStats}
-                />
-              </div>
+              {(embedForPdf || activeTab === 'processo') && (
+                <div style={gridThreeRows}>
+                  <div id="chart-proporcoes-processo" className={styles.chartContainer} style={row1}>
+                    <ActivityChart
+                      chartData={chartData.acaoDocenteProcesso}
+                      title={`Proporções de Respostas por Item - Processo Avaliativo (${selectedFilters.ano})`}
+                      customOptions={proporcoesItensOptions}
+                    />
+                  </div>
 
-              <div id="chart-medias-processo" className={styles.chartContainer} style={row3}>
-                <ActivityChart
-                  chartData={chartData.mediasItensProcesso}
-                  title="Médias dos Itens relacionados ao Processo Avaliativo (Discente)"
-                  customOptions={mediasItensOptions}
-                />
-              </div>
-            </div>
-          )}
+                  <div
+                    id="chart-boxplot-processo"
+                    className={styles.chartContainer}
+                    style={{ ...row2, ...boxplotCardStyle }}
+                  >
+                    <div style={boxplotItemPlotAreaStyle}>
+                      <BoxplotChart
+                        apiData={chartData.boxplotProcessoApex}
+                        title="Boxplot das Médias por Item (Processo Avaliativo)"
+                        customOptions={boxplotPdfOptions}
+                      />
+                    </div>
 
-          {(embedForPdf || activeTab === 'infraestrutura') && (
-            <div style={gridThreeRows}>
-              <div id="chart-proporcoes-infra" className={styles.chartContainer} style={row1}>
-                <ActivityChart
-                  chartData={chartData.infraestruturaItens}
-                  title={`Proporções de Respostas por Item - Instalações Físicas e Recursos de TI (${selectedFilters.ano})`}
-                  customOptions={proporcoesItensOptions}
-                />
-              </div>
+                    <StatsTableInline
+                      id="table-stats-processo"
+                      title="Estatísticas — Processo Avaliativo"
+                      rows={recalculated.boxplotProcessoStats}
+                    />
+                  </div>
 
-              <div
-                id="chart-boxplot-infra"
-                className={styles.chartContainer}
-                style={{ ...row2, ...boxplotCardStyle }}
-              >
-                <div style={boxplotItemPlotAreaStyle}>
-                  <BoxplotChart
-                    apiData={chartData.boxplotInfraApex}
-                    title="Boxplot das Médias por Item (Instalações e TI)"
-                    customOptions={boxplotPdfOptions}
-                  />
+                  <div id="chart-medias-processo" className={styles.chartContainer} style={row3}>
+                    <ActivityChart
+                      chartData={chartData.mediasItensProcesso}
+                      title="Médias dos Itens relacionados ao Processo Avaliativo (Discente)"
+                      customOptions={mediasItensOptions}
+                    />
+                  </div>
                 </div>
+              )}
 
-                <StatsTableInline
-                  id="table-stats-infra"
-                  title="Estatísticas — Instalações e TI"
-                  rows={recalculated.boxplotInfraStats}
-                />
-              </div>
+              {(embedForPdf || activeTab === 'infraestrutura') && (
+                <div style={gridThreeRows}>
+                  <div id="chart-proporcoes-infra" className={styles.chartContainer} style={row1}>
+                    <ActivityChart
+                      chartData={chartData.infraestruturaItens}
+                      title={`Proporções de Respostas por Item - Instalações Físicas e Recursos de TI (${selectedFilters.ano})`}
+                      customOptions={proporcoesItensOptions}
+                    />
+                  </div>
 
-              <div id="chart-medias-infra" className={styles.chartContainer} style={row3}>
-                <ActivityChart
-                  chartData={chartData.mediasItensInfra}
-                  title="Médias dos Itens relacionados às Instalações Físicas e Recursos de TI (Discente)"
-                  customOptions={mediasItensOptions}
-                />
-              </div>
+                  <div
+                    id="chart-boxplot-infra"
+                    className={styles.chartContainer}
+                    style={{ ...row2, ...boxplotCardStyle }}
+                  >
+                    <div style={boxplotItemPlotAreaStyle}>
+                      <BoxplotChart
+                        apiData={chartData.boxplotInfraApex}
+                        title="Boxplot das Médias por Item (Instalações e TI)"
+                        customOptions={boxplotPdfOptions}
+                      />
+                    </div>
+
+                    <StatsTableInline
+                      id="table-stats-infra"
+                      title="Estatísticas — Instalações e TI"
+                      rows={recalculated.boxplotInfraStats}
+                    />
+                  </div>
+
+                  <div id="chart-medias-infra" className={styles.chartContainer} style={row3}>
+                    <ActivityChart
+                      chartData={chartData.mediasItensInfra}
+                      title="Médias dos Itens relacionados às Instalações Físicas e Recursos de TI (Discente)"
+                      customOptions={mediasItensOptions}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      </div>
-    </>
+          </div>
+        </>
+      )}
+    </div>
   );
 }

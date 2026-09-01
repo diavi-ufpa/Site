@@ -47,7 +47,7 @@ export default async function DiscentePage() {
     <div>
       <Header
         title="Visão Geral do Avalia Presencial"
-        date="17 de setembro de 2025"
+        subtitle="Análise das respostas do questionário dos cursos presenciais da UFPA"
       />
       <DiscenteDashboardClient
         initialData={{

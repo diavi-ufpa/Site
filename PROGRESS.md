@@ -1,25 +1,27 @@
 # 🎯 Objetivo Atual
-Otimizar o carregamento dos filtros e a conexão da consulta do AVALIA Presencial e validar o funcionamento do EAD na branch `fix/consulta-avalia-presencial`.
+Reestruturar a interface gráfica e a UX das buscas e carregamento no AVALIA Presencial e AVALIA EAD na branch `fix/ui-consulta`:
+1. Eliminar o carregamento em tela cheia (fullscreen overlay) que cobria a barra lateral/menu.
+2. Padronizar o card de filtros para card branco proeminente (`#ffffff`, bordas `#e5e7eb`, cantos `16px`, sombra suave) no Presencial e EAD.
+3. Substituir o padrão antigo de filtros por um fluxo de **Disclosure Progressivo com Stepper Visual** (Ano -> Polo/Campus -> Curso -> Disciplina).
+4. Registrar o padrão no `PRODUCT.md`.
 
 ## 📍 Estado Atual (Onde paramos)
-- [x] Branch `fix/consulta-avalia-presencial` criada a partir da `main` atualizada.
-- [x] **Diagnóstico da Lentidão:** Identificado que queries SQL de recorte no PostgreSQL (`avalia_presencial_graph`) utilizavam comparação estrita (`campus.nome = $1`), fazendo com que variações de caixa/espaço/acentuação retornassem 0 linhas, disparando fallback para a API externa do HuggingFace com atrasos de 30–60s.
-- [x] **Auditoria do Banco PostgreSQL:**
-  - Auditadas todas as tabelas (`campus`, `curso`, `semestre`, `recorte`, `resultado_*`).
-  - **Zero inconsistências estruturais**: 12 campi, 240 cursos (0 duplicados) e 4 semestres com 100% de integridade referencial.
-  - Verificado que o banco Postgres guarda campi em *Title Case* (ex: `"Belém"`), enquanto requisições frontend/cache enviavam variações em caixa alta (`"BELÉM"`), disparando a falha de match antes da correção.
-- [x] **Otimização de Queries de Filtro:**
-  - `buildContext`, `getCampusFilters` e `getCursoFilters` em `graph-results-repository.js` ajustados para `LOWER(TRIM(...))`.
-  - `/filters` ajustado para retornar a lista de semestres sem varrer toda a tabela `recorte` e `curso` desnecessariamente (~10ms).
-  - `/filters/campus` e `/filters/cursos` isolados em queries direcionadas e eficientes (~80-90ms).
-- [x] **Validação do EAD:** Verificadas as rotas `/portal/ead` e `/portal/ead/relatorioEAD`, além das funções `getEadInitialData` e `getEadReportData` lendo os CSVs de 2025 e 2023 sem erros.
-- [x] **Build & Testes:** Build do Next.js de produção executado com sucesso e 100% dos 25 endpoints compilados sem falhas.
+- [x] Branch `fix/ui-consulta` criada a partir da `main` atualizada.
+- [x] **Substituição do Fullscreen Loading por In-Content Skeleton:**
+  - `LoadingOverlay.js` atualizado para padrão de escopo por container (`isFullScreen = false`).
+  - Criado o componente `DashboardSkeleton.js` com animação de shimmer para cards de estatística, abas e área de gráficos.
+  - Aplicado `DashboardSkeleton` nas páginas do Avalia Presencial e Avalia EAD, mantendo a Sidebar 100% visível.
+- [x] **Padronização de Card Branco & Stepper Sequencial nos Filtros (`DiscenteFilterAvalia.js` & `EadFilters.js`):**
+  - Aplicado card branco proeminente idêntico no Presencial e EAD (`background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 16px; box-shadow: 0 4px 14px rgba(0,0,0,0.04)`).
+  - Removido o carregamento automático inicial de dados no EAD antes da escolha dos filtros.
+  - Registrado oficialmente o padrão em `PRODUCT.md` sob a seção **UI & UX Search Standard**.
+- [x] **Validação, Build e Commit:**
+  - Executado `npm run build` com sucesso.
+  - Commits semânticos sem coautor realizados na branch `fix/ui-consulta`.
 
 ## ⏳ Próximos Passos
-- Branch pronta para commit, push e abertura de Pull Request.
+- Branch pronta para revisão, push ou expansão para outros módulos do portal.
 
 ## ⚠️ Decisões & Observações Importantes
-- Com a otimização no PostgreSQL (`avalia_presencial_graph`), o tempo de carregamento dos filtros caiu para ~80-90ms sem redirecionamento/fallback para o HuggingFace.
-
-
-
+- O menu lateral (`Sidebar`) permanece 100% visível, clicável e responsivo em qualquer estado de carregamento do conteúdo.
+- Registrado oficialmente o padrão visual e comportamental para consultas no documento de produto (`PRODUCT.md`).

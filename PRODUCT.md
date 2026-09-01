@@ -31,3 +31,11 @@ Não deve parecer um painel SaaS promocional, um utilitário de terminal disfar�
 ## Accessibility & Inclusion
 
 Manter contraste compatível com WCAG AA, foco visível, textos e controles legíveis, navegação completa por teclado e feedback que não dependa apenas de cor. Animações devem ser breves e limitadas a mudanças de estado.
+
+## UI & UX Search Standard (Padrão de Buscas e Filtros)
+
+1. **Card de Filtros (White Card Standard):** Todos os painéis de filtro no portal devem ser renderizados como cards brancos proeminentes com fundo `#ffffff`, bordas `#e5e7eb`, cantos arredondados `16px`, sombra suave (`box-shadow: 0 4px 14px rgba(0,0,0,0.04)`), sem gaveteiros colapsáveis padrão que ocultem seleção obrigatória.
+2. **Disclosure Progressivo com Stepper:** Buscas com dependências hierárquicas (ex: Ano ➔ Campus/Polo ➔ Curso ➔ Disciplina) devem utilizar fluxo sequencial em passos numerados (`1`, `2`, `3`), onde opções dependentes só habilitam após preenchimento do pré-requisito e exibem *placeholders* bloqueados amigáveis.
+3. **In-Content Loading (Skeleton UI):** O carregamento de consultas deve ocorrer exclusivamente dentro da área de conteúdo (utilizando `DashboardSkeleton` ou overlays delimitados), mantendo a barra lateral (`Sidebar`) e o cabeçalho 100% visíveis e interativos.
+4. **Empty State Receptivo:** Quando os filtros obrigatórios não estiverem selecionados, a área de dados deve exibir um card de orientação amigável (Empty State) em vez de mensagens de erro ríspidas ou dados parciais pré-carregados.
+

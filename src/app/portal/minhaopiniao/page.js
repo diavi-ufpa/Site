@@ -1,180 +1,137 @@
 'use client';
 
-import React, { useCallback } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import {
+  GraduationCap,
+  Users,
+  Briefcase,
+  Building2,
+  ArrowRight,
+  ShieldCheck,
+  BarChart3,
+} from 'lucide-react';
+import Header from '@/components/ui/Header';
 import styles from '../../../styles/page.module.css';
 
-// 1. Importe o seu Contexto Global
-import { useGlobalData } from '@/contexts/DataContext';
-import { useAuth } from '@/contexts/AuthContext';
-
-/* ==========================================================================
-   Função Auxiliar: Parse de CSV
-   (Necessária aqui para converter o texto bruto antes de salvar no Cache Global)
-   ========================================================================== */
-function parseCSV(csvText) {
-  const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== '');
-  // Remove o cabeçalho original (pois os índices mudaram/estão duplicados na fonte)
-  const dataRows = lines.slice(1); 
-
-  return dataRows.map(line => {
-    const columns = [];
-    let currentVal = '';
-    let insideQuote = false;
-
-    // Parser manual para lidar com aspas e vírgulas internas
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-      if (char === '"') {
-        insideQuote = !insideQuote;
-      } else if (char === ',' && !insideQuote) {
-        columns.push(currentVal.trim());
-        currentVal = '';
-      } else {
-        currentVal += char;
-      }
-    }
-    columns.push(currentVal.trim());
-
-    // Mapeamento idêntico ao da página de dados
-    const rowObj = {
-      CURSO_DISCENTE: columns[3] || 'N/I',
-      CAMPUS_DISCENTE: columns[4] || 'N/I',
-      UNIDADE_DISCENTE: columns[4] || 'N/I', // Fallback usando Campus
-    };
-
-    // Mapeia Pergunta_1 a Pergunta_34
-    for (let q = 1; q <= 34; q++) {
-      rowObj[`Pergunta_${q}`] = columns[5 + q]; 
-    }
-
-    return rowObj;
-  });
-}
-
-/* ==========================================================================
-   Componente Principal
-   ========================================================================== */
-export default function MinhaOpiniaoPage() {
-  const router = useRouter();
-  const { authorizedFetch } = useAuth();
-  
-  // 2. Acesse o cache e a função de salvar
-  const { cache, saveToCache } = useGlobalData();
-
-  const routeConfigs = {
-    '/portal/minhaopiniao/discente': { key: 'discente', url: '/api/discente', type: 'csv' }, // Marquei como CSV
-    '/portal/minhaopiniao/docente': { key: 'docente', url: '/api/docente', type: 'json' }, // Mantive JSON por enquanto (se mudou, altere aqui)
-    '/portal/minhaopiniao/tecnico': { key: 'tecnico', url: '/api/tecnico', type: 'json' },
-  };
-
-  const prefetchFor = useCallback(
-    async (href) => {
-      // 1) Prefetch do bundle da rota (padrão do Next.js)
-      router.prefetch(href);
-
-      // 2) Lógica de Cache Inteligente
-      const config = routeConfigs[href];
-      if (!config) return;
-
-      // Se o dado JÁ está no cache, não fazemos nada
-      if (cache[config.key] && cache[config.key].length > 0) {
-        console.log(`Cache encontrado para ${config.key}, ignorando fetch.`);
-        return;
-      }
-
-      // Se não está no cache, baixamos em background
-      try {
-        console.log(`Iniciando prefetch de dados para: ${config.key}`);
-        const res = await authorizedFetch(config.url);
-
-        let finalData = [];
-
-        // --- CORREÇÃO AQUI ---
-        // Verifica se devemos tratar como CSV ou JSON baseado na config ou resposta
-        if (config.type === 'csv') {
-            const textData = await res.text(); // Baixa como TEXTO
-            finalData = parseCSV(textData);    // Converte para Objeto
-        } else {
-            // Lógica antiga para JSON (Docente/Técnico se ainda forem JSON)
-            const jsonData = await res.json();
-            finalData = jsonData[2]?.data || jsonData;
-        }
-        
-        // Guarda no Contexto Global
-        saveToCache(config.key, Array.isArray(finalData) ? finalData : []);
-        console.log(`Dados de ${config.key} guardados no cache com sucesso. Registros: ${finalData.length}`);
-      } catch (err) {
-        console.error(`Erro no prefetch de ${config.key}:`, err);
-      }
-    },
-    [router, cache, saveToCache] // Dependências
-  );
-
-  const onNavigate = useCallback(
-    (e, href) => {
-      e.preventDefault();
-      router.push(href);
-    },
-    [router]
-  );
-
-  const makeLinkProps = (href) => ({
-    href,
-    className: styles.ctaPrimary,
-    onMouseEnter: () => prefetchFor(href),
-    onFocus: () => prefetchFor(href),
-    onTouchStart: () => prefetchFor(href), 
-    onClick: (e) => onNavigate(e, href),
-  });
-
+export default function MinhaOpiniaoOverviewPage() {
   return (
-    <section className={styles.wrapper}>
-      <header className={styles.hero}>
+    <div className={styles.wrapper}>
+      <Header
+        title="Minha Opinião • A Voz da Comunidade Acadêmica"
+        subtitle="Instrumento institucional de consulta aos discentes, docentes e técnicos da UFPA"
+      />
+
+      <section className={styles.hero}>
         <div className={styles.heroText}>
           <span className={styles.kicker}>DIAVI • CPA • UFPA</span>
 
           <h1>
             Minha Opinião <br />
-            a voz da comunidade acadêmica
+            A voz da comunidade acadêmica
           </h1>
 
           <p>
-            O <strong>Minha Opinião</strong> é o instrumento institucional da UFPA
-            para coleta e análise da percepção de <strong>discentes</strong>,
-            <strong> docentes</strong> e <strong>técnicos</strong>.
-            <br /><br />
-            Explore indicadores e compare resultados em tempo real.
+            O <strong>Minha Opinião</strong> é o instrumento institucional da Universidade Federal do Pará (UFPA), coordenado pela <strong>Comissão Própria de Avaliação (CPA)</strong> e pela <strong>Diretoria de Avaliação Institucional (DIAVI)</strong>, voltado para a coleta e análise sistemática da percepção de toda a comunidade acadêmica.
+          </p>
+
+          <p>
+            O programa reúne as visões de <strong>discentes</strong>, <strong>docentes</strong> e <strong>técnico-administrativos</strong> para diagnosticar potencialidades, planejar intervenções de gestão e subsidiar o Relatório de Autoavaliação Institucional (RAI).
           </p>
 
           <div className={styles.ctaGroup}>
-            <Link {...makeLinkProps('/portal/minhaopiniao/discente')}>
-              Discente
+            <Link href="/portal/minhaopiniao/discente" className={styles.ctaPrimary}>
+              <GraduationCap size={18} />
+              <span>Discente</span>
+              <ArrowRight size={16} />
             </Link>
 
-            <Link {...makeLinkProps('/portal/minhaopiniao/docente')}>
-              Docente
+            <Link href="/portal/minhaopiniao/docente" className={styles.ctaPrimary}>
+              <Users size={18} />
+              <span>Docente</span>
+              <ArrowRight size={16} />
             </Link>
 
-            <Link {...makeLinkProps('/portal/minhaopiniao/tecnico')}>
-              Técnico
+            <Link href="/portal/minhaopiniao/tecnico" className={styles.ctaPrimary}>
+              <Briefcase size={18} />
+              <span>Técnico</span>
+              <ArrowRight size={16} />
             </Link>
           </div>
         </div>
 
-        {/* ILUSTRAÇÃO */}
+        {/* ILUSTRAÇÃO INSTITUCIONAL */}
         <div className={styles.heroArt} aria-hidden="true">
-          <svg width="420" height="360" viewBox="0 0 420 360" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="90" y="180" width="30" height="80" rx="6" fill="#6B5BCE" />
-            <rect x="140" y="150" width="30" height="110" rx="6" fill="#8B7CF0" />
-            <rect x="190" y="120" width="30" height="140" rx="6" fill="#FF8A1E" />
-            <rect x="240" y="160" width="30" height="100" rx="6" fill="#6B5BCE" />
-            <rect x="290" y="140" width="30" height="120" rx="6" fill="#8B7CF0" />
-            <rect x="80" y="260" width="260" height="4" rx="2" fill="#9CA3AF" />
+          <svg width="380" height="300" viewBox="0 0 380 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="50" y="150" width="34" height="110" rx="8" fill="#1D556F" />
+            <rect x="104" y="110" width="34" height="150" rx="8" fill="#288FB4" />
+            <rect x="158" y="70" width="34" height="190" rx="8" fill="#FF8E29" />
+            <rect x="212" y="120" width="34" height="140" rx="8" fill="#1D556F" />
+            <rect x="266" y="90" width="34" height="170" rx="8" fill="#288FB4" />
+            <rect x="36" y="264" width="280" height="6" rx="3" fill="#E2E8F0" />
           </svg>
         </div>
-      </header>
-    </section>
+      </section>
+
+      <hr className={styles.divider} />
+
+      {/* SEGMENTOS DA COMUNIDADE */}
+      <div>
+        <h2 className={styles.sectionTitle}>
+          <Building2 size={22} color="#FF8E29" />
+          <span>Segmentos e Áreas de Avaliação</span>
+        </h2>
+        <p className={styles.sectionSubtitle}>
+          Cada segmento da comunidade universitária possui questionários específicos e adaptados à sua realidade de atuação institucional:
+        </p>
+
+        <div className={styles.dimensionsGrid}>
+          <div className={styles.dimensionCard}>
+            <div className={styles.cardHeader}>
+              <span className={`${styles.badge} ${styles.badgeD1}`}>Discentes</span>
+              <h3 className={styles.cardTitle}>Corpo Discente</h3>
+            </div>
+            <p className={styles.cardText}>
+              Avaliação das condições de ensino, vivência universitária, serviços de apoio ao estudante, infraestrutura dos campi, bibliotecas e organização acadêmica geral.
+            </p>
+          </div>
+
+          <div className={styles.dimensionCard}>
+            <div className={styles.cardHeader}>
+              <span className={`${styles.badge} ${styles.badgeD2}`}>Docentes</span>
+              <h3 className={styles.cardTitle}>Corpo Docente</h3>
+            </div>
+            <p className={styles.cardText}>
+              Percepção sobre as condições de trabalho, políticas de fomento a ensino, pesquisa e extensão, governança universitária, planejamento e suporte institucional.
+            </p>
+          </div>
+
+          <div className={styles.dimensionCard}>
+            <div className={styles.cardHeader}>
+              <span className={`${styles.badge} ${styles.badgeD3}`}>Técnicos</span>
+              <h3 className={styles.cardTitle}>Técnico-Administrativos</h3>
+            </div>
+            <p className={styles.cardText}>
+              Análise do ambiente laboral, capacitação profissional, infraestrutura física e tecnológica, fluxos operacionais e satisfação institucional.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* METODOLOGIA E ANONIMATO */}
+      <div className={styles.methodologyCard}>
+        <h3 className={styles.sectionTitle}>
+          <ShieldCheck size={20} color="#1D556F" />
+          <span>Metodologia, Anonimato e Análise Comparativa</span>
+        </h3>
+        <p className={styles.cardText}>
+          O Minha Opinião é aplicado periodicamente em ambiente digital seguro. O sistema oferece recursos de <strong>filtragem avançada</strong> e <strong>modo de comparação lado a lado</strong> entre diferentes unidades acadêmicas, cursos e campi.
+        </p>
+
+        <div className={styles.calloutBox}>
+          <strong>Garantia de Sigilo e Anonimato:</strong> Todas as informações são coletadas com sigilo integral das identidades dos respondentes. Os relatórios gerados apresentam exclusivamente dados agregados e métricas estatísticas consolidadas.
+        </div>
+      </div>
+    </div>
   );
 }

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { Bar } from 'react-chartjs-2';
 import {
@@ -10,35 +10,8 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 import styles from '@/styles/dados.module.css';
-
-const topLabelsPlugin = {
-  id: 'topLabelsPlugin',
-  afterDatasetsDraw(chart) {
-    if (chart?.config?.type !== 'bar') return;
-    if (chart?.options?.plugins?.topLabelsPlugin !== true) return;
-
-    const { ctx } = chart;
-    ctx.save();
-    ctx.fillStyle = '#374151';
-    ctx.font = '600 10px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'bottom';
-
-    chart.data.datasets.forEach((dataset, datasetIndex) => {
-      const meta = chart.getDatasetMeta(datasetIndex);
-      if (!meta || meta.hidden) return;
-
-      meta.data.forEach((bar, index) => {
-        const value = Number(dataset.data?.[index] ?? 0);
-        if (!Number.isFinite(bar?.x) || !Number.isFinite(bar?.y)) return;
-        ctx.fillText(String(value), bar.x, bar.y - 4);
-      });
-    });
-
-    ctx.restore();
-  },
-};
 
 ChartJS.register(
   CategoryScale,
@@ -47,10 +20,10 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  topLabelsPlugin
+  ChartDataLabels
 );
 
-export default function QuantidadeCursosAvaliadosChart({ data }) {
+export default function QuantidadeCursosAvaliadosChart({ data, height = 360 }) {
   const labels = data?.anos ?? [];
   const values = data?.valores ?? [];
 
@@ -58,13 +31,14 @@ export default function QuantidadeCursosAvaliadosChart({ data }) {
     labels,
     datasets: [
       {
-        label: 'Quant. Cursos Avaliados',
+        label: 'Quantidade de Cursos Avaliados',
         data: values,
-        backgroundColor: 'rgba(59, 130, 246, 0.8)',
-        borderColor: 'rgba(59, 130, 246, 1)',
+        backgroundColor: '#1D556F',
+        borderColor: '#1D556F',
         borderWidth: 1,
-        borderRadius: 3,
-        maxBarThickness: 28,
+        borderRadius: 6,
+        borderSkipped: false,
+        maxBarThickness: 38,
       },
     ],
   };
@@ -75,14 +49,24 @@ export default function QuantidadeCursosAvaliadosChart({ data }) {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      topLabelsPlugin: true,
       legend: { display: false },
-      datalabels: false,
-      verticalValueLabels: false,
-      verticalTopValuesPlugin: false,
+      datalabels: {
+        display: true,
+        anchor: 'end',
+        align: 'top',
+        offset: 4,
+        color: '#1F2937',
+        font: { size: 11, weight: '700' },
+        formatter: (value) => (Number(value) > 0 ? String(value) : ''),
+      },
       tooltip: {
+        backgroundColor: '#0F172A',
+        titleFont: { size: 12, weight: '700' },
+        bodyFont: { size: 12 },
+        padding: 10,
+        cornerRadius: 8,
         callbacks: {
-          label: (context) => `Quantidade: ${Number(context.raw ?? 0)}`,
+          label: (context) => `Cursos avaliados: ${Number(context.raw ?? 0).toLocaleString('pt-BR')}`,
         },
       },
     },
@@ -93,26 +77,35 @@ export default function QuantidadeCursosAvaliadosChart({ data }) {
           autoSkip: false,
           maxRotation: 0,
           minRotation: 0,
-          font: { size: 10 },
+          font: { size: 11, weight: '600' },
+          color: '#374151',
         },
       },
       y: {
         beginAtZero: true,
-        suggestedMax: maxValue + 2,
+        suggestedMax: maxValue > 0 ? maxValue * 1.15 : 10,
         ticks: {
           precision: 0,
+          font: { size: 11 },
+          color: '#6B7280',
+        },
+        grid: { color: '#F3F4F6' },
+        title: {
+          display: true,
+          text: 'Quantidade de Cursos',
+          font: { size: 12, weight: '600' },
+          color: '#6B7280',
         },
       },
     },
   };
 
   return (
-    <>
-      <h3 className={styles.chartTitle}>Quant. Cursos Avaliados</h3>
-      <div className={styles.chartContainer}>
-        <Bar data={chartData} options={options} />
+    <div className={styles.chartWrapper}>
+      <h3 className={styles.chartTitle}>Quantidade de Cursos Avaliados por Ano</h3>
+      <div className={styles.chartContainer} style={{ height }}>
+        <Bar data={chartData} options={options} plugins={[ChartDataLabels]} />
       </div>
-    </>
+    </div>
   );
 }
-
