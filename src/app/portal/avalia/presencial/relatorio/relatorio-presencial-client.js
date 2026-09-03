@@ -1069,20 +1069,37 @@ export default function RelatorioPresencialClient({
     return doc.lastAutoTable.finalY + 30;
   }
 
+  const [filterTree, setFilterTree] = useState(null);
+
   useEffect(() => {
     const controller = new AbortController();
 
     const loadInitialFilters = async () => {
       try {
-        const res = await authorizedFetch(make('/filters', { consultarBanco }), { signal: controller.signal, cache: 'no-store' });
-        if (!res.ok) throw new Error('Falha ao carregar filtros iniciais');
+        const res = await authorizedFetch(make('/filters/tree', { consultarBanco }), { signal: controller.signal });
+        if (!res.ok) throw new Error('Falha ao carregar árvore de filtros');
         const data = await res.json();
+
+        if (data?.tree) {
+          setFilterTree(data.tree);
+        }
 
         setDynamicFilters((prev) => ({
           ...prev,
-          anos: data?.anos || data?.ano || prev.anos,
+          anos: data?.anos || (data?.tree ? Object.keys(data.tree) : prev.anos),
         }));
-      } catch {}
+      } catch {
+        try {
+          const res = await authorizedFetch(make('/filters', { consultarBanco }), { signal: controller.signal });
+          if (res.ok) {
+            const data = await res.json();
+            setDynamicFilters((prev) => ({
+              ...prev,
+              anos: data?.anos || data?.ano || prev.anos,
+            }));
+          }
+        } catch {}
+      }
     };
 
     loadInitialFilters();
@@ -1099,13 +1116,23 @@ export default function RelatorioPresencialClient({
       return;
     }
 
+    if (filterTree && filterTree[selected.ano]) {
+      const campi = filterTree[selected.ano].campi || [];
+      setDynamicFilters((prev) => ({
+        ...prev,
+        campus: campi,
+        cursos: [],
+      }));
+      return;
+    }
+
     const controller = new AbortController();
 
     const loadCampus = async () => {
       try {
         const res = await authorizedFetch(
           make('/filters/campus', { ano: selected.ano, consultarBanco }),
-          { signal: controller.signal, cache: 'no-store' }
+          { signal: controller.signal }
         );
         if (!res.ok) throw new Error('Falha ao carregar campi');
         const data = await res.json();
@@ -1121,13 +1148,35 @@ export default function RelatorioPresencialClient({
 
     loadCampus();
     return () => controller.abort();
-  }, [selected.ano, consultarBanco, authorizedFetch]);
+  }, [selected.ano, filterTree, consultarBanco, authorizedFetch]);
 
   useEffect(() => {
     if (!selected.ano || !selected.campus) {
       setDynamicFilters((prev) => ({
         ...prev,
         cursos: [],
+      }));
+      return;
+    }
+
+    if (filterTree && filterTree[selected.ano]) {
+      const yearTree = filterTree[selected.ano];
+      let courses = [];
+
+      if (selected.campus === 'todos') {
+        const cursosMap = yearTree.cursosPorCampus || {};
+        const setOfCourses = new Set();
+        Object.values(cursosMap).forEach((list) => {
+          (list || []).forEach((c) => setOfCourses.add(c));
+        });
+        courses = Array.from(setOfCourses).sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
+      } else {
+        courses = yearTree.cursosPorCampus?.[selected.campus] || [];
+      }
+
+      setDynamicFilters((prev) => ({
+        ...prev,
+        cursos: courses,
       }));
       return;
     }
@@ -1142,7 +1191,7 @@ export default function RelatorioPresencialClient({
             campus: selected.campus,
             consultarBanco,
           }),
-          { signal: controller.signal, cache: 'no-store' }
+          { signal: controller.signal }
         );
 
         if (!res.ok) throw new Error('Falha ao carregar cursos');
@@ -1159,7 +1208,7 @@ export default function RelatorioPresencialClient({
     loadCursos();
 
     return () => controller.abort();
-  }, [selected.ano, selected.campus, consultarBanco, authorizedFetch]);
+  }, [selected.ano, selected.campus, filterTree, consultarBanco, authorizedFetch]);
 
   useEffect(() => {
     selectedRef.current = selected;
