@@ -27,11 +27,15 @@ function normalizeParam(value, fallback = 'todos') {
     : raw;
 }
 
-function json(payload, init = {}) {
+function json(payload, init = {}, isFilter = false) {
+  const cacheControlHeader = isFilter
+    ? 'public, max-age=86400, stale-while-revalidate=604800'
+    : 'no-store, max-age=0';
+
   return Response.json(payload, {
     ...init,
     headers: {
-      'Cache-Control': 'no-store, max-age=0',
+      'Cache-Control': cacheControlHeader,
       'X-Data-Source': 'avalia-graph-results',
       ...(init.headers ?? {}),
     },
@@ -79,17 +83,19 @@ export async function GET(request) {
   let filters = null;
 
   try {
+    const { searchParams } = new URL(request.url);
+    endpoint = searchParams.get('endpoint');
+    const isFilter = Boolean(endpoint?.startsWith('/filters'));
+
     const auth = await requireIdentityUser(request);
-    if (!auth.ok) return json({ error: auth.error }, { status: auth.status });
+    if (!auth.ok) return json({ error: auth.error }, { status: auth.status }, isFilter);
 
     if (!isAvaliaGraphDatabaseConfigured()) {
       return fallbackToSpreadsheetApi(request);
     }
 
-    const { searchParams } = new URL(request.url);
-    endpoint = searchParams.get('endpoint');
     if (!endpoint) {
-      return json({ error: 'Parâmetro "endpoint" é obrigatório.' }, { status: 400 });
+      return json({ error: 'Parâmetro "endpoint" é obrigatório.' }, { status: 400 }, isFilter);
     }
 
     filters = {
@@ -102,7 +108,7 @@ export async function GET(request) {
     if (payload === null) {
       return fallbackToSpreadsheetApi(request);
     }
-    return json(payload);
+    return json(payload, {}, isFilter);
   } catch (error) {
     console.error('[avalia-graph] fatal:', {
       endpoint,

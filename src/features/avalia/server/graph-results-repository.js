@@ -213,6 +213,64 @@ async function getCursoFilters(ano, campus) {
   return uniqueSorted(rows.map((row) => row.curso));
 }
 
+async function getFilterTreePayload() {
+  const { rows } = await queryAvaliaGraph(`
+    SELECT DISTINCT
+      s.codigo AS semestre,
+      campus.nome AS campus,
+      curso.nome AS curso
+    FROM ${SCHEMA}.recorte r
+    JOIN ${SCHEMA}.semestre s ON s.semestre_id = r.semestre_id
+    LEFT JOIN ${SCHEMA}.campus campus ON campus.campus_id = r.campus_id
+    LEFT JOIN ${SCHEMA}.curso curso ON curso.curso_id = r.curso_id
+    WHERE r.nivel IN ('SEMESTRE', 'CAMPUS', 'CAMPUS_CURSO')
+    ORDER BY s.codigo, campus.nome, curso.nome
+  `);
+
+  const tree = {};
+
+  for (const row of rows) {
+    const semestre = String(row.semestre ?? '').trim();
+    if (!semestre) continue;
+
+    if (!tree[semestre]) {
+      tree[semestre] = {
+        campi: [],
+        cursosPorCampus: {},
+      };
+    }
+
+    const campus = String(row.campus ?? '').trim();
+    if (campus) {
+      if (!tree[semestre].campi.includes(campus)) {
+        tree[semestre].campi.push(campus);
+      }
+      if (!tree[semestre].cursosPorCampus[campus]) {
+        tree[semestre].cursosPorCampus[campus] = [];
+      }
+
+      const curso = String(row.curso ?? '').trim();
+      if (curso) {
+        if (!tree[semestre].cursosPorCampus[campus].includes(curso)) {
+          tree[semestre].cursosPorCampus[campus].push(curso);
+        }
+      }
+    }
+  }
+
+  const allAnos = await getSemestres();
+  const anos = allAnos.length > 0 ? allAnos : uniqueSorted(Object.keys(tree));
+
+  for (const sem of Object.keys(tree)) {
+    tree[sem].campi = uniqueSorted(tree[sem].campi);
+    for (const campusKey of Object.keys(tree[sem].cursosPorCampus)) {
+      tree[sem].cursosPorCampus[campusKey] = uniqueSorted(tree[sem].cursosPorCampus[campusKey]);
+    }
+  }
+
+  return { anos, tree };
+}
+
 async function getFilterPayload(filters = {}) {
   const anos = await getSemestres();
   const campus = filters.ano ? await getCampusFilters(filters.ano) : [];
@@ -539,6 +597,7 @@ export async function queryAvaliaGraphEndpoint(endpoint, filters = {}) {
     const { rows } = await queryAvaliaGraph('SELECT 1 AS ok');
     return rows[0] ?? { ok: 1 };
   }
+  if (endpoint === '/filters/tree') return getFilterTreePayload();
   if (endpoint === '/filters') return getFilterPayload(filters);
   if (endpoint === '/filters/campus') {
     const anos = await getSemestres();

@@ -10,17 +10,19 @@ async function getInitialData() {
     anos: [],
     campus: [],
     cursos: [],
+    tree: null,
   };
 
   try {
     if (isAvaliaGraphDatabaseConfigured()) {
-      const data = await queryAvaliaGraphEndpoint('/filters');
+      const data = await queryAvaliaGraphEndpoint('/filters/tree');
       if (data?.anos && data.anos.length > 0) {
         filtersOptions.anos = data.anos;
+        filtersOptions.tree = data.tree ?? null;
       }
     }
   } catch (err) {
-    console.error('[Avalia Presencial] Erro ao pré-carregar filtro de anos no servidor:', err);
+    console.error('[Avalia Presencial] Erro ao pré-carregar árvore de filtros no servidor:', err);
   }
 
   return {
