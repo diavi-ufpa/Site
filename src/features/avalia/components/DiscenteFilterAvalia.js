@@ -14,6 +14,7 @@ export default function DiscenteFilters({
   showRankingToggle = true,
   loadingCampus = false,
   loadingCurso = false,
+  loadingInitial = false,
 }) {
   const { campus, cursos, anos, dimensoes } = filters;
   const hasYearSelected = Boolean(selectedFilters?.ano);
@@ -252,125 +253,145 @@ export default function DiscenteFilters({
       </div>
 
       {/* Grid de Passos Progressivos */}
-      <div className="stepGrid">
-        {/* PASSO 1: ANO */}
-        <div className="stepCard">
-          <label className="stepLabel">
-            <span className={`stepBadge ${hasYearSelected ? 'stepBadgeCompleted' : 'stepBadgeActive'}`}>
-              {hasYearSelected ? '✓' : '1'}
-            </span>
-            Ano da Avaliação
-          </label>
-          <select
-            name="ano"
-            value={selectedFilters.ano ?? ''}
-            onChange={onFilterChange}
-            className="customSelect"
-          >
-            <option value="" disabled hidden>
-              Selecione o ano
-            </option>
-            {anos?.map((a, i) => (
-              <option key={`ano-${a}-${i}`} value={a}>
-                {a}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* PASSO 2: CAMPUS (Disclosure Progressivo) */}
-        <div className="stepCard">
-          <label className="stepLabel">
-            <span className={`stepBadge ${!hasYearSelected ? '' : hasCampusSelected ? 'stepBadgeCompleted' : 'stepBadgeActive'}`}>
-              {hasCampusSelected ? '✓' : '2'}
-            </span>
-            Campus
-          </label>
-
-          {!hasYearSelected ? (
-            <div className="lockedStepPlaceholder">
-              <span>Aguardando seleção do ano</span>
-              <ChevronRight size={16} />
+      {loadingInitial ? (
+        <div className="stepGrid">
+          {[
+            { label: '1. Ano da Avaliação' },
+            { label: '2. Campus' },
+            { label: '3. Curso' },
+          ].map((item, idx) => (
+            <div key={idx} className="stepCard">
+              <label className="stepLabel" style={{ color: '#9ca3af' }}>
+                <span className="stepBadge">{idx + 1}</span>
+                {item.label}
+              </label>
+              <div className="lockedStepPlaceholder">
+                <span className="pulseText">Carregando opções...</span>
+              </div>
             </div>
-          ) : (
-            <select
-              disabled={loadingCampus}
-              name="campus"
-              value={selectedFilters.campus ?? ''}
-              onChange={onFilterChange}
-              className="customSelect"
-            >
-              <option value="" disabled>
-                {loadingCampus ? 'Carregando campi...' : 'Selecione o campus'}
-              </option>
-              {!loadingCampus && <option value="todos">Todos os Campi</option>}
-              {campusOptions.map((c, i) => (
-                <option key={`campus-${c}-${i}`} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          )}
+          ))}
         </div>
-
-        {/* PASSO 3: CURSO (Disclosure Progressivo) */}
-        <div className="stepCard">
-          <label className="stepLabel">
-            <span className={`stepBadge ${!hasCampusSelected ? '' : hasCourseSelected ? 'stepBadgeCompleted' : 'stepBadgeActive'}`}>
-              {hasCourseSelected ? '✓' : '3'}
-            </span>
-            Curso
-          </label>
-
-          {!hasCampusSelected ? (
-            <div className="lockedStepPlaceholder">
-              <span>Aguardando seleção do campus</span>
-              <ChevronRight size={16} />
-            </div>
-          ) : (
-            <select
-              disabled={loadingCurso}
-              name="curso"
-              value={selectedFilters.curso ?? ''}
-              onChange={onFilterChange}
-              className="customSelect"
-            >
-              <option value="" disabled>
-                {loadingCurso ? 'Carregando cursos...' : 'Selecione o curso'}
-              </option>
-              {!loadingCurso && <option value="todos">Todos os Cursos</option>}
-              {cursoOptions.map((c, i) => (
-                <option key={`curso-${c}-${i}`} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
-
-        {/* REFINAMENTO: DIMENSÃO (Opcional) */}
-        {showDimensionFilter && (
+      ) : (
+        <div className="stepGrid">
+          {/* PASSO 1: ANO */}
           <div className="stepCard">
             <label className="stepLabel">
-              <Layers size={14} color="#6b7280" />
-              Dimensão (opcional)
+              <span className={`stepBadge ${hasYearSelected ? 'stepBadgeCompleted' : 'stepBadgeActive'}`}>
+                {hasYearSelected ? '✓' : '1'}
+              </span>
+              Ano da Avaliação
             </label>
             <select
-              name="dimensao"
-              value={selectedFilters.dimensao ?? ''}
+              name="ano"
+              value={selectedFilters.ano ?? ''}
               onChange={onFilterChange}
               className="customSelect"
             >
-              <option value="">Todas as Dimensões</option>
-              {(dimensoes ?? []).map((d) => (
-                <option key={`dim-${d.value}`} value={d.value}>
-                  {d.label}
+              <option value="" disabled hidden>
+                Selecione o ano
+              </option>
+              {anos?.map((a, i) => (
+                <option key={`ano-${a}-${i}`} value={a}>
+                  {a}
                 </option>
               ))}
             </select>
           </div>
-        )}
-      </div>
+
+          {/* PASSO 2: CAMPUS (Disclosure Progressivo) */}
+          <div className="stepCard">
+            <label className="stepLabel">
+              <span className={`stepBadge ${!hasYearSelected ? '' : hasCampusSelected ? 'stepBadgeCompleted' : 'stepBadgeActive'}`}>
+                {hasCampusSelected ? '✓' : '2'}
+              </span>
+              Campus
+            </label>
+
+            {!hasYearSelected ? (
+              <div className="lockedStepPlaceholder">
+                <span>Aguardando seleção do ano</span>
+                <ChevronRight size={16} />
+              </div>
+            ) : (
+              <select
+                disabled={loadingCampus}
+                name="campus"
+                value={selectedFilters.campus ?? ''}
+                onChange={onFilterChange}
+                className="customSelect"
+              >
+                <option value="" disabled>
+                  {loadingCampus ? 'Carregando campi...' : 'Selecione o campus'}
+                </option>
+                {!loadingCampus && <option value="todos">Todos os Campi</option>}
+                {campusOptions.map((c, i) => (
+                  <option key={`campus-${c}-${i}`} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* PASSO 3: CURSO (Disclosure Progressivo) */}
+          <div className="stepCard">
+            <label className="stepLabel">
+              <span className={`stepBadge ${!hasCampusSelected ? '' : hasCourseSelected ? 'stepBadgeCompleted' : 'stepBadgeActive'}`}>
+                {hasCourseSelected ? '✓' : '3'}
+              </span>
+              Curso
+            </label>
+
+            {!hasCampusSelected ? (
+              <div className="lockedStepPlaceholder">
+                <span>Aguardando seleção do campus</span>
+                <ChevronRight size={16} />
+              </div>
+            ) : (
+              <select
+                disabled={loadingCurso}
+                name="curso"
+                value={selectedFilters.curso ?? ''}
+                onChange={onFilterChange}
+                className="customSelect"
+              >
+                <option value="" disabled>
+                  {loadingCurso ? 'Carregando cursos...' : 'Selecione o curso'}
+                </option>
+                {!loadingCurso && <option value="todos">Todos os Cursos</option>}
+                {cursoOptions.map((c, i) => (
+                  <option key={`curso-${c}-${i}`} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* REFINAMENTO: DIMENSÃO (Opcional) */}
+          {showDimensionFilter && (
+            <div className="stepCard">
+              <label className="stepLabel">
+                <Layers size={14} color="#6b7280" />
+                Dimensão (opcional)
+              </label>
+              <select
+                name="dimensao"
+                value={selectedFilters.dimensao ?? ''}
+                onChange={onFilterChange}
+                className="customSelect"
+              >
+                <option value="">Todas as Dimensões</option>
+                {(dimensoes ?? []).map((d) => (
+                  <option key={`dim-${d.value}`} value={d.value}>
+                    {d.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
