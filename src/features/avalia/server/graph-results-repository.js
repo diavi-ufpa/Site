@@ -592,6 +592,187 @@ async function getRankings(endpoint, filters) {
   return null;
 }
 
+async function getDashboardOverviewBundle(filters) {
+  const [
+    summary,
+    medias,
+    proporcoes,
+    boxplot,
+    atividades,
+    docDimMedias,
+    docDimProporcoes,
+    turmaDimBoxplot,
+  ] = await Promise.all([
+    getSummary(filters),
+    getMeans(filters, endpointOptions('/discente/dimensoes/medias')),
+    getProportions(filters, endpointOptions('/discente/dimensoes/proporcoes')),
+    getBoxplot(filters, endpointOptions('/discente/dimensoes/boxplot')),
+    getActivities(filters, 'DISC'),
+    getMeans(filters, endpointOptions('/docente/dimensoes/medias')),
+    getProportions(filters, endpointOptions('/docente/dimensoes/proporcoes')),
+    getBoxplot(filters, endpointOptions('/docente/avaliacaoturma/dimensoes/boxplot')),
+  ]);
+
+  return {
+    summary,
+    medias,
+    proporcoes,
+    boxplot,
+    atividades,
+    docDimMedias,
+    docDimProporcoes,
+    turmaDimBoxplot,
+    turmaDimDescritivas: turmaDimBoxplot,
+  };
+}
+
+async function getAutoavaliacaoBundle(filters) {
+  const [
+    propItens,
+    medItens,
+    boxItens,
+    acPropSub,
+    acMedSub,
+    acBoxSub,
+    adProp,
+    adMed,
+    adBox,
+    atiProp,
+    atiMed,
+    atiBox,
+    gesProp,
+    gesMed,
+    gesBox,
+    proProp,
+    proMed,
+    proBox,
+    instProp,
+    instMed,
+    instBox,
+  ] = await Promise.all([
+    getProportions(filters, endpointOptions('/discente/autoavaliacao/itens/proporcoes')),
+    getMeans(filters, endpointOptions('/discente/autoavaliacao/itens/medias')),
+    getBoxplot(filters, endpointOptions('/discente/autoavaliacao/itens/boxplot')),
+    getProportions(filters, endpointOptions('/discente/acaodocente/subdimensoes/proporcoes')),
+    getMeans(filters, endpointOptions('/discente/acaodocente/subdimensoes/medias')),
+    getBoxplot(filters, endpointOptions('/discente/acaodocente/subdimensoes/boxplot')),
+    getProportions(filters, endpointOptions('/docente/autoavaliacao/subdimensoes/proporcoes')),
+    getMeans(filters, endpointOptions('/docente/autoavaliacao/subdimensoes/medias')),
+    getBoxplot(filters, endpointOptions('/docente/autoavaliacao/subdimensoes/boxplot')),
+    getProportions(filters, endpointOptions('/discente/atitudeprofissional/itens/proporcoes')),
+    getMeans(filters, endpointOptions('/discente/atitudeprofissional/itens/medias')),
+    getBoxplot(filters, endpointOptions('/discente/atitudeprofissional/itens/boxplot')),
+    getProportions(filters, endpointOptions('/discente/gestaodidatica/itens/proporcoes')),
+    getMeans(filters, endpointOptions('/discente/gestaodidatica/itens/medias')),
+    getBoxplot(filters, endpointOptions('/discente/gestaodidatica/itens/boxplot')),
+    getProportions(filters, endpointOptions('/discente/processoavaliativo/itens/proporcoes')),
+    getMeans(filters, endpointOptions('/discente/processoavaliativo/itens/medias')),
+    getBoxplot(filters, endpointOptions('/discente/processoavaliativo/itens/boxplot')),
+    getProportions(filters, endpointOptions('/discente/instalacoes/itens/proporcoes')),
+    getMeans(filters, endpointOptions('/discente/instalacoes/itens/medias')),
+    getBoxplot(filters, endpointOptions('/discente/instalacoes/itens/boxplot')),
+  ]);
+
+  return {
+    autoavaliacao: { propItens, medItens, boxItens },
+    acao_docente_discente: { propSub: acPropSub, medSub: acMedSub, boxSub: acBoxSub },
+    autoavaliacao_docente: { propSub: adProp, medSub: adMed, boxSub: adBox },
+    atitude: { discProp: atiProp, discMed: atiMed, discBox: atiBox },
+    gestao: { discProp: gesProp, discMed: gesMed, discBox: gesBox },
+    processo: { discProp: proProp, discMed: proMed, discBox: proBox },
+    instalacoes: { propItens: instProp, medItens: instMed, boxDisc: instBox },
+  };
+}
+
+async function getBaseDocenteBundle(filters) {
+  const [
+    turmaMed,
+    turmaProp,
+    turmaBox,
+    subMed,
+    subProp,
+    subBox,
+    dimMed,
+    dimProp,
+    dimBox,
+    atiProp,
+    atiMed,
+    atiBox,
+    gesProp,
+    gesMed,
+    gesBox,
+    proProp,
+    proMed,
+    proBox,
+    instMedDoc,
+    instPropDoc,
+  ] = await Promise.all([
+    getMeans(filters, endpointOptions('/docente/avaliacaoturma/itens/medias')),
+    getProportions(filters, endpointOptions('/docente/avaliacaoturma/itens/proporcoes')),
+    getBoxplot(filters, endpointOptions('/docente/avaliacaoturma/itens/boxplot')),
+    getMeans(filters, endpointOptions('/docente_base/autoavaliacao/subdimensoes/medias')),
+    getProportions(filters, endpointOptions('/docente_base/autoavaliacao/subdimensoes/proporcoes')),
+    getBoxplot(filters, endpointOptions('/docente_base/autoavaliacao/subdimensoes/boxplot')),
+    getMeans(filters, endpointOptions('/docente/dimensoes/medias')),
+    getProportions(filters, endpointOptions('/docente/dimensoes/proporcoes')),
+    getBoxplot(filters, endpointOptions('/docente/dimensoes/boxplot')),
+    getProportions(filters, endpointOptions('/docente/atitudeprofissional/itens/proporcoes')),
+    getMeans(filters, endpointOptions('/docente/atitudeprofissional/itens/medias')),
+    getBoxplot(filters, endpointOptions('/docente/atitudeprofissional/itens/boxplot')),
+    getProportions(filters, endpointOptions('/docente/gestaodidatica/itens/proporcoes')),
+    getMeans(filters, endpointOptions('/docente/gestaodidatica/itens/medias')),
+    getBoxplot(filters, endpointOptions('/docente/gestaodidatica/itens/boxplot')),
+    getProportions(filters, endpointOptions('/docente/processoavaliativo/itens/proporcoes')),
+    getMeans(filters, endpointOptions('/docente/processoavaliativo/itens/medias')),
+    getBoxplot(filters, endpointOptions('/docente/processoavaliativo/itens/boxplot')),
+    getMeans(filters, endpointOptions('/docente/instalacoes/itens/medias')),
+    getProportions(filters, endpointOptions('/docente/instalacoes/itens/proporcoes')),
+  ]);
+
+  return {
+    base_docente: {
+      turmaMed,
+      turmaProp,
+      turmaBox,
+      subMed,
+      subProp,
+      subBox,
+      dimMed,
+      dimProp,
+      dimBox,
+    },
+    atitude: { docProp: atiProp, docMed: atiMed, docBox: atiBox },
+    gestao: { docProp: gesProp, docMed: gesMed, docBox: gesBox },
+    processo: { docProp: proProp, docMed: proMed, docBox: proBox },
+    instalacoes: { medDoc: instMedDoc, propDoc: instPropDoc },
+  };
+}
+
+async function getInstalacoesBundle(filters) {
+  const [medItens, propItens, boxDisc, medDoc, propDoc] = await Promise.all([
+    getMeans(filters, endpointOptions('/discente/instalacoes/itens/medias')),
+    getProportions(filters, endpointOptions('/discente/instalacoes/itens/proporcoes')),
+    getBoxplot(filters, endpointOptions('/discente/instalacoes/itens/boxplot')),
+    getMeans(filters, endpointOptions('/docente/instalacoes/itens/medias')),
+    getProportions(filters, endpointOptions('/docente/instalacoes/itens/proporcoes')),
+  ]);
+
+  return {
+    instalacoes: { medItens, propItens, boxDisc, medDoc, propDoc },
+  };
+}
+
+async function getAtividadesBundle(filters) {
+  const [doc, disc] = await Promise.all([
+    getActivities(filters, 'DOC'),
+    getActivities(filters, 'DISC'),
+  ]);
+
+  return {
+    atividades: { doc, disc },
+  };
+}
+
 export async function queryAvaliaGraphEndpoint(endpoint, filters = {}) {
   if (endpoint === '/ping') {
     const { rows } = await queryAvaliaGraph('SELECT 1 AS ok');
@@ -607,6 +788,21 @@ export async function queryAvaliaGraphEndpoint(endpoint, filters = {}) {
   if (endpoint === '/filters/cursos') {
     const cursos = await getCursoFilters(filters.ano, filters.campus);
     return { cursos };
+  }
+  if (endpoint === '/discente/geral/bundle' || endpoint === '/bundle/overview') {
+    return getDashboardOverviewBundle(filters);
+  }
+  if (endpoint === '/discente/autoavaliacao/bundle') {
+    return getAutoavaliacaoBundle(filters);
+  }
+  if (endpoint === '/discente/base_docente/bundle') {
+    return getBaseDocenteBundle(filters);
+  }
+  if (endpoint === '/discente/instalacoes/bundle') {
+    return getInstalacoesBundle(filters);
+  }
+  if (endpoint === '/discente/atividades/bundle') {
+    return getAtividadesBundle(filters);
   }
   if (endpoint === '/resumo' || endpoint === '/discente/geral/summary') {
     return getSummary(filters);

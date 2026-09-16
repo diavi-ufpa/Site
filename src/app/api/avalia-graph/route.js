@@ -30,7 +30,7 @@ function normalizeParam(value, fallback = 'todos') {
 function json(payload, init = {}, isFilter = false) {
   const cacheControlHeader = isFilter
     ? 'public, max-age=86400, stale-while-revalidate=604800'
-    : 'no-store, max-age=0';
+    : 'public, max-age=3600, stale-while-revalidate=86400';
 
   return Response.json(payload, {
     ...init,
@@ -91,7 +91,11 @@ export async function GET(request) {
     if (!auth.ok) return json({ error: auth.error }, { status: auth.status }, isFilter);
 
     if (!isAvaliaGraphDatabaseConfigured()) {
-      return fallbackToSpreadsheetApi(request);
+      return json(
+        { error: 'Banco de dados gráfico não configurado no ambiente server-side.' },
+        { status: 503 },
+        isFilter
+      );
     }
 
     if (!endpoint) {
@@ -106,7 +110,11 @@ export async function GET(request) {
 
     const payload = await queryCached(endpoint, filters);
     if (payload === null) {
-      return fallbackToSpreadsheetApi(request);
+      return json(
+        { error: `Endpoint "${endpoint}" não encontrado no repositório gráfico.` },
+        { status: 404 },
+        isFilter
+      );
     }
     return json(payload, {}, isFilter);
   } catch (error) {
@@ -116,6 +124,13 @@ export async function GET(request) {
       message: error?.message,
       stack: error?.stack,
     });
-    return fallbackToSpreadsheetApi(request);
+    return json(
+      {
+        error: 'Erro interno ao consultar banco gráfico.',
+        details: error?.message ?? 'Erro desconhecido',
+      },
+      { status: 500 },
+      Boolean(endpoint?.startsWith('/filters'))
+    );
   }
 }

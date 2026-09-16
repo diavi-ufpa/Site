@@ -735,7 +735,7 @@ export default function RelatorioPresencialClient({
 
   async function fetchJsonOptional(endpoint, filters = selectedRef.current) {
     try {
-      const res = await authorizedFetch(make(endpoint, filters), { cache: 'no-store' });
+      const res = await authorizedFetch(make(endpoint, filters));
       if (!res.ok) return null;
       return await res.json();
     } catch {
@@ -1232,7 +1232,6 @@ export default function RelatorioPresencialClient({
       try {
         const res = await authorizedFetch(make('/discente/geral/summary', selected), {
           signal: controller.signal,
-          cache: 'no-store',
         });
         if (!res.ok) throw new Error('Falha ao carregar summary');
         const data = await res.json();
