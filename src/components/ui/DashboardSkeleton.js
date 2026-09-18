@@ -1,6 +1,9 @@
 'use client';
 
 import React from 'react';
+import TabContentSkeleton from './TabContentSkeleton';
+
+export { TabContentSkeleton };
 
 export default function DashboardSkeleton() {
   return (
@@ -56,24 +59,7 @@ export default function DashboardSkeleton() {
       </div>
 
       {/* Gráfico / Conteúdo Skeleton */}
-      <div
-        style={{
-          backgroundColor: '#fff',
-          borderRadius: '16px',
-          padding: '1.5rem',
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-          minHeight: '380px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '1rem',
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div className="skeletonBox" style={{ width: '220px', height: '22px' }} />
-          <div className="skeletonBox" style={{ width: '100px', height: '18px' }} />
-        </div>
-        <div className="skeletonBox" style={{ width: '100%', flex: 1, minHeight: '280px', borderRadius: '12px' }} />
-      </div>
+      <TabContentSkeleton />
     </div>
   );
 }

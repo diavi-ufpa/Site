@@ -1,27 +1,20 @@
 # 🎯 Objetivo Atual
-Reestruturar a interface gráfica e a UX das buscas e carregamento no AVALIA Presencial e AVALIA EAD na branch `fix/ui-consulta`:
-1. Eliminar o carregamento em tela cheia (fullscreen overlay) que cobria a barra lateral/menu.
-2. Padronizar o card de filtros para card branco proeminente (`#ffffff`, bordas `#e5e7eb`, cantos `16px`, sombra suave) no Presencial e EAD.
-3. Substituir o padrão antigo de filtros por um fluxo de **Disclosure Progressivo com Stepper Visual** (Ano -> Polo/Campus -> Curso -> Disciplina).
-4. Registrar o padrão no `PRODUCT.md`.
+Substituir a animação de carregamento com ícone girando por placeholders (Skeleton UI) na alternância entre abas no Avalia Presencial.
 
 ## 📍 Estado Atual (Onde paramos)
-- [x] Branch `fix/ui-consulta` criada a partir da `main` atualizada.
-- [x] **Substituição do Fullscreen Loading por In-Content Skeleton:**
-  - `LoadingOverlay.js` atualizado para padrão de escopo por container (`isFullScreen = false`).
-  - Criado o componente `DashboardSkeleton.js` com animação de shimmer para cards de estatística, abas e área de gráficos.
-  - Aplicado `DashboardSkeleton` nas páginas do Avalia Presencial e Avalia EAD, mantendo a Sidebar 100% visível.
-- [x] **Padronização de Card Branco & Stepper Sequencial nos Filtros (`DiscenteFilterAvalia.js` & `EadFilters.js`):**
-  - Aplicado card branco proeminente idêntico no Presencial e EAD (`background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 16px; box-shadow: 0 4px 14px rgba(0,0,0,0.04)`).
-  - Removido o carregamento automático inicial de dados no EAD antes da escolha dos filtros.
-  - Registrado oficialmente o padrão em `PRODUCT.md` sob a seção **UI & UX Search Standard**.
-- [x] **Validação, Build e Commit:**
-  - Executado `npm run build` com sucesso.
-  - Commits semânticos sem coautor realizados na branch `fix/ui-consulta`.
+- [x] **Criação do componente `TabContentSkeleton`:**
+  - Criado `src/components/ui/TabContentSkeleton.js` com layout em cards brancos, shimmer animation, placeholders para títulos, gráficos de barras e tabelas/distribuições.
+- [x] **Substituição do `LoadingOverlay` giratório no Avalia Presencial:**
+  - Em `DiscenteDashboardClient.js`, removido o `<LoadingOverlay />` com spinner circular.
+  - Inserido `<TabContentSkeleton />` como placeholder nativo exibido imediatamente durante a transição das abas (*Dimensões Gerais*, *Autoavaliação Discente*, *Avaliação da Ação Docente*, *Instalações Físicas* e *Atividades Acadêmicas*).
+  - Adicionado placeholder skeleton para carregamento de rankings contextuais (`RankingSkeleton`).
+  - Atualizado `DashboardSkeleton.js` para reaproveitar `TabContentSkeleton`.
+- [x] **Validação e Build:**
+  - Executado `npm run build` com sucesso (código de saída 0).
 
 ## ⏳ Próximos Passos
-- Branch pronta para revisão, push ou expansão para outros módulos do portal.
+- Apresentar o resultado ao usuário para validação visual.
 
 ## ⚠️ Decisões & Observações Importantes
-- O menu lateral (`Sidebar`) permanece 100% visível, clicável e responsivo em qualquer estado de carregamento do conteúdo.
-- Registrado oficialmente o padrão visual e comportamental para consultas no documento de produto (`PRODUCT.md`).
+- Cards de estatísticas e a barra de abas permanecem visíveis e estáveis durante a alternância entre abas.
+- Zero layout shift (CLS) ou piscar de tela ("flicker"): o placeholder surge instantaneamente enquanto a API responde.

@@ -8,8 +8,7 @@ import {
 } from '@/features/avalia/lib/avaliaDataSource';
 import { useAuth } from '@/contexts/AuthContext';
 import StatCard from '@/components/ui/StatCard';
-import LoadingOverlay from '@/components/ui/LoadingOverlay';
-import DashboardSkeleton from '@/components/ui/DashboardSkeleton';
+import DashboardSkeleton, { TabContentSkeleton } from '@/components/ui/DashboardSkeleton';
 import styles from '../../../../styles/dados.module.css';
 import { Users, TrendingUp, TrendingDown, Search, Filter } from 'lucide-react';
 
@@ -2245,6 +2244,31 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
   function renderRankingContext(contextKey) {
     if (!showRanking || !rankingConfig[contextKey]) return null;
 
+    if (rankingLoading[contextKey]) {
+      return (
+        <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem', animation: 'fadeIn 0.3s ease' }}>
+          <div className="skeletonBox" style={{ width: '280px', height: '22px', borderRadius: '6px' }} />
+          <div
+            style={{
+              backgroundColor: '#ffffff',
+              borderRadius: '16px',
+              padding: '1.5rem',
+              boxShadow: '0 4px 14px rgba(0, 0, 0, 0.04)',
+              border: '1px solid #e5e7eb',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.75rem',
+            }}
+          >
+            <div className="skeletonBox" style={{ width: '180px', height: '18px', borderRadius: '4px' }} />
+            <div className="skeletonBox" style={{ width: '100%', height: '36px', borderRadius: '6px' }} />
+            <div className="skeletonBox" style={{ width: '100%', height: '36px', borderRadius: '6px' }} />
+            <div className="skeletonBox" style={{ width: '100%', height: '36px', borderRadius: '6px' }} />
+          </div>
+        </div>
+      );
+    }
+
     const cfg = rankingConfig[contextKey];
     let groups = cfg.groups;
 
@@ -2294,19 +2318,25 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
     pickCampusRow(summaryData?.campusPiorAvaliado) ||
     null;
 
-  const currentRankingLoading =
-    showRanking && visibleRankingContexts.some((key) => !!rankingLoading[key]);
-
   const isGlobalLoading = isLoading;
-  const isTabLoading = (
-    isDimensionMode
-      ? selectedDimension === '3'
-        ? !!tabLoading.instalacoes
-        : selectedDimension === '4'
-          ? !!tabLoading.atividades
-          : !!tabLoading.autoavaliacao || !!tabLoading.base_docente
-      : !!tabLoading[activeTab]
-  ) || currentRankingLoading;
+
+  const isCurrentTabLoaded = isDimensionMode
+    ? selectedDimension === '3'
+      ? !!loadedTabs.instalacoes
+      : selectedDimension === '4'
+        ? !!loadedTabs.atividades
+        : !!loadedTabs.autoavaliacao && !!loadedTabs.base_docente
+    : !!loadedTabs[activeTab];
+
+  const isCurrentTabLoading = isDimensionMode
+    ? selectedDimension === '3'
+      ? !!tabLoading.instalacoes
+      : selectedDimension === '4'
+        ? !!tabLoading.atividades
+        : !!tabLoading.autoavaliacao || !!tabLoading.base_docente
+    : !!tabLoading[activeTab];
+
+  const isTabLoading = !isCurrentTabLoaded || isCurrentTabLoading;
 
   return (
     <div style={{ position: 'relative', width: '100%' }}>
@@ -2461,9 +2491,11 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
                     height: 'auto',
                   }}
                 >
-                  {isTabLoading && <LoadingOverlay />}
-
-                  {!isDimensionMode && activeTab === 'dimensoes' && (
+                  {isTabLoading ? (
+                    <TabContentSkeleton />
+                  ) : (
+                    <>
+                      {!isDimensionMode && activeTab === 'dimensoes' && (
                     <>
                       <DimensoesGeraisTab
                         datasets={datasets}
@@ -2703,6 +2735,8 @@ export default function DiscenteDashboardClient({ initialData, filtersOptions })
                         formatAtividadesChartData={formatAtividadesChartData}
                       />
                       {renderRankingContext('atividades')}
+                    </>
+                  )}
                     </>
                   )}
                 </div>
