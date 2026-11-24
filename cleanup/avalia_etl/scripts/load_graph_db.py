@@ -18,7 +18,7 @@ from src.graph_calculator import calculate_graphs, read_source
 from src.utils.logger import info, section, success
 
 
-CALCULATION_VERSION = "graph-v1"
+CALCULATION_VERSION = "graph-v2"
 SEMESTER_PATTERN = re.compile(r"^(\d{4})[-_](\d+)$")
 
 
