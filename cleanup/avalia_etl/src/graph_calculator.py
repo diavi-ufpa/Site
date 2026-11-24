@@ -143,6 +143,25 @@ def _prepare_source(
         result["__oferta"] = result["ID"].map(normalize_text)
         if (result["__oferta"] == "").any():
             raise ValueError("Base DISC contém ID de oferta vazio.")
+        # Quando ID for um índice numérico único por linha (ex: 2025-2), usa ID2 ou
+        # DOCENTE|DISCIPLINA|CURSO|CAMPUS para identificar corretamente a oferta/turma.
+        if (
+            len(result) > 1
+            and result["__oferta"].nunique() == len(result)
+            and result["__oferta"].str.fullmatch(r"\d+").all()
+        ):
+            if "ID2" in result.columns and result["ID2"].map(normalize_text).ne("").all():
+                result["__oferta"] = result["ID2"].map(normalize_text)
+            elif "DOCENTE" in result.columns and "DISCIPLINA" in result.columns:
+                result["__oferta"] = (
+                    result["DOCENTE"].map(normalize_text)
+                    + "|"
+                    + result["DISCIPLINA"].map(normalize_text)
+                    + "|"
+                    + result["__curso"]
+                    + "|"
+                    + result["__campus"]
+                )
     else:
         offer_columns = [
             column for column in (
@@ -405,7 +424,8 @@ def _disc_media_long(
     conflicts = long.groupby(keys)["__value"].nunique()
     if (conflicts > 1).any():
         raise ValueError("Uma oferta DISC possui médias divergentes para o mesmo item.")
-    return long
+    # Deduplica para garantir exatamente um ponto por oferta/turma (valoresUnicos)
+    return long.drop_duplicates(subset=keys).copy()
 
 
 def _append_boxplots(
